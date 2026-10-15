@@ -19,6 +19,8 @@ concurrency:
 
 jobs:
   build:
+    # Onyx's branch workflow validates Izzy/Foss on GitHub-hosted runners.
+    if: github.head_ref != 'feat/onyx-redesign-v1' || github.event.pull_request.head.repo.full_name != github.repository
     runs-on: blacksmith-4vcpu-ubuntu-2404
     timeout-minutes: 20
 
