@@ -1,19 +1,19 @@
 ONYX MUSIC V1 — VALIDATION STATUS
 
-Implementation branch: feat/onyx-redesign-v1 (LOCAL ONLY)
+Implementation branch: feat/onyx-redesign-v1
 Base: 4d4899f47343a14b625390e4ea7bec201efda8a1
 
-STATUS: NOT COMPILED. NOT DEVICE TESTED. NO PR OR APK CREATED.
+STATUS: PULL REQUEST OPEN; ACTIONS VALIDATION IN PROGRESS; DEVICE TESTS PENDING.
 
-Remote blocker:
-- Authenticated GitHub account: xero-scripts-repo.
-- Repository metadata reports user's push/admin rights.
-- Connector lists no installed accounts/installations.
-- Creating a new remote feature branch returns GitHub HTTP403:
-  Resource not accessible by integration.
-- Plain git push also has no credentials in this environment.
-- Remote branch absence confirmed by API404 and empty git ls-remote.
+GitHub access was enabled on 2026-10-15. The five implementation commits are
+published on the feature branch; PR https://github.com/xero-scripts-repo/Onyx-Music/pull/1
 No changes were made to main, and no release was published.
+
+First CI run: https://github.com/xero-scripts-repo/Onyx-Music/actions/runs/38684019847
+Java21/SDK/signing succeeded. Izzy/Foss compilation found an implicit
+BoxWithConstraints.maxWidth access across a Compose DSL scope in MainActivity.
+Fixed by capturing compactWindow in its owning scope before child composables.
+The workflow is being rerun with this fix; Android tests are not yet confirmed.
 
 Changes implemented:
 - Original native monochrome theme, typography, shapes, default dark mode.
@@ -62,7 +62,7 @@ Added but NOT EXECUTED (require Android Gradle build):
 - ProgressStateTest: zero/negative duration, clamped seeks, live state,
   finite output on extreme long values.
 
-Actions ready to run after GitHub access is fixed:
+Actions validation:
 - Java21, original android-37.0 SDK/symlink workaround.
 - :app:testIzzyDebugUnitTest :app:assembleIzzyDebug :app:assembleFossDebug
 - APK artifacts with SHA256, signing mode, commit and certificate digest.

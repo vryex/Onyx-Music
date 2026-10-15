@@ -57,3 +57,20 @@ persistent key cannot recover this ability. Otherwise, back up user data and
 uninstall the old app before installing the APK signed with the new key. Keep
 using the same persistent key for subsequent updates; the application ID must
 also remain com.onyx.music. This workflow does not increase the version code.
+
+Windows PowerShell alternative
+
+Install a Java 21 JDK if keytool is not available; Android Studio is not needed.
+Run the following in PowerShell, outside the repository:
+
+  New-Item -ItemType Directory -Force "$env:USERPROFILE\OnyxSigning"
+  keytool -genkeypair -storetype PKCS12 `
+    -keystore "$env:USERPROFILE\OnyxSigning\onyx-upload.p12" `
+    -alias onyx -keyalg RSA -keysize 3072 -validity 10000 `
+    -dname "CN=Onyx Music"
+  [Convert]::ToBase64String([IO.File]::ReadAllBytes("$env:USERPROFILE\OnyxSigning\onyx-upload.p12")) | Set-Clipboard
+
+Keytool prompts for the password. Paste the clipboard into the
+ONYX_KEYSTORE_BASE64 repository secret, then set the other three secrets as
+listed above. Clear the clipboard with Set-Clipboard -Value "" and retain a
+secure backup of the key/password. Do not send the key in chat.

@@ -718,6 +718,7 @@ class MainActivity : FragmentActivity() {
                         .background(MaterialTheme.colorScheme.background),
             ) {
                 val density = LocalDensity.current
+                val compactWindow = maxWidth < 360.dp
                 val configuration = LocalWindowInfo.current
                 val cutoutInsets = WindowInsets.displayCutout
                 val windowsInsets = WindowInsets.systemBars
@@ -1065,7 +1066,7 @@ class MainActivity : FragmentActivity() {
                                             Text(
                                                 text = if (currentRoute == "home") stringResource(R.string.onyx_music)
                                                 else currentTitleRes?.let { stringResource(it) } ?: "",
-                                                style = if (maxWidth < 360.dp) MaterialTheme.typography.titleMedium
+                                                style = if (compactWindow) MaterialTheme.typography.titleMedium
                                                 else MaterialTheme.typography.titleLarge,
                                                 maxLines = 1,
                                                 overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
