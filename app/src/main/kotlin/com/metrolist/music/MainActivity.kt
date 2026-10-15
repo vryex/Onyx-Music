@@ -1053,7 +1053,6 @@ class MainActivity : FragmentActivity() {
                     }
 
                     Scaffold(
-                        modifier = Modifier.onyxBackdrop(),
                         containerColor = Color.Transparent,
                         snackbarHost = { SnackbarHost(snackbarHostState) },
                         topBar = {
@@ -1293,6 +1292,7 @@ class MainActivity : FragmentActivity() {
                         modifier =
                             Modifier
                                 .fillMaxSize()
+                                .onyxBackdrop()
                                 .nestedScroll(topAppBarScrollBehavior.nestedScrollConnection),
                     ) {
                         Row(Modifier.fillMaxSize()) {
