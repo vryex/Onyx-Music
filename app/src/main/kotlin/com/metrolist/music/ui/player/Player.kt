@@ -96,6 +96,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.input.nestedscroll.nestedScroll
@@ -123,7 +124,6 @@ import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import androidx.datastore.preferences.core.edit
-import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.ProcessLifecycleOwner
 import androidx.media3.common.C
@@ -198,9 +198,6 @@ import kotlinx.coroutines.withContext
 import kotlin.math.max
 import kotlin.math.roundToInt
 import com.metrolist.music.ui.component.Icon as MIcon
-import com.metrolist.music.constants.SleepTimerDefaultKey
-import com.metrolist.music.constants.SleepTimerFadeOutKey
-import com.metrolist.music.constants.SleepTimerStopAfterCurrentSongKey
 
 
 @OptIn(ExperimentalMaterial3Api::class)
