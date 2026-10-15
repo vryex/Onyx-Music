@@ -11,6 +11,8 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import java.io.InputStream
 import javax.inject.Inject
 
@@ -108,11 +110,9 @@ class EQViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 // Read the file content
-                val content = inputStream.bufferedReader().use { it.readText() }
-                inputStream.close()
-
-                // Parse the ParametricEQ format
-                val parametricEQ = ParametricEQParser.parseText(content)
+                val parametricEQ = withContext(Dispatchers.IO) {
+                    inputStream.bufferedReader().use { ParametricEQParser.parseText(it.readText()) }
+                }
 
                 // Validate the parsed EQ
                 val validationErrors = ParametricEQParser.validate(parametricEQ)
