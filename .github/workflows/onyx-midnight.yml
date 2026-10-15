@@ -36,6 +36,10 @@ jobs:
             ln -s "$ANDROID_HOME/platforms/android-37.0" "$ANDROID_HOME/platforms/android-37"
           fi
       - uses: gradle/actions/setup-gradle@v4
+      - name: Prepare debug build key
+        run: |
+          mkdir -p "$HOME/.android"
+          keytool -genkeypair -keystore "$HOME/.android/debug.keystore" -storepass android -keypass android -alias androiddebugkey -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Onyx CI Debug,O=Onyx,C=MX" -noprompt
       - name: Regression tests and required debug build
         run: bash ./gradlew :app:testFossDebugUnitTest :innertube:testDebugUnitTest :app:assembleFossDebug --console=plain --max-workers=2 -Pkotlin.compiler.execution.strategy=in-process
       - name: Optimized release build
