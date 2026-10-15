@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -73,7 +74,7 @@ fun AppNavigationRail(
     onSearchLongClick: (() -> Unit)? = null,
     onHomeLongHold: (() -> Unit)? = null,
 ) {
-    val containerColor = Color.Black
+    val containerColor = MaterialTheme.colorScheme.background
     val haptics = LocalHapticFeedback.current
     val viewConfiguration = LocalViewConfiguration.current
 
@@ -164,9 +165,9 @@ fun AppNavigationBar(
         modifier = modifier
             .fillMaxWidth()
             .padding(horizontal = 14.dp, vertical = 4.dp)
-            .clip(RoundedCornerShape(22.dp))
+            .clip(RoundedCornerShape(50))
             .background(MaterialTheme.colorScheme.surfaceContainer)
-            .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(22.dp))
+            .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(50))
             .padding(horizontal = 7.dp, vertical = 5.dp),
         horizontalArrangement = Arrangement.spacedBy(3.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -199,10 +200,11 @@ fun AppNavigationBar(
                     }
                 }
             }
-            val pillShape = RoundedCornerShape(16.dp)
+            val pillShape = RoundedCornerShape(50)
             Column(
                 modifier = Modifier
                     .weight(1f)
+                    .heightIn(min = 48.dp)
                     .clip(pillShape)
                     .background(
                         if (selected) MaterialTheme.colorScheme.surfaceContainerHighest
@@ -233,7 +235,7 @@ fun AppNavigationBar(
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                         style = MaterialTheme.typography.labelSmall,
-                        fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
+                        fontWeight = if (selected) FontWeight.Medium else FontWeight.Normal,
                         color = if (selected) MaterialTheme.colorScheme.onSurface else contentColor,
                     )
                 }

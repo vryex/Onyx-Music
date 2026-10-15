@@ -619,7 +619,7 @@ fun DailyDiscoverCard(
                         )
                     val messageRes =
                         remember(dailyDiscover.seed.id) {
-                            messages[kotlin.math.abs(dailyDiscover.seed.id.hashCode()) % messages.size]
+                            messages[Math.floorMod(dailyDiscover.seed.id.hashCode(), messages.size)]
                         }
 
                     Text(
@@ -1193,7 +1193,7 @@ fun HomeScreen(
                     Text(
                         text = stringResource(R.string.home),
                         style = MaterialTheme.typography.headlineLarge,
-                        fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
+                        fontWeight = androidx.compose.ui.text.font.FontWeight.Medium,
                         color = MaterialTheme.colorScheme.onSurface,
                         modifier = Modifier.padding(horizontal = 20.dp, vertical = 18.dp),
                     )

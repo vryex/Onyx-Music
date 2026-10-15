@@ -109,7 +109,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.text.Collator
 import java.time.LocalDateTime
-import java.util.UUID
 
 @OptIn(ExperimentalFoundationApi::class, ExperimentalMaterial3Api::class)
 @Composable
@@ -166,7 +165,7 @@ fun LibraryMixScreen(
         Playlist(
             playlist =
                 PlaylistEntity(
-                    id = UUID.randomUUID().toString(),
+                    id = "onyx_builtin_liked",
                     name = stringResource(R.string.liked),
                 ),
             songCount = 0,
@@ -177,7 +176,7 @@ fun LibraryMixScreen(
         Playlist(
             playlist =
                 PlaylistEntity(
-                    id = UUID.randomUUID().toString(),
+                    id = "onyx_builtin_downloaded",
                     name = stringResource(R.string.offline),
                 ),
             songCount = 0,
@@ -188,7 +187,7 @@ fun LibraryMixScreen(
         Playlist(
             playlist =
                 PlaylistEntity(
-                    id = UUID.randomUUID().toString(),
+                    id = "onyx_builtin_top",
                     name = stringResource(R.string.my_top) + " $topSize",
                 ),
             songCount = 0,
@@ -199,7 +198,7 @@ fun LibraryMixScreen(
         Playlist(
             playlist =
                 PlaylistEntity(
-                    id = UUID.randomUUID().toString(),
+                    id = "onyx_builtin_cached",
                     name = stringResource(R.string.cached_playlist),
                 ),
             songCount = 0,
@@ -210,7 +209,7 @@ fun LibraryMixScreen(
         Playlist(
             playlist =
                 PlaylistEntity(
-                    id = UUID.randomUUID().toString(),
+                    id = "onyx_builtin_uploaded",
                     name = stringResource(R.string.uploaded_playlist),
                 ),
             songCount = 0,
@@ -237,14 +236,14 @@ fun LibraryMixScreen(
     val songs = viewModel.songs.collectAsStateWithLifecycle()
     val playlist = viewModel.playlists.collectAsStateWithLifecycle()
 
-    var allItems = albums.value + artist.value + playlist.value
     val locale = LocalLocale.current.platformLocale
     val collator = remember(locale) {
         Collator.getInstance(locale).apply {
             strength = Collator.PRIMARY
         }
     }
-    allItems =
+    val allItems = remember(albums.value, artist.value, playlist.value, sortType, sortDescending, collator) {
+        val allItems = albums.value + artist.value + playlist.value
         when (sortType) {
             MixSortType.CREATE_DATE -> {
                 allItems.sortedBy { item ->
@@ -281,8 +280,11 @@ fun LibraryMixScreen(
                 }
             }
         }.reversed(sortDescending)
+    }
 
-    val searchableItems = if (normalizedQuery.isBlank()) allItems else allItems + songs.value
+    val searchableItems = remember(allItems, songs.value, normalizedQuery.isBlank()) {
+        if (normalizedQuery.isBlank()) allItems else allItems + songs.value
+    }
 
     val filteredItems = remember(searchableItems, normalizedQuery, collator) {
         val matchedItems =

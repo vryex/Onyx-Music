@@ -6,6 +6,10 @@
 package com.metrolist.music.ui.component
 
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.padding
+import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.shape.RoundedCornerShape
+import com.metrolist.music.ui.theme.onyxGlass
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.text.KeyboardActions
@@ -51,7 +55,7 @@ fun LibrarySearchHeader(
 
     Row(
         verticalAlignment = Alignment.CenterVertically,
-        modifier = modifier.fillMaxWidth(),
+        modifier = modifier.fillMaxWidth().padding(end = 16.dp, bottom = 12.dp).onyxGlass(RoundedCornerShape(16.dp)),
     ) {
         if (isSearchActive) {
             TextField(

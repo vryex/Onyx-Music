@@ -62,6 +62,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.draw.drawWithCache
+import androidx.compose.ui.graphics.Brush
+import com.metrolist.music.ui.theme.onyxGlass
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -166,6 +169,7 @@ fun ArtistScreen(
     val showMonthlyListeners by rememberPreference(key = ShowMonthlyListenersKey, defaultValue = true)
 
     val lazyListState = rememberLazyListState()
+    val heroCanvas = MaterialTheme.colorScheme.background
     val snackbarHostState = remember { SnackbarHostState() }
     var showLocal by rememberSaveable { mutableStateOf(false) }
     val density = LocalDensity.current
@@ -310,16 +314,24 @@ fun ArtistScreen(
                                         },
                             ) {
                                 AsyncImage(
-                                    model = thumbnail.resize(1200, 1200),
+                                    model = thumbnail.resize(800, 800),
                                     contentDescription = null,
                                     contentScale = ContentScale.Crop,
                                     modifier =
                                         Modifier
                                             .fillMaxWidth()
                                             .align(Alignment.TopCenter)
-                                            .fadingEdge(
-                                                bottom = 200.dp,
-                                            ),
+                                            .drawWithCache {
+                                                val fade = Brush.verticalGradient(
+                                                    listOf(Color.Transparent, heroCanvas),
+                                                    startY = size.height * 0.35f,
+                                                    endY = size.height,
+                                                )
+                                                onDrawWithContent {
+                                                    drawContent()
+                                                    drawRect(fade)
+                                                }
+                                            },
                                 )
                             }
                         }
@@ -354,8 +366,8 @@ fun ArtistScreen(
                                 Text(
                                     text = displayArtistName ?: "Unknown",
                                     style = MaterialTheme.typography.headlineLarge,
-                                    fontWeight = FontWeight.Bold,
-                                    maxLines = 1,
+                                    fontWeight = FontWeight.Medium,
+                                    maxLines = 2,
                                     overflow = TextOverflow.Ellipsis,
                                     fontSize = 32.sp,
                                     modifier = Modifier.padding(bottom = 16.dp),
@@ -381,12 +393,12 @@ fun ArtistScreen(
                                                     },
                                             ),
                                         shape = RoundedCornerShape(50),
-                                        modifier = Modifier.height(40.dp),
+                                        modifier = Modifier.height(48.dp),
                                     ) {
                                         Text(
                                             text = stringResource(if (isChannelSubscribed) R.string.subscribed else R.string.subscribe),
                                             fontSize = 14.sp,
-                                            color = if (!isChannelSubscribed) MaterialTheme.colorScheme.error else LocalContentColor.current,
+                                            color = MaterialTheme.colorScheme.onSurface,
                                         )
                                     }
 
@@ -404,7 +416,7 @@ fun ArtistScreen(
                                                         playerConnection.playQueue(YouTubeQueue(radioEndpoint))
                                                     },
                                                     shape = RoundedCornerShape(50),
-                                                    modifier = Modifier.height(40.dp),
+                                                    modifier = Modifier.height(48.dp),
                                                 ) {
                                                     Icon(
                                                         painter = painterResource(R.drawable.radio),
@@ -476,7 +488,7 @@ fun ArtistScreen(
                                     Text(
                                         text = stringResource(R.string.about_artist),
                                         style = MaterialTheme.typography.titleMedium,
-                                        fontWeight = FontWeight.Bold,
+                                        fontWeight = FontWeight.Medium,
                                         modifier = Modifier.padding(bottom = 8.dp),
                                     )
                                 }

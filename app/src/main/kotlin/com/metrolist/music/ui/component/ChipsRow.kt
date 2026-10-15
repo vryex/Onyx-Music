@@ -78,6 +78,9 @@ fun <E> ChipsRow(
                 selected = currentValue == value,
                 colors = FilterChipDefaults.filterChipColors(
                     containerColor = containerColor,
+                    selectedContainerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
+                    selectedLabelColor = MaterialTheme.colorScheme.onSurface,
+                    labelColor = MaterialTheme.colorScheme.onSurfaceVariant,
                 ),
                 onClick = { onValueUpdate(value) },
                 shape = RoundedCornerShape(50.dp),
@@ -196,6 +199,9 @@ fun <Int> ChoiceChipsRow(
                         selected = currentValue == value,
                         colors = FilterChipDefaults.filterChipColors(
                             containerColor = containerColor,
+                    selectedContainerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
+                    selectedLabelColor = MaterialTheme.colorScheme.onSurface,
+                    labelColor = MaterialTheme.colorScheme.onSurfaceVariant,
                         ),
                         onClick = { onValueUpdate(value) },
                         shape = RoundedCornerShape(50.dp),

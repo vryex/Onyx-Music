@@ -33,6 +33,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -308,7 +309,7 @@ fun LoginScreen(
                 .onyxBackdrop(),
     ) {
         AndroidView(
-            modifier = Modifier.fillMaxSize().padding(start = 12.dp, end = 12.dp, top = 76.dp, bottom = 10.dp).clip(RoundedCornerShape(25.dp)),
+            modifier = Modifier.fillMaxSize().padding(start = 12.dp, end = 12.dp, top = 76.dp, bottom = 10.dp).clip(RoundedCornerShape(16.dp)),
             factory = { webViewContext ->
                 WebView(webViewContext).apply {
                     webViewClient =
@@ -425,6 +426,7 @@ fun LoginScreen(
             },
             confirmButton = {
                 Button(
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF663AF3), contentColor = Color.White),
                     enabled = selectedAccount?.let { it.isSelected || it.signinUrl != null } == true,
                     onClick = {
                         val account = selectedAccount ?: return@Button
@@ -491,7 +493,7 @@ private fun YouTubeAccountPickerItem(
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(24.dp),
+        shape = RoundedCornerShape(16.dp),
         colors =
             CardDefaults.cardColors(
                 containerColor =
