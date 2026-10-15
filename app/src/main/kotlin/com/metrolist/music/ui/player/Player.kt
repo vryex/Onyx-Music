@@ -1265,55 +1265,17 @@ fun BottomSheetPlayer(
                             val isBackPressed by backInteractionSource.collectIsPressedAsState()
                             val isNextPressed by nextInteractionSource.collectIsPressedAsState()
 
-                            val playPauseWeight by animateFloatAsState(
-                                targetValue =
-                                    if (isPlayPausePressed) {
-                                        1.9f
-                                    } else if (isBackPressed || isNextPressed) {
-                                        1.1f
-                                    } else {
-                                        1.3f
-                                    },
-                                animationSpec =
-                                    spring(
-                                        dampingRatio = 0.6f,
-                                        stiffness = 500f,
-                                    ),
-                                label = "playPauseWeight",
+                            val playPauseScale by animateFloatAsState(
+                                targetValue = if (isPlayPausePressed) 0.94f else 1f,
+                                animationSpec = tween(140), label = "playPauseScale",
                             )
-
-                            val backButtonWeight by animateFloatAsState(
-                                targetValue =
-                                    if (isBackPressed) {
-                                        0.65f
-                                    } else if (isPlayPausePressed) {
-                                        0.35f
-                                    } else {
-                                        0.45f
-                                    },
-                                animationSpec =
-                                    spring(
-                                        dampingRatio = 0.6f,
-                                        stiffness = 500f,
-                                    ),
-                                label = "backButtonWeight",
+                            val backButtonScale by animateFloatAsState(
+                                targetValue = if (isBackPressed) 0.94f else 1f,
+                                animationSpec = tween(140), label = "backButtonScale",
                             )
-
-                            val nextButtonWeight by animateFloatAsState(
-                                targetValue =
-                                    if (isNextPressed) {
-                                        0.65f
-                                    } else if (isPlayPausePressed) {
-                                        0.35f
-                                    } else {
-                                        0.45f
-                                    },
-                                animationSpec =
-                                    spring(
-                                        dampingRatio = 0.6f,
-                                        stiffness = 500f,
-                                    ),
-                                label = "nextButtonWeight",
+                            val nextButtonScale by animateFloatAsState(
+                                targetValue = if (isNextPressed) 0.94f else 1f,
+                                animationSpec = tween(140), label = "nextButtonScale",
                             )
 
                             FilledIconButton(
@@ -1328,12 +1290,12 @@ fun BottomSheetPlayer(
                                     ),
                                 modifier =
                                     Modifier
-                                        .height(68.dp)
-                                        .weight(backButtonWeight),
+                                        .size(56.dp)
+                                        .graphicsLayer { scaleX = backButtonScale; scaleY = backButtonScale },
                             ) {
                                 Icon(
                                     painter = painterResource(R.drawable.skip_previous),
-                                    contentDescription = null,
+                                    contentDescription = stringResource(R.string.previous),
                                     modifier = Modifier.size(32.dp),
                                 )
                             }
@@ -1368,8 +1330,8 @@ fun BottomSheetPlayer(
                                     ),
                                 modifier =
                                     Modifier
-                                        .height(68.dp)
-                                        .weight(playPauseWeight)
+                                        .size(72.dp)
+                                        .graphicsLayer { scaleX = playPauseScale; scaleY = playPauseScale }
                                         .focusRequester(focusRequester),
                             ) {
                                 Row(
@@ -1393,16 +1355,7 @@ fun BottomSheetPlayer(
                                             },
                                         modifier = Modifier.size(32.dp),
                                     )
-                                    Spacer(modifier = Modifier.width(8.dp))
-                                    Text(
-                                        text =
-                                            if (isListenTogetherGuest) {
-                                                if (isMuted) stringResource(R.string.unmute) else stringResource(R.string.mute)
-                                            } else {
-                                                if (effectiveIsPlaying) stringResource(R.string.player_pause) else stringResource(R.string.play)
-                                            },
-                                        style = MaterialTheme.typography.titleMedium,
-                                    )
+
                                 }
                             }
 
@@ -1420,12 +1373,12 @@ fun BottomSheetPlayer(
                                     ),
                                 modifier =
                                     Modifier
-                                        .height(68.dp)
-                                        .weight(nextButtonWeight),
+                                        .size(56.dp)
+                                        .graphicsLayer { scaleX = nextButtonScale; scaleY = nextButtonScale },
                             ) {
                                 Icon(
                                     painter = painterResource(R.drawable.skip_next),
-                                    contentDescription = null,
+                                    contentDescription = stringResource(R.string.next),
                                     modifier = Modifier.size(32.dp),
                                 )
                             }

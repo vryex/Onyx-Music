@@ -604,7 +604,7 @@ class MainActivity : FragmentActivity() {
 
         val enableLandscapeScaling by rememberPreference(EnableLandscapeScalingKey, defaultValue = false)
         val userDensityScale by rememberPreference(DensityScaleKey, defaultValue = 1f)
-        val pureBlack = true
+        val pureBlack = false
 
         val (selectedThemeColorInt) = rememberPreference(SelectedThemeColorKey, defaultValue = DefaultThemeColor.toArgb())
         val selectedThemeColor = Color(selectedThemeColorInt)
@@ -955,14 +955,7 @@ class MainActivity : FragmentActivity() {
 
                 var showAccountDialog by remember { mutableStateOf(false) }
 
-                val pauseListenHistory by rememberPreference(PauseListenHistoryKey, defaultValue = false)
-                val eventCount by database.eventCount().collectAsStateWithLifecycle(initialValue = 0)
-                val showHistoryButton =
-                    remember(pauseListenHistory, eventCount) {
-                        !(pauseListenHistory && eventCount == 0)
-                    }
-
-                val baseBg = Color.Black
+                val baseBg = MaterialTheme.colorScheme.background
                 val artistNameAliases by ArtistNameAliases.aliases.collectAsStateWithLifecycle()
 
                 CompositionLocalProvider(
@@ -994,23 +987,9 @@ class MainActivity : FragmentActivity() {
                                 Row {
                                     TopAppBar(
                                         title = {
-                                            OnyxBrand(subtitle = currentTitleRes?.let { stringResource(it) })
+                                            OnyxBrand()
                                         },
                                         actions = {
-                                            if (showHistoryButton) {
-                                                IconButton(onClick = { navController.navigate("history") }) {
-                                                    Icon(
-                                                        painter = painterResource(R.drawable.history),
-                                                        contentDescription = stringResource(R.string.history),
-                                                    )
-                                                }
-                                            }
-                                            IconButton(onClick = { navController.navigate("stats") }) {
-                                                Icon(
-                                                    painter = painterResource(R.drawable.stats),
-                                                    contentDescription = stringResource(R.string.stats),
-                                                )
-                                            }
                                             if (listenTogetherInTopBar) {
                                                 IconButton(onClick = { navController.navigate("listen_together_from_topbar") }) {
                                                     Icon(

@@ -136,7 +136,7 @@ android {
             }
             isDebuggable = true
             if (appNameOverride == null) {
-                resValue("string", "app_name", "Metrolist Debug")
+                resValue("string", "app_name", "Onyx Music Debug")
             }
             signingConfig =
                 if (workflowDebugKeystoreFile != null) {
