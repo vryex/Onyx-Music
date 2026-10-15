@@ -5,6 +5,10 @@
 
 package com.metrolist.music.ui.screens.search
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.asPaddingValues
@@ -47,6 +51,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.TextFieldValue
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
@@ -181,7 +186,13 @@ fun SearchScreen(
             TopAppBar(
                 title = {
                     Row(
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(end = 12.dp)
+                            .heightIn(min = 52.dp)
+                            .background(MaterialTheme.colorScheme.surfaceContainer, RoundedCornerShape(28.dp))
+                            .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(28.dp))
+                            .padding(start = 18.dp, end = 4.dp),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
                         BasicTextField(
@@ -232,7 +243,7 @@ fun SearchScreen(
                                 IconButton(onClick = { query = TextFieldValue("") }) {
                                     Icon(
                                         painter = painterResource(R.drawable.close),
-                                        contentDescription = null,
+                                        contentDescription = stringResource(R.string.clear_search),
                                         tint = MaterialTheme.colorScheme.onSurface,
                                     )
                                 }
@@ -255,8 +266,13 @@ fun SearchScreen(
                                                 SearchSource.ONLINE -> R.drawable.language
                                             },
                                         ),
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.onSurface,
+                                    contentDescription = stringResource(
+                                        when (searchSource) {
+                                            SearchSource.LOCAL -> R.string.search_library
+                                            SearchSource.ONLINE -> R.string.search_yt_music
+                                        },
+                                    ),
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
                                 )
                             }
                         }
@@ -273,7 +289,7 @@ fun SearchScreen(
                 },
                 colors =
                     TopAppBarDefaults.topAppBarColors(
-                        containerColor = if (pureBlack) Color.Black else MaterialTheme.colorScheme.surfaceContainer,
+                        containerColor = MaterialTheme.colorScheme.background,
                     ),
             )
         },

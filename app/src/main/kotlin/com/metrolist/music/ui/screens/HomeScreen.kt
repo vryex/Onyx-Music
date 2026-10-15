@@ -219,11 +219,7 @@ fun CommunityPlaylistCard(
     val artistNameAliases = LocalArtistNameAliases.current
 
     val containerColor =
-        if (isDark) {
-            MaterialTheme.colorScheme.surfaceColorAtElevation(1.dp)
-        } else {
-            MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
-        }
+MaterialTheme.colorScheme.surfaceContainer
 
     val dbPlaylist by database.playlistByBrowseId(item.playlist.id).collectAsStateWithLifecycle(initialValue = null)
     val isBookmarked = dbPlaylist?.playlist?.bookmarkedAt != null
@@ -237,7 +233,7 @@ fun CommunityPlaylistCard(
             CardDefaults.cardColors(
                 containerColor = containerColor,
             ),
-        shape = RoundedCornerShape(28.dp),
+        shape = RoundedCornerShape(20.dp),
         onClick = onClick,
     ) {
         Column(
@@ -541,14 +537,14 @@ fun DailyDiscoverCard(
             CardDefaults.cardColors(
                 containerColor = MaterialTheme.colorScheme.surfaceVariant,
             ),
-        shape = RoundedCornerShape(28.dp),
+        shape = RoundedCornerShape(20.dp),
     ) {
         BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
             AsyncImage(
                 model =
                     ImageRequest
                         .Builder(LocalContext.current)
-                        .data(dailyDiscover.recommendation.thumbnail?.resize(1080, 1080))
+                        .data(dailyDiscover.recommendation.thumbnail?.resize(544, 544))
                         .crossfade(true)
                         .build(),
                 contentDescription = null,
@@ -692,7 +688,7 @@ fun HomeScreen(
     val accountName by viewModel.accountName.collectAsStateWithLifecycle()
     val accountImageUrl by viewModel.accountImageUrl.collectAsStateWithLifecycle()
     val innerTubeCookie by rememberPreference(InnerTubeCookieKey, "")
-    val (randomizeHomeOrder) = rememberPreference(RandomizeHomeOrderKey, true)
+    val (randomizeHomeOrder) = rememberPreference(RandomizeHomeOrderKey, false)
     val autoRadioQueue by rememberPreference(AutoRadioQueueKey, defaultValue = true)
 
     LaunchedEffect(Unit) { viewModel.loadHomeData() }
@@ -1117,11 +1113,11 @@ fun HomeScreen(
             } else {
                 val defaultOrder =
                     mapOf(
-                        HomeSection.SpeedDial to 100,
-                        HomeSection.QuickPicks to 90,
-                        HomeSection.FromTheCommunity to 80,
+                        HomeSection.SpeedDial to 90,
+                        HomeSection.QuickPicks to 80,
+                        HomeSection.FromTheCommunity to 30,
                         HomeSection.DailyDiscover to 70,
-                        HomeSection.KeepListening to 60,
+                        HomeSection.KeepListening to 100,
                         HomeSection.AccountPlaylists to 50,
                         HomeSection.ForgottenFavorites to 40,
                         HomeSection.MoodAndGenres to 10,
@@ -1189,7 +1185,23 @@ fun HomeScreen(
                 state = lazylistState,
                 contentPadding = LocalPlayerAwareWindowInsets.current.asPaddingValues(),
             ) {
-                item {
+                item(key = "onyx_home_heading") {
+                    Column(
+                        modifier = Modifier.padding(horizontal = 20.dp, vertical = 20.dp),
+                        verticalArrangement = Arrangement.spacedBy(4.dp),
+                    ) {
+                        Text(
+                            text = stringResource(R.string.onyx_home_subtitle),
+                            style = MaterialTheme.typography.headlineLarge,
+                        )
+                        Text(
+                            text = stringResource(R.string.onyx_discover),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                }
+                item(key = "onyx_home_filters") {
                     ChipsRow(
                         chips = homePage?.chips?.map { it to it.title } ?: emptyList(),
                         currentValue = selectedChip,
@@ -1879,12 +1891,14 @@ fun HomeScreen(
                                 }
 
                                 item(key = "community_playlists_content") {
+                                    val cardWidth = minOf(320.dp, maxWidth - 40.dp)
                                     LazyRow(
                                         contentPadding = PaddingValues(horizontal = 16.dp),
                                         horizontalArrangement = Arrangement.spacedBy(16.dp),
                                     ) {
-                                        items(playlists) { item ->
+                                        items(playlists.distinctBy { it.playlist.id }, key = { it.playlist.id }) { item ->
                                             CommunityPlaylistCard(
+                                                modifier = Modifier.width(cardWidth),
                                                 item = item,
                                                 onClick = {
                                                     navController.navigate("online_playlist/${item.playlist.id.removePrefix("VL")}")

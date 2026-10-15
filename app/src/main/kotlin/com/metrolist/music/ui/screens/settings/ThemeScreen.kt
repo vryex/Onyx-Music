@@ -89,6 +89,7 @@ data class ThemePalette(
 )
 
 val PaletteColors = listOf(
+    ThemePalette(R.string.onyx_music, Color.White),
     ThemePalette(R.string.palette_dynamic, Color.Transparent), // Sentinel for System/Dynamic colors
     ThemePalette(R.string.palette_crimson, Color(0xFFEC5464)), // Slightly shifted from DefaultThemeColor (0xFFED5564) to avoid conflict
     ThemePalette(R.string.palette_rose, Color(0xFFD81B60)),
@@ -116,7 +117,7 @@ val PaletteColors = listOf(
 fun ThemeScreen(
     navController: NavController,
 ) {
-    val (darkMode, onDarkModeChange) = rememberEnumPreference(DarkModeKey, DarkMode.AUTO)
+    val (darkMode, onDarkModeChange) = rememberEnumPreference(DarkModeKey, DarkMode.ON)
     val (pureBlack, onPureBlackChangeRaw) = rememberPreference(PureBlackKey, defaultValue = false)
     val (_, onPureBlackMiniPlayerChange) = rememberPreference(
         PureBlackMiniPlayerKey,
@@ -131,7 +132,7 @@ fun ThemeScreen(
         SelectedThemeColorKey,
         DefaultThemeColor.toArgb()
     )
-    val (_, onDynamicThemeChange) = rememberPreference(DynamicThemeKey, defaultValue = true)
+    val (_, onDynamicThemeChange) = rememberPreference(DynamicThemeKey, defaultValue = false)
 
     val selectedThemeColor = Color(selectedThemeColorInt)
     val configuration = LocalConfiguration.current
@@ -142,7 +143,7 @@ fun ThemeScreen(
         onSelectedThemeColorChange(color.toArgb())
         // Enable dynamic theme only when selecting the default/dynamic color
         // Disable it when selecting any other color
-        val isDynamicColor = color == DefaultThemeColor
+        val isDynamicColor = color == Color.Transparent
         onDynamicThemeChange(isDynamicColor)
     }
 
@@ -393,7 +394,7 @@ fun ThemeControls(
                     items(PaletteColors) { palette ->
                         val isDynamicPalette = palette.seedColor == Color.Transparent
                         val isSelected = if (isDynamicPalette) {
-                            selectedThemeColor == DefaultThemeColor
+                            selectedThemeColor == Color.Transparent
                         } else {
                             selectedThemeColor == palette.seedColor
                         }
@@ -402,7 +403,7 @@ fun ThemeControls(
                             palette = palette,
                             isSelected = isSelected,
                             onClick = { 
-                                val colorToSave = if (isDynamicPalette) DefaultThemeColor else palette.seedColor
+                                val colorToSave = palette.seedColor
                                 onSelectedThemeColorChange(colorToSave) 
                             }
                         )

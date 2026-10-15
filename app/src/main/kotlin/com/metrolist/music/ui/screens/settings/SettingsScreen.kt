@@ -11,6 +11,7 @@ import android.os.Build
 import android.provider.Settings
 import android.widget.Toast
 import androidx.compose.foundation.layout.Column
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.height
@@ -74,6 +75,19 @@ fun SettingsScreen(
             )
         )
 
+        Text(
+            text = stringResource(R.string.onyx_music),
+            style = MaterialTheme.typography.headlineSmall,
+            fontWeight = FontWeight.SemiBold,
+            modifier = Modifier.padding(start = 4.dp, top = 20.dp),
+        )
+        Text(
+            text = stringResource(R.string.onyx_by_kev),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(start = 4.dp, top = 4.dp, bottom = 20.dp),
+        )
+
         // User Interface Section
         Material3SettingsGroup(
             title = stringResource(R.string.settings_section_ui),
@@ -115,7 +129,7 @@ fun SettingsScreen(
         // Android Auto Section — only shown if Android Auto is installed
         if (hasAndroidAuto) {
             Material3SettingsGroup(
-                title = "Android Auto",
+                title = stringResource(R.string.android_auto),
                 items = listOf(
                     Material3SettingsItem(
                         icon = painterResource(R.drawable.ic_android_auto),
@@ -270,7 +284,7 @@ fun SettingsScreen(
     }
 
     TopAppBar(
-        title = { Text(stringResource(R.string.settings)) },
+        title = { Text(stringResource(R.string.settings), fontWeight = FontWeight.SemiBold) },
         navigationIcon = {
             IconButton(
                 onClick = navController::navigateUp,

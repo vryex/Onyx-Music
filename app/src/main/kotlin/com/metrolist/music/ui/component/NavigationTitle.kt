@@ -53,7 +53,7 @@ fun NavigationTitle(
             .clickable(enabled = onClick != null) {
                 onClick?.invoke()
             }
-            .padding(horizontal = 12.dp, vertical = 12.dp)
+            .padding(horizontal = 20.dp, vertical = 16.dp)
     ) {
         thumbnail?.invoke()
 
@@ -72,8 +72,8 @@ fun NavigationTitle(
             Text(
                 text = title,
                 style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.primary,
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.onSurface,
                 overflow = TextOverflow.Ellipsis,
                 maxLines = 1,
             )
@@ -89,7 +89,7 @@ fun NavigationTitle(
                 ),
                 contentPadding = PaddingValues(horizontal = 12.dp, vertical = 2.dp),
                 modifier = Modifier
-                    .height(24.dp)
+                    .height(48.dp)
             ) {
                 Text(
                     text = stringResource(R.string.play_all),

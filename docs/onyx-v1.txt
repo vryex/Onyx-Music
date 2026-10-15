@@ -1,0 +1,55 @@
+ONYX MUSIC V1 — DESIGN, IMPLEMENTATION AND VALIDATION
+
+Authority: user's complete Onyx Music specification, 2026-10-15.
+Execution: implement directly on feat/onyx-redesign-v1, commit and push,
+prepare review PR, build in GitHub Actions; no merge or release.
+
+Architecture: keep Kotlin namespace com.metrolist.music, Room schema,
+Media3 service, PlayerConnection, queues, downloads, synchronization,
+recognition and social routes. Only Android applicationId becomes
+com.onyx.music. Keep GPL-3.0 and upstream credits.
+
+Visual design: black background, #0B0B0B surfaces, #111111 cards,
+#222222 borders, #F5F5F5 text, #999999 secondary, white accent.
+Default dark monochrome; preserve explicit user appearance choices.
+Use platform sans typography, rounded 12–24dp shapes, 48dp hit targets,
+restrained animation and existing responsive player-aware insets.
+No mock content or decorative buttons.
+
+Implementation sequence:
+1. Theme.kt: stable monochrome schemes, typography, shapes, preserve
+   explicit light/custom palette options. Align appearance defaults.
+2. MainActivity/AppNavigation/HomeScreen/NavigationTitle/Items/ChipsRow:
+   Onyx header, three primary destinations by default, real social access,
+   quiet selection states, outlined filters, editorial content sections,
+   continue listening early, real dynamic discovery and recent content.
+3. Player/MiniPlayer: original compact rounded container and progress;
+   centered artwork, restrained transport controls, retain lyrics/queue/EQ,
+   cast/guest guards, gestures and service bindings.
+4. Search/library/settings/About: shared cards, input capsule, clear
+   category hierarchy, all existing routes and filters, Onyx/Kev credits
+   alongside upstream attribution.
+5. Android resources/build: geometric original O icon, monochrome
+   notification icon, adaptive/static launchers and black splash.
+6. Concrete performance fixes: composition-triggered automix enqueue,
+   unbounded cover palette cache, full-size palette decoding, repeated
+   image request building and missing community playlist stable keys.
+   Do not claim measured speed/FPS/memory gains without device traces.
+7. CI: Java21 and existing SDK workaround, IzzyDebug artifact, unit tests,
+   FossDebug compatibility build; optional persistent signing from Secrets.
+   Preserve ephemeral build as explicitly labelled unsigned-for-updates
+   preview when secrets are absent. Never commit private key material.
+
+Verification gates:
+- Inspect full diff; XML parse; git diff --check; relevant unit tests.
+- Actions: compile actual feature branch, inspect logs, fix failures and
+  rerun until successful or report an external blocker accurately.
+- APK manifest applicationId/name; artifact and checksum when available.
+- Device-only checks remain pending unless a real/emulated device is run:
+  login/network, playback/background/lockscreen, downloads/offline,
+  seek/repeat/shuffle/lyrics/EQ, social rooms, small/large font displays,
+  gestures, rotation, process restart and memory/frame timing.
+
+Review focus: empty/offline content; long titles and font scaling;
+mini player plus gesture/system insets; guests/cast transport semantics;
+updating an already installed APK signed with an earlier random key.

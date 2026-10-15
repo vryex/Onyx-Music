@@ -31,6 +31,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.AssistChipDefaults
 import androidx.compose.material3.DropdownMenu
@@ -78,10 +79,13 @@ fun <E> ChipsRow(
                 selected = currentValue == value,
                 colors = FilterChipDefaults.filterChipColors(
                     containerColor = containerColor,
+                    selectedContainerColor = MaterialTheme.colorScheme.primary,
+                    selectedLabelColor = MaterialTheme.colorScheme.onPrimary,
+                    labelColor = MaterialTheme.colorScheme.onSurfaceVariant,
                 ),
                 onClick = { onValueUpdate(value) },
-                shape = RoundedCornerShape(16.dp),
-                border = null
+                shape = RoundedCornerShape(12.dp),
+                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
             )
 
             Spacer(Modifier.width(8.dp))
