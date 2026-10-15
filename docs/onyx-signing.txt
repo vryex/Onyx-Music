@@ -1,9 +1,31 @@
 Onyx Music APK signing
 
-The Onyx workflow builds com.onyx.music / Onyx Music as IzzyDebug, with no
-application ID suffix. It uses Java 21 and validates Izzy unit tests plus
-IzzyDebug and FossDebug builds. The downloadable artifact contains the APK,
-commit, signing mode, APK SHA-256, and public signing certificate fingerprints.
+The Onyx workflow builds com.onyx.music / Onyx Music with no application ID
+suffix. It uses Java 21 and validates Izzy unit tests plus IzzyDebug and
+FossDebug builds. A separate Gradle invocation then builds IzzyRelease with
+R8 code optimization/minification, resource shrinking, and debugging disabled.
+This is an optimized review APK for device testing, not a published release.
+No version code or version name is increased.
+
+Download the optimized APK from the separate artifact named
+Onyx-Music-APK-IzzyRelease-optimized-review-persistent (or -ephemeral).
+The existing Onyx-Music-APK-IzzyDebug artifact remains available for debugging.
+Each APK artifact contains metadata with its actual package name, application
+label, and debuggable flag inspected using aapt; CI rejects an unexpected
+identity or build type. Metadata also includes the commit, signing mode,
+APK SHA-256, and public signing certificate fingerprints verified by apksigner.
+The optimized artifact additionally includes the R8 mapping.txt for diagnosing
+obfuscated crash traces. IzzyDebug unit test reports are uploaded even if a
+later build step fails, when reports exist.
+
+Both APK variants use the same signing key within one workflow run. When
+METROLIST_DEBUG_KEYSTORE_PATH is supplied, the release build uses the existing
+workflowDebug signing configuration. Without that variable, the project's
+original release signing behavior is preserved. Persistent signing lets the
+optimized APK update an existing Debug installation if both have the same key
+and application ID; ephemeral APKs from different runs cannot update each
+other. Compare responsiveness on a device using the optimized review APK;
+this build configuration alone does not establish measured performance gains.
 
 Persistent signing (recommended for updates)
 

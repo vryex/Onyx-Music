@@ -122,6 +122,9 @@ android {
             isShrinkResources = true
             isCrunchPngs = false
             isDebuggable = false
+            if (workflowDebugKeystoreFile != null) {
+                signingConfig = signingConfigs.getByName("workflowDebug")
+            }
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro",
