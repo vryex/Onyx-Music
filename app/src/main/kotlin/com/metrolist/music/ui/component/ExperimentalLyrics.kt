@@ -82,6 +82,8 @@ import androidx.compose.ui.unit.Velocity
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.metrolist.music.LocalDatabase
@@ -332,114 +334,119 @@ fun ExperimentalLyrics(
     }
 
     var lastMainMaxSeen by remember(lyrics, lines) { mutableIntStateOf(-1) }
-    var smoothPositionForSync by remember { mutableLongStateOf(0L) }
+    val lifecycleOwner = LocalLifecycleOwner.current
+    val latestSliderPositionProvider by rememberUpdatedState(sliderPositionProvider)
+    val latestLyricsOffset by rememberUpdatedState(currentSong?.song?.lyricsOffset ?: 0)
+    val playbackPositionProvider = remember { { currentPositionState } }
 
-    LaunchedEffect(lyrics, lines) {
+    LaunchedEffect(lyrics, lines, showLyrics, lifecycleOwner) {
         if (lyrics.isNullOrEmpty() || lines.isEmpty()) {
             activeLineIndices = emptySet()
             return@LaunchedEffect
         }
         
-        var lastPlayerPos = playerConnection.player.currentPosition
-        var lastUpdateTime = System.currentTimeMillis()
+        if (!showLyrics) return@LaunchedEffect
+        lifecycleOwner.lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
+            var lastPlayerPos = playerConnection.player.currentPosition
+            var lastUpdateTime = System.currentTimeMillis()
         
-        while (isActive) {
-            withFrameNanos { _ -> }
-            val now = System.currentTimeMillis()
-            val sliderPosition = sliderPositionProvider()
-            isSeeking = sliderPosition != null
+            while (isActive) {
+                withFrameNanos { _ -> }
+                val now = System.currentTimeMillis()
+                val sliderPosition = latestSliderPositionProvider()
+                isSeeking = sliderPosition != null
             
-            val position = if (isSeeking) {
-                sliderPosition!!
-            } else {
-                val playerPos = playerConnection.player.currentPosition
-                if (playerPos != lastPlayerPos) {
-                    lastPlayerPos = playerPos
-                    lastUpdateTime = now
+                val position = if (isSeeking) {
+                    sliderPosition!!
+                } else {
+                    val playerPos = playerConnection.player.currentPosition
+                    if (playerPos != lastPlayerPos) {
+                        lastPlayerPos = playerPos
+                        lastUpdateTime = now
+                    }
+                    val elapsed = now - lastUpdateTime
+                    lastPlayerPos + (if (playerConnection.player.isPlaying) elapsed else 0)
                 }
-                val elapsed = now - lastUpdateTime
-                lastPlayerPos + (if (playerConnection.player.isPlaying) elapsed else 0)
-            }
             
-            currentPositionState = position
-            smoothPositionForSync = position
+                currentPositionState = position
             
-            val lyricsOffset = currentSong?.song?.lyricsOffset ?: 0
-            val effectivePosition = position + lyricsOffset
+                val lyricsOffset = latestLyricsOffset
+                val effectivePosition = position + lyricsOffset
             
-            val initialActiveIndices = findActiveLineIndices(lines, effectivePosition)
-            val scrollActiveIndicesRaw = findActiveLineIndices(lines, effectivePosition + (if (hasWordTimings) 0L else 250L))
+                val initialActiveIndices = findActiveLineIndices(lines, effectivePosition)
+                val scrollActiveIndicesRaw = findActiveLineIndices(lines, effectivePosition + (if (hasWordTimings) 0L else 250L))
             
-            val scrollActiveIndices = scrollActiveIndicesRaw.toMutableSet()
-            for (i in scrollActiveIndicesRaw) {
-                if (lines.getOrNull(i)?.isBackground == true) {
-                    for (j in i - 1 downTo 0) {
-                        if (lines.getOrNull(j)?.isBackground == false) {
-                            scrollActiveIndices.add(j)
-                            break
+                val scrollActiveIndices = scrollActiveIndicesRaw.toMutableSet()
+                for (i in scrollActiveIndicesRaw) {
+                    if (lines.getOrNull(i)?.isBackground == true) {
+                        for (j in i - 1 downTo 0) {
+                            if (lines.getOrNull(j)?.isBackground == false) {
+                                scrollActiveIndices.add(j)
+                                break
+                            }
                         }
                     }
                 }
-            }
             
-            val newActiveIndices = initialActiveIndices.toMutableSet()
-            for (i in initialActiveIndices) {
-                if (lines.getOrNull(i)?.isBackground == true) {
-                    for (j in i - 1 downTo 0) {
-                        if (lines.getOrNull(j)?.isBackground == false) {
-                            newActiveIndices.add(j)
-                            break
+                val newActiveIndices = initialActiveIndices.toMutableSet()
+                for (i in initialActiveIndices) {
+                    if (lines.getOrNull(i)?.isBackground == true) {
+                        for (j in i - 1 downTo 0) {
+                            if (lines.getOrNull(j)?.isBackground == false) {
+                                newActiveIndices.add(j)
+                                break
+                            }
                         }
                     }
                 }
-            }
 
-            val scrollMax = scrollActiveIndices
-                .filter { lines.getOrNull(it)?.isBackground == false }
-                .maxOrNull() ?: (scrollActiveIndices.maxOrNull() ?: -1)
+                val scrollMax = scrollActiveIndices
+                    .filter { lines.getOrNull(it)?.isBackground == false }
+                    .maxOrNull() ?: (scrollActiveIndices.maxOrNull() ?: -1)
 
-            val isCurrentTargetStillActive = scrollTargetIndex in scrollActiveIndices
-            val anyStillActive = scrollActiveIndices.isNotEmpty()
+                val isCurrentTargetStillActive = scrollTargetIndex in scrollActiveIndices
+                val anyStillActive = scrollActiveIndices.isNotEmpty()
 
-            val shouldScroll = when {
-                isSeeking -> true
-                // If current target just ended and there are other active lines, scroll to the new max
-                !isCurrentTargetStillActive && anyStillActive && scrollMax > scrollTargetIndex -> true
-                
-                // If current target just ended and no other active lines
-                !isCurrentTargetStillActive && !anyStillActive && previousScrollActiveIndices.isNotEmpty() -> true
-                
-                // If we don't have a target yet and lines became active
-                scrollTargetIndex == -1 && anyStillActive -> true
-                
-                // New line started while nothing was active before
-                previousScrollActiveIndices.isEmpty() && anyStillActive && scrollMax > scrollTargetIndex -> true
+                val shouldScroll = when {
+                    isSeeking -> true
+                    // If current target just ended and there are other active lines, scroll to the new max
+                    !isCurrentTargetStillActive && anyStillActive && scrollMax > scrollTargetIndex -> true
 
-                else -> false
-            }
+                    // If current target just ended and no other active lines
+                    !isCurrentTargetStillActive && !anyStillActive && previousScrollActiveIndices.isNotEmpty() -> true
 
-            if (shouldScroll) {
-                val targetToScroll = when {
-                    isSeeking -> scrollMax
-                    !isCurrentTargetStillActive && anyStillActive -> scrollMax
-                    !isCurrentTargetStillActive && !anyStillActive -> {
-                        (lastMainMaxSeen + 1 until lines.size).firstOrNull {
-                            lines.getOrNull(it)?.isBackground == false
-                        } ?: scrollTargetIndex
+                    // If we don't have a target yet and lines became active
+                    scrollTargetIndex == -1 && anyStillActive -> true
+
+                    // New line started while nothing was active before
+                    previousScrollActiveIndices.isEmpty() && anyStillActive && scrollMax > scrollTargetIndex -> true
+
+                    else -> false
+                }
+
+                if (shouldScroll) {
+                    val targetToScroll = when {
+                        isSeeking -> scrollMax
+                        !isCurrentTargetStillActive && anyStillActive -> scrollMax
+                        !isCurrentTargetStillActive && !anyStillActive -> {
+                            (lastMainMaxSeen + 1 until lines.size).firstOrNull {
+                                lines.getOrNull(it)?.isBackground == false
+                            } ?: scrollTargetIndex
+                        }
+                        else -> scrollMax
                     }
-                    else -> scrollMax
+                    if (targetToScroll != -1 && (isSeeking || targetToScroll > scrollTargetIndex)) {
+                        scrollTargetIndex = targetToScroll
+                    }
                 }
-                if (targetToScroll != -1 && (isSeeking || targetToScroll > scrollTargetIndex)) {
-                    scrollTargetIndex = targetToScroll
+
+                if (scrollMax > lastMainMaxSeen && scrollMax != -1) {
+                    lastMainMaxSeen = scrollMax
                 }
+
+                previousScrollActiveIndices = scrollActiveIndices
+                activeLineIndices = newActiveIndices
             }
-            
-            if (scrollMax > lastMainMaxSeen && scrollMax != -1) {
-                lastMainMaxSeen = scrollMax
-            }
-            
-            previousScrollActiveIndices = scrollActiveIndices
-            activeLineIndices = newActiveIndices
         }
     }
 
@@ -484,7 +491,6 @@ fun ExperimentalLyrics(
         }
     }
 
-    val lifecycleOwner = LocalLifecycleOwner.current
     DisposableEffect(showLyrics) {
         val activity = context as? Activity
         if (showLyrics) activity?.window?.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
@@ -700,7 +706,6 @@ fun ExperimentalLyrics(
                     }
             ) {
                 val lyricsOffsetVal = (currentSong?.song?.lyricsOffset ?: 0).toLong()
-                val currentEffectivePosition = currentPositionState + lyricsOffsetVal
                 
                 if (isLyricsProviderShown) {
                     val targetProviderBase = anchorY + (positions[0] ?: 0f) - with(density) { 32.dp.toPx() }
@@ -744,11 +749,14 @@ fun ExperimentalLyrics(
                         ) {
                             when (listItem) {
                                 is LyricsListItem.Indicator -> {
-                                    val visible =
-                                        isAutoScrollEnabled &&
-                                            currentEffectivePosition >= listItem.gapStartMs &&
-                                            currentEffectivePosition <= listItem.gapEndMs - 650L
-                                    IntervalIndicator(listItem.gapStartMs, listItem.gapEndMs - 650L, currentEffectivePosition, visible, expressiveAccent,
+                                    val inGap by remember(listItem, lyricsOffsetVal) {
+                                        derivedStateOf {
+                                            (currentPositionState + lyricsOffsetVal) in listItem.gapStartMs..(listItem.gapEndMs - 650L)
+                                        }
+                                    }
+                                    val visible = isAutoScrollEnabled && inGap
+                                    val indicatorPosition = if (visible) currentPositionState + lyricsOffsetVal else listItem.gapStartMs
+                                    IntervalIndicator(listItem.gapStartMs, listItem.gapEndMs - 650L, indicatorPosition, visible, expressiveAccent,
                                         Modifier.fillMaxWidth().onSizeChanged { itemHeights[listIndex] = it.height }.padding(horizontal = 24.dp).wrapContentWidth(Alignment.CenterHorizontally))
                                 }
                                 is LyricsListItem.Line -> {
@@ -757,10 +765,14 @@ fun ExperimentalLyrics(
                                     val isActiveLine = activeLineIndices.contains(index)
                                     val pairedMainLineIndex = if (item.isBackground) (index - 1 downTo 0).firstOrNull { lines.getOrNull(it)?.isBackground == false } ?: -1 else -1
                                     
-                                    val isInGapWithMain = if (item.isBackground && pairedMainLineIndex != -1) {
-                                        val pairedMainLine = lines[pairedMainLineIndex]
-                                        currentEffectivePosition >= pairedMainLine.time && currentEffectivePosition <= item.time
-                                    } else false
+                                    val isInGapWithMain by remember(item, pairedMainLineIndex, lines, lyricsOffsetVal) {
+                                        derivedStateOf {
+                                            if (item.isBackground && pairedMainLineIndex != -1) {
+                                                val pairedMainLine = lines[pairedMainLineIndex]
+                                                (currentPositionState + lyricsOffsetVal) in pairedMainLine.time..item.time
+                                            } else false
+                                        }
+                                    }
                                     
                                     val bgVisible = item.isBackground && (activeLineIndices.contains(pairedMainLineIndex) || activeLineIndices.contains(index) || isInGapWithMain)
                                     
@@ -768,9 +780,9 @@ fun ExperimentalLyrics(
                                         index = index, item = item, isSynced = isSynced,
                                         isActiveLine = isActiveLine,
                                         bgVisible = bgVisible, isSelected = selectedIndices.contains(index),
-                                        isSelectionModeActive = isSelectionModeActive, currentPositionState = currentPositionState,
+                                        isSelectionModeActive = isSelectionModeActive, currentPositionProvider = playbackPositionProvider,
                                         lyricsOffset = (currentSong?.song?.lyricsOffset ?: 0).toLong(),
-                                        playerConnection = playerConnection, lyricsTextSize = 36f, lyricsLineSpacing = 1.3f,
+                                        lyricsTextSize = 36f, lyricsLineSpacing = 1.3f,
                                         expressiveAccent = expressiveAccent, lyricsTextPosition = lyricsTextPosition,
                                         respectAgentPositioning = respectAgentPositioning, isAutoScrollEnabled = isAutoScrollEnabled,
                                         displayedCurrentLineIndex = deferredCurrentLineIndex, romanizeAsMain = romanizeAsMain,

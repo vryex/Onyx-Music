@@ -7,6 +7,7 @@ package com.metrolist.music.ui.component
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -31,9 +32,12 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.metrolist.music.R
 import com.metrolist.music.constants.ThumbnailCornerRadius
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
-import kotlin.random.Random
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.repeatOnLifecycle
+import kotlinx.coroutines.isActive
+import kotlin.math.PI
+import kotlin.math.sin
 
 @Composable
 fun PlayingIndicator(
@@ -43,21 +47,13 @@ fun PlayingIndicator(
     barWidth: Dp = 4.dp,
     cornerRadius: Dp = ThumbnailCornerRadius,
 ) {
-    val animatables =
-        remember {
-            List(bars) {
-                Animatable(0.1f)
-            }
-        }
-
-    LaunchedEffect(Unit) {
-        delay(300)
-        animatables.forEach { animatable ->
-            launch {
-                while (true) {
-                    animatable.animateTo(Random.nextFloat() * 0.9f + 0.1f)
-                    delay(50)
-                }
+    val phase = remember { Animatable(0f) }
+    val lifecycleOwner = LocalLifecycleOwner.current
+    LaunchedEffect(lifecycleOwner) {
+        lifecycleOwner.lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
+            while (isActive) {
+                phase.animateTo((2 * PI).toFloat(), tween(1100, easing = LinearEasing))
+                phase.snapTo(0f)
             }
         }
     }
@@ -67,17 +63,18 @@ fun PlayingIndicator(
         verticalAlignment = Alignment.Bottom,
         modifier = modifier,
     ) {
-        animatables.forEach { animatable ->
+        repeat(bars.coerceAtLeast(0)) { index ->
             Canvas(
                 modifier =
                 Modifier
                     .fillMaxHeight()
                     .width(barWidth),
             ) {
+                val heightFraction = 0.1f + 0.9f * (sin(phase.value + index * 2.1f) + 1f) / 2f
                 drawRoundRect(
                     color = color,
-                    topLeft = Offset(x = 0f, y = size.height * (1 - animatable.value)),
-                    size = size.copy(height = animatable.value * size.height),
+                    topLeft = Offset(x = 0f, y = size.height * (1 - heightFraction)),
+                    size = size.copy(height = heightFraction * size.height),
                     cornerRadius = CornerRadius(cornerRadius.toPx()),
                 )
             }
