@@ -688,7 +688,7 @@ fun BottomSheetPlayer(
     }
 
     // Paused seeks do not change playbackState, so refresh directly from the player event.
-    DisposableEffect(playerConnection, isCasting) {
+    DisposableEffect(playerConnection.player, isCasting) {
         val player = playerConnection.player
         val listener = object : androidx.media3.common.Player.Listener {
             override fun onPositionDiscontinuity(
