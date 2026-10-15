@@ -3,7 +3,7 @@ ONYX MUSIC V1 — VALIDATION STATUS
 Implementation branch: feat/onyx-redesign-v1
 Base: 4d4899f47343a14b625390e4ea7bec201efda8a1
 
-STATUS: PULL REQUEST OPEN; ACTIONS VALIDATION IN PROGRESS; DEVICE TESTS PENDING.
+STATUS: ACTIONS BUILD AND UNIT TESTS PASSED; APK AVAILABLE; DEVICE TESTS PENDING.
 
 GitHub access was enabled on 2026-10-15. The five implementation commits are
 published on the feature branch; PR https://github.com/xero-scripts-repo/Onyx-Music/pull/1
@@ -13,7 +13,24 @@ First CI run: https://github.com/xero-scripts-repo/Onyx-Music/actions/runs/38684
 Java21/SDK/signing succeeded. Izzy/Foss compilation found an implicit
 BoxWithConstraints.maxWidth access across a Compose DSL scope in MainActivity.
 Fixed by capturing compactWindow in its owning scope before child composables.
-The workflow is being rerun with this fix; Android tests are not yet confirmed.
+Successful validation:
+https://github.com/xero-scripts-repo/Onyx-Music/actions/runs/38684374166
+Tested source commit: 88e5ffc3bde4c91f9c0df82303686568ef2a4406
+Java21/SDK setup, :app:testIzzyDebugUnitTest, :app:assembleIzzyDebug and
+:app:assembleFossDebug all completed successfully (BUILD SUCCESSFUL).
+Only this validation document changed after that tested source commit.
+
+APK:
+https://github.com/xero-scripts-repo/Onyx-Music/actions/runs/38684374166/artifacts/11948994860
+Artifact: Onyx-Music-APK-IzzyDebug-ephemeral
+APK SHA-256: ccf116c7ea8c8608decdd6d1024330eb3b8b3cbecab6daf07d6170f3d85c61bd
+APK size: 51131943 bytes
+Actual binary manifest checked: package=com.onyx.music, versionCode=153,
+versionName=13.7.0. Compiled resources contain Onyx Music.
+Downloaded ZIP/APK CRC and SHA-256 match CI metadata; apksigner verification
+passed in CI. No ONYX signing Secrets were configured, so this preview uses
+an ephemeral key. Set up persistent signing before relying on in-place updates.
+Successful compilation does not verify playback/network/UI behavior on a phone.
 
 Changes implemented:
 - Original native monochrome theme, typography, shapes, default dark mode.
@@ -57,7 +74,7 @@ Verified locally:
 - Independent source review; launcher shortcut finding fixed and checked.
 - GPL LICENSE unchanged; versions unchanged; no database schema edits.
 
-Added but NOT EXECUTED (require Android Gradle build):
+Automated coverage executed successfully with the Izzy unit-test suite:
 - OnyxThemeTest: primary/secondary/accent contrast and explicit light mode.
 - ProgressStateTest: zero/negative duration, clamped seeks, live state,
   finite output on extreme long values.
