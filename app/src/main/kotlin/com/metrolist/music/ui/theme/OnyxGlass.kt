@@ -19,7 +19,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
@@ -34,18 +34,17 @@ fun Modifier.onyxGlass(
     emphasized: Boolean = false,
 ): Modifier {
     val c = MaterialTheme.colorScheme
-    val top = c.surfaceContainerHigh.copy(alpha = if (emphasized) 0.94f else 0.83f)
-    val bottom = c.surfaceContainer.copy(alpha = if (emphasized) 0.88f else 0.68f)
+    val surface = if (emphasized) c.surfaceContainerHigh else c.surfaceContainer
     return this
         .clip(shape)
-        .background(Brush.verticalGradient(listOf(top, bottom)))
+        .background(surface)
         .border(1.dp, c.onSurface.copy(alpha = 0.10f), shape)
 }
 
 @Composable
 fun Modifier.onyxBackdrop(): Modifier {
     val c = MaterialTheme.colorScheme
-    return background(Brush.verticalGradient(listOf(c.background, c.surface, c.surfaceContainerLow, c.background)))
+    return background(Color.Black)
 }
 
 @Composable
@@ -62,21 +61,21 @@ fun OnyxBrand(
             Modifier
                 .size(38.dp)
                 .clip(RoundedCornerShape(13.dp))
-                .background(MaterialTheme.colorScheme.primary),
+                .background(MaterialTheme.colorScheme.onSurface),
             contentAlignment = Alignment.Center,
         ) {
             Icon(
                 painter = painterResource(R.drawable.onyx_mark),
                 contentDescription = null,
-                tint = MaterialTheme.colorScheme.onPrimary,
+                tint = Color.Black,
                 modifier = Modifier.size(25.dp),
             )
         }
         Column {
             Text(
-                text = "ONYX",
+                text = "Onyx Music",
                 style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Black,
+                fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onSurface,
                 maxLines = 1,
             )
