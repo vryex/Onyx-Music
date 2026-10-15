@@ -409,15 +409,15 @@ fun GridItem(
 ) {
     val gridHeight = currentGridThumbnailHeight()
     Column(
-        modifier = if (fillMaxWidth) {
+        modifier = (if (fillMaxWidth) {
             modifier
                 .padding(12.dp)
                 .fillMaxWidth()
         } else {
             modifier
                 .padding(12.dp)
-                .width(gridHeight * thumbnailRatio)
-        }.clip(RoundedCornerShape(16.dp))
+                .width(gridHeight * thumbnailRatio + 20.dp)
+        }).clip(RoundedCornerShape(16.dp))
             .background(MaterialTheme.colorScheme.surfaceContainer)
             .padding(10.dp)
     ) {
