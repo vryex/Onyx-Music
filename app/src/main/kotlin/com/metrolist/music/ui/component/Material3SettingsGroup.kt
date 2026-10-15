@@ -56,7 +56,7 @@ fun Material3SettingsGroup(
             Text(
                 text = it,
                 style = MaterialTheme.typography.labelLarge,
-                color = MaterialTheme.colorScheme.primary,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(bottom = 8.dp, top = 8.dp)
             )
         }
@@ -64,10 +64,10 @@ fun Material3SettingsGroup(
         // Settings items
         Column(
             modifier = Modifier.fillMaxWidth(),
-            verticalArrangement = Arrangement.spacedBy(9.dp)
+            verticalArrangement = Arrangement.spacedBy(6.dp)
         ) {
             items.forEachIndexed { index, item ->
-                val shape = RoundedCornerShape(24.dp)
+                val shape = RoundedCornerShape(17.dp)
 
                 Card(
                     modifier = Modifier
