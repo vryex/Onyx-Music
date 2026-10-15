@@ -27,7 +27,7 @@ import com.materialkolor.dynamiccolor.ColorSpec
 import com.materialkolor.rememberDynamicColorScheme
 import com.materialkolor.score.Score
 
-val DefaultThemeColor = Color(0xFF9EB4FF)
+val DefaultThemeColor = Color(0xFFFF6474)
 
 @Composable
 fun MetrolistTheme(
@@ -36,33 +36,29 @@ fun MetrolistTheme(
     themeColor: Color = DefaultThemeColor,
     content: @Composable () -> Unit,
 ) {
-    val baseColorScheme = remember(darkTheme, themeColor) {
-        if (darkTheme) {
-            darkColorScheme(
-                primary = Color(0xFFBBC8FF), onPrimary = Color(0xFF101831),
-                background = Color(0xFF090D15), onBackground = Color(0xFFF3F5FF),
-                surface = Color(0xFF101724), onSurface = Color(0xFFF3F5FF),
-                surfaceContainerLow = Color(0xFF131A29),
-                surfaceContainer = Color(0xFF1B2537),
-                surfaceContainerHigh = Color(0xFF283348),
-                surfaceVariant = Color(0xFF2E3A4E),
-                onSurfaceVariant = Color(0xFFBAC5DA),
-            )
-        } else {
-            lightColorScheme(
-                primary = Color(0xFF3E559B), onPrimary = Color.White,
-                background = Color(0xFFF4F6FC), onBackground = Color(0xFF151D30),
-                surface = Color(0xFFF9FAFF), onSurface = Color(0xFF151D30),
-                surfaceContainerLow = Color(0xFFEEF1F9),
-                surfaceContainer = Color(0xFFE6EBF5),
-                surfaceContainerHigh = Color(0xFFDBE3F2),
-                surfaceVariant = Color(0xFFE3E9F5),
-                onSurfaceVariant = Color(0xFF56627A),
-            )
-        }
+    val accent = remember(themeColor) {
+        if (themeColor == DefaultThemeColor || themeColor == Color(0xFF9EB4FF)) {
+            Color(0xFFFF6474)
+        } else themeColor
     }
-    val colorScheme = remember(baseColorScheme, pureBlack, darkTheme) {
-        if (darkTheme && pureBlack) baseColorScheme.pureBlack(true) else baseColorScheme
+    val colorScheme = remember(accent) {
+        darkColorScheme(
+            primary = accent,
+            onPrimary = Color.Black,
+            background = Color.Black,
+            onBackground = Color(0xFFF8F8F8),
+            surface = Color.Black,
+            onSurface = Color(0xFFF8F8F8),
+            surfaceVariant = Color(0xFF242424),
+            onSurfaceVariant = Color(0xFFAEAEAE),
+            surfaceContainerLowest = Color.Black,
+            surfaceContainerLow = Color(0xFF0C0C0C),
+            surfaceContainer = Color(0xFF171717),
+            surfaceContainerHigh = Color(0xFF212121),
+            surfaceContainerHighest = Color(0xFF292929),
+            outline = Color(0xFF505050),
+            outlineVariant = Color(0xFF292929),
+        )
     }
 
     // Use standard MaterialTheme instead of MaterialExpressiveTheme
