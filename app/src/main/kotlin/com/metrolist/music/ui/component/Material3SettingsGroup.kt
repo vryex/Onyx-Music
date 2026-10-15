@@ -67,7 +67,7 @@ fun Material3SettingsGroup(
             verticalArrangement = Arrangement.spacedBy(6.dp)
         ) {
             items.forEachIndexed { index, item ->
-                val shape = RoundedCornerShape(17.dp)
+                val shape = RoundedCornerShape(16.dp)
 
                 Card(
                     modifier = Modifier

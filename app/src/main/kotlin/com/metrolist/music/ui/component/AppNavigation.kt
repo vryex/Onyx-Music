@@ -29,6 +29,11 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.text.font.FontWeight
 import com.metrolist.music.ui.theme.onyxGlass
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.tween
+import androidx.compose.ui.semantics.Role
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.clickable
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -84,7 +89,7 @@ fun AppNavigationRail(
         Spacer(modifier = Modifier.weight(1f))
 
         navigationItems.forEach { screen ->
-            val isSelected = remember(currentRoute, screen.route) {
+            val isSelected = remember(currentRoute, screen.route, navigationItems) {
                 isRouteSelected(currentRoute, screen.route, navigationItems)
             }
             val currentIsSelected by rememberUpdatedState(isSelected)
@@ -163,16 +168,16 @@ fun AppNavigationBar(
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = 14.dp, vertical = 4.dp)
-            .clip(RoundedCornerShape(22.dp))
+            .padding(horizontal = 16.dp, vertical = 4.dp)
+            .clip(RoundedCornerShape(50))
             .background(MaterialTheme.colorScheme.surfaceContainer)
-            .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(22.dp))
+            .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(50))
             .padding(horizontal = 7.dp, vertical = 5.dp),
         horizontalArrangement = Arrangement.spacedBy(3.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         navigationItems.forEach { screen ->
-            val selected = remember(currentRoute, screen.route) {
+            val selected = remember(currentRoute, screen.route, navigationItems) {
                 isRouteSelected(currentRoute, screen.route, navigationItems)
             }
             val updatedSelected by rememberUpdatedState(selected)
@@ -199,22 +204,27 @@ fun AppNavigationBar(
                     }
                 }
             }
-            val pillShape = RoundedCornerShape(16.dp)
+            val pillShape = RoundedCornerShape(50)
+            val selectedFill by animateColorAsState(
+                targetValue = if (selected) MaterialTheme.colorScheme.surfaceContainerHighest else Color.Transparent,
+                animationSpec = tween(180),
+                label = "navigationSelection",
+            )
             Column(
                 modifier = Modifier
                     .weight(1f)
                     .clip(pillShape)
-                    .background(
-                        if (selected) MaterialTheme.colorScheme.surfaceContainerHighest
-                        else Color.Transparent
-                    )
-                    .clickable(
+                    .background(selectedFill)
+                    .selectable(
+                        selected = selected,
+                        role = Role.Tab,
                         interactionSource = interactionSource,
                         indication = null,
                         onClick = {
                             if (!isSearchItem && !isHomeHoldItem) onItemClick(screen, updatedSelected)
                         }
                     )
+                    .heightIn(min = 48.dp)
                     .padding(vertical = if (slimNav) 8.dp else 7.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(3.dp),

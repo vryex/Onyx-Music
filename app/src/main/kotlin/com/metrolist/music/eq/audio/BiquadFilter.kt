@@ -39,7 +39,10 @@ class BiquadFilter(
     private var y2R = 0.0
 
     init {
+        require(sampleRate > 0 && frequency.isFinite() && frequency > 0 && frequency < sampleRate / 2.0)
+        require(gain.isFinite() && q.isFinite() && q > 0)
         calculateCoefficients()
+        require(listOf(b0, b1, b2, a1, a2).all { it.isFinite() })
     }
 
     /**
@@ -172,22 +175,17 @@ class BiquadFilter(
     /**
      * Process stereo samples (left and right channels)
      */
-    fun processStereo(inputLeft: Double, inputRight: Double): Pair<Double, Double> {
-        // Left channel
-        val outputLeft = b0 * inputLeft + b1 * x1L + b2 * x2L - a1 * y1L - a2 * y2L
-        x2L = x1L
-        x1L = inputLeft
-        y2L = y1L
-        y1L = outputLeft
+    fun processStereo(inputLeft: Double, inputRight: Double): Pair<Double, Double> =
+        Pair(processSample(inputLeft), processRightSample(inputRight))
 
-        // Right channel
-        val outputRight = b0 * inputRight + b1 * x1R + b2 * x2R - a1 * y1R - a2 * y2R
+    /** Separate primitive channel method avoids allocating a Pair in the audio loop. */
+    fun processRightSample(input: Double): Double {
+        val output = b0 * input + b1 * x1R + b2 * x2R - a1 * y1R - a2 * y2R
         x2R = x1R
-        x1R = inputRight
+        x1R = input
         y2R = y1R
-        y1R = outputRight
-
-        return Pair(outputLeft, outputRight)
+        y1R = output
+        return output
     }
 
     /**

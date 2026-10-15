@@ -6,7 +6,7 @@
 package com.metrolist.music.ui.screens.library
 
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -20,6 +20,7 @@ import com.metrolist.music.constants.ChipSortTypeKey
 import com.metrolist.music.constants.LibraryFilter
 import com.metrolist.music.constants.LibraryViewType
 import com.metrolist.music.constants.PlaylistViewTypeKey
+import com.metrolist.music.ui.theme.OnyxPageHeader
 import com.metrolist.music.ui.component.ChipsRow
 import com.metrolist.music.utils.rememberEnumPreference
 
@@ -31,7 +32,8 @@ fun LibraryScreen() {
     var playlistViewType by rememberEnumPreference(PlaylistViewTypeKey, LibraryViewType.GRID)
 
     val filterContent = @Composable {
-        Row {
+        Column {
+            OnyxPageHeader(title = stringResource(R.string.filter_library))
             ChipsRow(
                 chips = listOf(
                     LibraryFilter.PLAYLISTS to stringResource(R.string.filter_playlists),
@@ -44,7 +46,6 @@ fun LibraryScreen() {
                 onValueUpdate = {
                     filterType = if (filterType == it) LibraryFilter.LIBRARY else it
                 },
-                modifier = Modifier.weight(1f),
             )
         }
     }

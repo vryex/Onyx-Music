@@ -15,10 +15,11 @@ import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.CompositingStrategy
 import androidx.compose.ui.graphics.graphicsLayer
 import com.valentinilk.shimmer.defaultShimmerTheme
 import com.valentinilk.shimmer.shimmer
@@ -31,20 +32,20 @@ fun ShimmerHost(
     showGradient: Boolean = true,
     content: @Composable ColumnScope.() -> Unit,
 ) {
-    val baseModifier = modifier
-        .shimmer()
-        .graphicsLayer(alpha = 0.99f)
+    val baseModifier = modifier.shimmer()
 
     Column(
         horizontalAlignment = horizontalAlignment,
         verticalArrangement = verticalArrangement,
         modifier = if (showGradient) {
-            baseModifier.drawWithContent {
-                drawContent()
-                drawRect(
-                    brush = Brush.verticalGradient(listOf(Color.Black, Color.Transparent)),
-                    blendMode = BlendMode.DstIn,
-                )
+            baseModifier.graphicsLayer {
+                compositingStrategy = CompositingStrategy.Offscreen
+            }.drawWithCache {
+                val fade = Brush.verticalGradient(listOf(Color.Black, Color.Transparent))
+                onDrawWithContent {
+                    drawContent()
+                    drawRect(brush = fade, blendMode = BlendMode.DstIn)
+                }
             }
         } else {
             baseModifier

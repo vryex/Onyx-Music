@@ -13,6 +13,7 @@ import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -61,6 +62,9 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.testTagsAsResourceId
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.layout.ContentScale
@@ -132,7 +136,7 @@ import com.valentinilk.shimmer.shimmer
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
-@OptIn(ExperimentalFoundationApi::class, ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalFoundationApi::class, ExperimentalMaterial3Api::class, androidx.compose.ui.ExperimentalComposeUiApi::class)
 @Composable
 fun ArtistScreen(
     navController: NavController,
@@ -195,7 +199,7 @@ fun ArtistScreen(
     }
 
     Box(
-        modifier = Modifier.fillMaxSize(),
+        modifier = Modifier.fillMaxSize().semantics { testTagsAsResourceId = true }.testTag("onyx_artist"),
     ) {
         LazyColumn(
             state = lazyListState,
@@ -297,29 +301,33 @@ fun ArtistScreen(
                 item(key = "header") {
                     val thumbnail = artistPage?.artist?.thumbnail ?: libraryArtist?.artist?.thumbnailUrl
 
-                    Box {
+                    BoxWithConstraints {
+                        val heroHeight = maxWidth.coerceAtMost(560.dp) * 0.85f
                         // Artist Image with offset
                         if (thumbnail != null) {
                             Box(
                                 modifier =
                                     Modifier
                                         .fillMaxWidth()
-                                        .aspectRatio(1f)
-                                        .offset {
-                                            IntOffset(x = 0, y = headerOffset)
-                                        },
+                                        .height(heroHeight),
                             ) {
                                 AsyncImage(
-                                    model = thumbnail.resize(1200, 1200),
+                                    model = thumbnail.resize(960, 960),
                                     contentDescription = null,
                                     contentScale = ContentScale.Crop,
                                     modifier =
                                         Modifier
-                                            .fillMaxWidth()
-                                            .align(Alignment.TopCenter)
-                                            .fadingEdge(
-                                                bottom = 200.dp,
-                                            ),
+                                            .fillMaxSize()
+                                            .align(Alignment.TopCenter),
+                                )
+                                Box(
+                                    Modifier.fillMaxSize().background(
+                                        androidx.compose.ui.graphics.Brush.verticalGradient(
+                                            0f to Color.Transparent,
+                                            0.35f to Color.Transparent,
+                                            1f to MaterialTheme.colorScheme.background,
+                                        ),
+                                    ),
                                 )
                             }
                         }
@@ -332,13 +340,7 @@ fun ArtistScreen(
                                     .padding(
                                         top =
                                             if (thumbnail != null) {
-                                                // Position content at the bottom part of the image
-                                                // Using screen width to calculate aspect ratio height minus overlap
-                                                LocalResources.current.displayMetrics.widthPixels.let { screenWidth ->
-                                                    with(density) {
-                                                        ((screenWidth / 1.2f) - 144).toDp()
-                                                    }
-                                                }
+                                                (heroHeight - 80.dp).coerceAtLeast(16.dp)
                                             } else {
                                                 16.dp
                                             },
@@ -354,8 +356,8 @@ fun ArtistScreen(
                                 Text(
                                     text = displayArtistName ?: "Unknown",
                                     style = MaterialTheme.typography.headlineLarge,
-                                    fontWeight = FontWeight.Bold,
-                                    maxLines = 1,
+                                    fontWeight = FontWeight.Medium,
+                                    maxLines = 2,
                                     overflow = TextOverflow.Ellipsis,
                                     fontSize = 32.sp,
                                     modifier = Modifier.padding(bottom = 16.dp),
@@ -381,12 +383,12 @@ fun ArtistScreen(
                                                     },
                                             ),
                                         shape = RoundedCornerShape(50),
-                                        modifier = Modifier.height(40.dp),
+                                        modifier = Modifier.height(48.dp),
                                     ) {
                                         Text(
                                             text = stringResource(if (isChannelSubscribed) R.string.subscribed else R.string.subscribe),
                                             fontSize = 14.sp,
-                                            color = if (!isChannelSubscribed) MaterialTheme.colorScheme.error else LocalContentColor.current,
+                                            color = MaterialTheme.colorScheme.onSurface,
                                         )
                                     }
 
@@ -404,7 +406,7 @@ fun ArtistScreen(
                                                         playerConnection.playQueue(YouTubeQueue(radioEndpoint))
                                                     },
                                                     shape = RoundedCornerShape(50),
-                                                    modifier = Modifier.height(40.dp),
+                                                    modifier = Modifier.height(48.dp),
                                                 ) {
                                                     Icon(
                                                         painter = painterResource(R.drawable.radio),
