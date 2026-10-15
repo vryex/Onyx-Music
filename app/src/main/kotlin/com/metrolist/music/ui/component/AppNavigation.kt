@@ -73,7 +73,7 @@ fun AppNavigationRail(
     onSearchLongClick: (() -> Unit)? = null,
     onHomeLongHold: (() -> Unit)? = null,
 ) {
-    val containerColor = if (pureBlack) Color.Black else MaterialTheme.colorScheme.surfaceContainer
+    val containerColor = Color.Black
     val haptics = LocalHapticFeedback.current
     val viewConfiguration = LocalViewConfiguration.current
 
@@ -156,7 +156,7 @@ fun AppNavigationBar(
     onHomeLongHold: (() -> Unit)? = null,
 ) {
     val containerColor = if (pureBlack) Color.Black else MaterialTheme.colorScheme.surfaceContainer
-    val contentColor = if (pureBlack) Color.White else MaterialTheme.colorScheme.onSurfaceVariant
+    val contentColor = MaterialTheme.colorScheme.onSurfaceVariant
     val haptics = LocalHapticFeedback.current
     val viewConfiguration = LocalViewConfiguration.current
 
@@ -164,7 +164,9 @@ fun AppNavigationBar(
         modifier = modifier
             .fillMaxWidth()
             .padding(horizontal = 14.dp, vertical = 4.dp)
-            .onyxGlass(RoundedCornerShape(30.dp), emphasized = true)
+            .clip(RoundedCornerShape(22.dp))
+            .background(MaterialTheme.colorScheme.surfaceContainer)
+            .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(22.dp))
             .padding(horizontal = 7.dp, vertical = 5.dp),
         horizontalArrangement = Arrangement.spacedBy(3.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -197,13 +199,13 @@ fun AppNavigationBar(
                     }
                 }
             }
-            val pillShape = RoundedCornerShape(24.dp)
+            val pillShape = RoundedCornerShape(16.dp)
             Column(
                 modifier = Modifier
                     .weight(1f)
                     .clip(pillShape)
                     .background(
-                        if (selected) MaterialTheme.colorScheme.primary.copy(alpha = 0.16f)
+                        if (selected) MaterialTheme.colorScheme.surfaceContainerHighest
                         else Color.Transparent
                     )
                     .clickable(
@@ -222,7 +224,7 @@ fun AppNavigationBar(
                         if (selected) screen.iconIdActive else screen.iconIdInactive
                     ),
                     contentDescription = stringResource(screen.titleId),
-                    tint = if (selected) MaterialTheme.colorScheme.primary else contentColor,
+                    tint = if (selected) Color.White else contentColor,
                     modifier = Modifier.size(23.dp),
                 )
                 if (!slimNav) {
