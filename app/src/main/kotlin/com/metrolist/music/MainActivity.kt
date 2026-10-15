@@ -1065,7 +1065,10 @@ class MainActivity : FragmentActivity() {
                                             Text(
                                                 text = if (currentRoute == "home") stringResource(R.string.onyx_music)
                                                 else currentTitleRes?.let { stringResource(it) } ?: "",
-                                                style = MaterialTheme.typography.titleLarge,
+                                                style = if (maxWidth < 360.dp) MaterialTheme.typography.titleMedium
+                                                else MaterialTheme.typography.titleLarge,
+                                                maxLines = 1,
+                                                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
                                             )
                                         },
                                         actions = {
