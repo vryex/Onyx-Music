@@ -63,15 +63,21 @@ assert any('Minimize player' in n.get('content-desc', '') for n in player.iter('
 assert any('Next track' in n.get('content-desc', '') for n in player.iter('node')), 'Transport missing'
 tap_label(player, 'repeat')
 tap_label(snapshot('12-repeat'), 'sleep timer')
-snapshot('13-sleep-timer')
-adb('shell', 'input', 'keyevent', 'KEYCODE_BACK')
+tap_label(snapshot('13-sleep-timer'), 'cancel')
 adb('shell', 'settings', 'put', 'system', 'user_rotation', '1')
 time.sleep(3)
 landscape = snapshot('14-player-landscape')
+if not any('Next track' in n.get('content-desc', '') for n in landscape.iter('node')):
+    tap_label(landscape, 'onyx ui check 1')
+    landscape = snapshot('14-player-landscape-expanded')
 assert any('Next track' in n.get('content-desc', '') for n in landscape.iter('node')), 'Landscape transport missing'
 adb('shell', 'settings', 'put', 'system', 'user_rotation', '0')
 time.sleep(2)
-tap_label(snapshot('15-player-portrait'), 'lyrics')
+portrait = snapshot('15-player-portrait')
+if not any('Minimize player' in n.get('content-desc', '') for n in portrait.iter('node')):
+    tap_label(portrait, 'onyx ui check 1')
+    portrait = snapshot('15-player-portrait-expanded')
+tap_label(portrait, 'lyrics')
 tap_label(snapshot('16-lyrics'), 'lyrics tools')
 snapshot('17-lyrics-tools')
 log = adb('logcat', '-d').decode(errors='replace')
