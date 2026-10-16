@@ -75,7 +75,7 @@ time.sleep(4)
 tap(snapshot('home'), 'library')
 library = snapshot('library')
 def selected_label(root, text):
-    return any(n.get('selected') == 'true' and any(
+    return any((n.get('selected') == 'true' or n.get('checked') == 'true') and any(
         c.get('text', '').strip().lower() == text for c in n.iter('node')
     ) for n in root.iter('node'))
 if not selected_label(library, 'albums'):
