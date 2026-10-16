@@ -2,6 +2,11 @@ name: Onyx Midnight Release
 on:
   push:
     branches: [feat/onyx-authkit-20261015, feat/onyx-liquid-v2]
+    paths:
+      - 'app/**'
+      - 'innertube/**'
+      - 'gradle/**'
+      - '*.gradle.kts'
   workflow_dispatch:
 permissions:
   contents: write

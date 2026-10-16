@@ -1,0 +1,65 @@
+name: Onyx Player Validation
+on:
+  push:
+    branches: [feat/onyx-liquid-v2]
+    paths:
+      - .github/scripts/onyx_player_validation.py
+      - .github/workflows/onyx-player-validation.yml
+permissions:
+  contents: read
+  actions: read
+jobs:
+  player:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Wait for the release artifact
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          python3 - <<'PY'
+          import json, os, time, urllib.request
+          base = 'https://api.github.com/repos/xero-scripts-repo/Onyx-Music/actions/runs/38829577530'
+          def get(url):
+              request = urllib.request.Request(url, headers={'Authorization': 'Bearer ' + os.environ['GH_TOKEN'], 'Accept': 'application/vnd.github+json'})
+              with urllib.request.urlopen(request, timeout=30) as response:
+                  return json.load(response)
+          for _ in range(90):
+              if any(a['name'] == 'Onyx-Music-signed-release' for a in get(base + '/artifacts')['artifacts']):
+                  print('Release artifact available')
+                  break
+              run = get(base)
+              if run['status'] == 'completed':
+                  raise SystemExit('Release build finished without its APK artifact: ' + str(run['conclusion']))
+              time.sleep(10)
+          else:
+              raise SystemExit('Timed out waiting for release artifact')
+          PY
+      - uses: actions/download-artifact@v4
+        with:
+          name: Onyx-Music-signed-release
+          run-id: 38829577530
+          github-token: ${{ github.token }}
+          path: dist
+      - name: Enable emulator acceleration
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          target: google_apis
+          arch: x86_64
+          profile: pixel_2
+          ram-size: 2048M
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none -no-snapshot
+          disable-animations: false
+          script: python3 .github/scripts/onyx_player_validation.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: Onyx-player-validation
+          path: smoke/
+          if-no-files-found: ignore
