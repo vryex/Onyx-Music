@@ -76,6 +76,7 @@ jobs:
             python3 .github/scripts/onyx_player_validation.py
             adb uninstall com.onyx.music
             adb install baseline-profile.apk
+            adb shell pm grant com.onyx.music android.permission.POST_NOTIFICATIONS
             adb shell am start -W -n com.onyx.music/com.metrolist.music.MainActivity
             python3 -c 'import time; time.sleep(8)'
             python3 .github/scripts/onyx_scroll_profile.py baseline

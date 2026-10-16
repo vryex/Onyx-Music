@@ -21,13 +21,13 @@ import android.view.WindowManager
 import android.widget.Toast
 import androidx.fragment.app.FragmentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.animation.ExitTransition
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInHorizontally
-import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.foundation.background
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
@@ -1285,41 +1285,23 @@ class MainActivity : FragmentActivity() {
                                         val previousRouteIndex = routeIndexMap[initialState.destination.route] ?: -1
 
                                         if (currentRouteIndex == -1 || currentRouteIndex > previousRouteIndex) {
-                                            slideInHorizontally { it / 8 } + fadeIn(tween(130))
+                                            slideInHorizontally(animationSpec = tween(220)) { it / 16 }
                                         } else {
-                                            slideInHorizontally { -it / 8 } + fadeIn(tween(130))
+                                            slideInHorizontally(animationSpec = tween(220)) { -it / 16 }
                                         }
                                     },
-                                    exitTransition = {
-                                        val currentRouteIndex = routeIndexMap[initialState.destination.route] ?: -1
-                                        val targetRouteIndex = routeIndexMap[targetState.destination.route] ?: -1
-
-                                        if (targetRouteIndex == -1 || targetRouteIndex > currentRouteIndex) {
-                                            slideOutHorizontally { -it / 8 } + fadeOut(tween(130))
-                                        } else {
-                                            slideOutHorizontally { it / 8 } + fadeOut(tween(130))
-                                        }
-                                    },
+                                    exitTransition = { ExitTransition.None },
                                     popEnterTransition = {
                                         val currentRouteIndex = routeIndexMap[targetState.destination.route] ?: -1
                                         val previousRouteIndex = routeIndexMap[initialState.destination.route] ?: -1
 
                                         if (previousRouteIndex != -1 && previousRouteIndex < currentRouteIndex) {
-                                            slideInHorizontally { it / 8 } + fadeIn(tween(130))
+                                            slideInHorizontally(animationSpec = tween(220)) { it / 16 }
                                         } else {
-                                            slideInHorizontally { -it / 8 } + fadeIn(tween(130))
+                                            slideInHorizontally(animationSpec = tween(220)) { -it / 16 }
                                         }
                                     },
-                                    popExitTransition = {
-                                        val currentRouteIndex = routeIndexMap[initialState.destination.route] ?: -1
-                                        val targetRouteIndex = routeIndexMap[targetState.destination.route] ?: -1
-
-                                        if (currentRouteIndex != -1 && currentRouteIndex < targetRouteIndex) {
-                                            slideOutHorizontally { -it / 8 } + fadeOut(tween(130))
-                                        } else {
-                                            slideOutHorizontally { it / 8 } + fadeOut(tween(130))
-                                        }
-                                    },
+                                    popExitTransition = { ExitTransition.None },
                                     modifier = Modifier.nestedScroll(topAppBarScrollBehavior.nestedScrollConnection),
                                 ) {
                                     navigationBuilder(

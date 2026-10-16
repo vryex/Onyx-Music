@@ -21,7 +21,6 @@ import com.metrolist.music.constants.LibraryFilter
 import com.metrolist.music.constants.LibraryViewType
 import com.metrolist.music.constants.PlaylistViewTypeKey
 import com.metrolist.music.ui.theme.OnyxPageHeader
-import com.metrolist.music.ui.theme.onyxEntrance
 import com.metrolist.music.ui.component.ChipsRow
 import com.metrolist.music.utils.rememberEnumPreference
 
@@ -51,7 +50,7 @@ fun LibraryScreen() {
         }
     }
 
-    Box(modifier = Modifier.fillMaxSize().onyxEntrance()) {
+    Box(modifier = Modifier.fillMaxSize()) {
         when (filterType) {
             LibraryFilter.LIBRARY -> LibraryMixScreen(
                 navController = navController,

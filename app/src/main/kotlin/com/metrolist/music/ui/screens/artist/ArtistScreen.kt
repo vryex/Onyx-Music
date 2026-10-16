@@ -38,7 +38,6 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import com.metrolist.music.ui.theme.onyxGlass
-import com.metrolist.music.ui.theme.onyxEntrance
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -201,7 +200,7 @@ fun ArtistScreen(
     }
 
     Box(
-        modifier = Modifier.fillMaxSize().onyxEntrance().semantics { testTagsAsResourceId = true }.testTag("onyx_artist"),
+        modifier = Modifier.fillMaxSize().semantics { testTagsAsResourceId = true }.testTag("onyx_artist"),
     ) {
         LazyColumn(
             state = lazyListState,

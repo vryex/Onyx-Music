@@ -141,7 +141,6 @@ import com.metrolist.music.ui.component.HideOnScrollFAB
 import com.metrolist.music.ui.component.LocalBottomSheetPageState
 import com.metrolist.music.ui.component.LocalMenuState
 import com.metrolist.music.ui.theme.OnyxPageHeader
-import com.metrolist.music.ui.theme.onyxEntrance
 import com.metrolist.music.ui.component.OnyxHomeHero
 import com.metrolist.music.ui.component.NavigationTitle
 import com.metrolist.music.ui.component.RandomizeGridItem
@@ -1190,7 +1189,7 @@ fun HomeScreen(
 
             LazyColumn(
                 state = lazylistState,
-                modifier = Modifier.onyxEntrance(),
+                modifier = Modifier,
                 contentPadding = LocalPlayerAwareWindowInsets.current.asPaddingValues(),
             ) {
                 item(key = "onyx_title") {
