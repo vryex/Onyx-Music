@@ -79,6 +79,13 @@ assert any('Next track' in n.get('content-desc', '') for n in player.iter('node'
 tap_label(player, 'repeat')
 tap_label(snapshot('12-repeat'), 'sleep timer')
 tap_label(snapshot('13-sleep-timer'), 'cancel')
+tap_label(snapshot('13-timer-dismissed'), 'sleep timer')
+tap_label(snapshot('13-timer-start'), 'ok')
+active_timer = snapshot('13-timer-active')
+assert any(re.match(r'^(29:[0-5]\d|30:00)$', n.get('text', '')) for n in active_timer.iter('node')), 'Active timer countdown missing'
+tap_label(active_timer, 'sleep timer')
+cleared_timer = snapshot('13-timer-cleared')
+assert not any(re.match(r'^(29:[0-5]\d|30:00)$', n.get('text', '')) for n in cleared_timer.iter('node')), 'Timer did not clear'
 adb('shell', 'settings', 'put', 'system', 'user_rotation', '1')
 time.sleep(3)
 landscape = snapshot('14-player-landscape')
