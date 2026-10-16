@@ -103,13 +103,22 @@ assert any(re.match(r'^(29:[0-5]\d|30:00)$', n.get('text', '')) for n in active_
 tap_label(active_timer, 'sleep timer')
 cleared_timer = snapshot('13-timer-cleared')
 assert not any(re.match(r'^(29:[0-5]\d|30:00)$', n.get('text', '')) for n in cleared_timer.iter('node')), 'Timer did not clear'
+# Exercise the 480dp landscape width that previously squeezed the transport.
+adb('shell', 'wm', 'size', '1080x1260')
 adb('shell', 'settings', 'put', 'system', 'user_rotation', '1')
 time.sleep(3)
 landscape = snapshot('14-player-landscape')
-if not any('Next track' in n.get('content-desc', '') for n in landscape.iter('node')):
+if not any('Previous track' in n.get('content-desc', '') for n in landscape.iter('node')):
     tap_label(landscape, 'onyx ui check 1')
     landscape = snapshot('14-player-landscape-expanded')
-assert any('Next track' in n.get('content-desc', '') for n in landscape.iter('node')), 'Landscape transport missing'
+width, height = map(int, re.findall(r'\d+', adb('shell', 'wm', 'size').decode().splitlines()[-1]))
+# Mini player exposes Next, so require Previous as well to prove expansion.
+for control in ['Previous track', 'Next track']:
+    nodes = [n for n in landscape.iter('node') if control in n.get('content-desc', '')]
+    assert nodes, 'Expanded landscape transport missing: ' + control
+    bounds = [int(v) for v in re.findall(r'\d+', nodes[0].get('bounds', ''))]
+    assert len(bounds) == 4 and 0 <= bounds[0] < bounds[2] <= height and 0 <= bounds[1] < bounds[3] <= width, 'Landscape control outside viewport: ' + control
+adb('shell', 'wm', 'size', 'reset')
 adb('shell', 'settings', 'put', 'system', 'user_rotation', '0')
 time.sleep(2)
 portrait = snapshot('15-player-portrait')

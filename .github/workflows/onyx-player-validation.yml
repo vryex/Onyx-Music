@@ -21,6 +21,8 @@ jobs:
     timeout-minutes: 40
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - name: Wait for the release artifact
         id: release
         env:
@@ -28,7 +30,10 @@ jobs:
           TARGET_SHA: ${{ github.sha }}
         run: |
           python3 - <<'PY'
-          import json, os, time, urllib.request
+          import json, os, subprocess, time, urllib.request
+          target_sha = subprocess.check_output(['git', 'log', '-1', '--format=%H', '--', 'app', 'innertube', 'gradle', '*.gradle.kts'], text=True).strip()
+          assert target_sha, 'Missing production source commit'
+          print('Validating production source', target_sha)
           api = 'https://api.github.com/repos/xero-scripts-repo/Onyx-Music/actions'
           def get(url):
               request = urllib.request.Request(url, headers={'Authorization': 'Bearer ' + os.environ['GH_TOKEN'], 'Accept': 'application/vnd.github+json'})
@@ -36,7 +41,7 @@ jobs:
                   return json.load(response)
           for _ in range(120):
               runs = get(api + '/workflows/onyx-midnight.yml/runs?per_page=30')['workflow_runs']
-              matching = [r for r in runs if r['head_sha'] == os.environ['TARGET_SHA']]
+              matching = [r for r in runs if r['head_sha'] == target_sha]
               if matching:
                   run = matching[0]
                   if any(a['name'] == 'Onyx-Music-signed-release' for a in get(api + '/runs/' + str(run['id']) + '/artifacts')['artifacts']):
