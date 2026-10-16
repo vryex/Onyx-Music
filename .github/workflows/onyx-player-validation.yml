@@ -4,6 +4,7 @@ on:
     branches: [feat/onyx-liquid-v2]
     paths:
       - .github/scripts/onyx_player_validation.py
+      - .github/scripts/onyx_scroll_profile.py
       - .github/workflows/onyx-player-validation.yml
 permissions:
   contents: read
@@ -59,7 +60,9 @@ jobs:
           ram-size: 2048M
           emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none -no-snapshot
           disable-animations: false
-          script: python3 .github/scripts/onyx_player_validation.py
+          script: |
+            python3 .github/scripts/onyx_player_validation.py
+            python3 .github/scripts/onyx_scroll_profile.py baseline
       - uses: actions/upload-artifact@v4
         if: always()
         with:
