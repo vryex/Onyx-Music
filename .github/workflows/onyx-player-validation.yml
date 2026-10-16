@@ -3,6 +3,7 @@ on:
   push:
     branches: [feat/onyx-liquid-v2]
     paths:
+      - .github/scripts/onyx_smoke.py
       - .github/scripts/onyx_player_validation.py
       - .github/scripts/onyx_scroll_profile.py
       - .github/scripts/onyx_compare_profiles.py

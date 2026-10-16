@@ -19,7 +19,17 @@ def snapshot(name):
     adb('shell', 'uiautomator', 'dump', '/sdcard/onyx-window.xml')
     xml = adb('exec-out', 'cat', '/sdcard/onyx-window.xml')
     (OUT / (name + '.xml')).write_bytes(xml)
-    return ET.fromstring(xml)
+    root = ET.fromstring(xml)
+    if any(n.get('resource-id') == 'android:id/alertTitle' and n.get('text') == "Pixel Launcher isn't responding" for n in root.iter('node')):
+        close = next(n for n in root.iter('node') if n.get('resource-id') == 'android:id/aerr_close')
+        b = [int(v) for v in re.findall(r'\d+', close.get('bounds', ''))]
+        assert len(b) == 4, 'Missing launcher-dialog dismissal bounds'
+        print('Emulator recovery: dismissing Pixel Launcher ANR; app ANRs remain failures')
+        (OUT / (name + '-launcher-anr.xml')).write_bytes(xml)
+        adb('shell', 'input', 'tap', str((b[0] + b[2]) // 2), str((b[1] + b[3]) // 2))
+        time.sleep(2)
+        return snapshot(name)
+    return root
 
 
 def tap_label(root, label):
