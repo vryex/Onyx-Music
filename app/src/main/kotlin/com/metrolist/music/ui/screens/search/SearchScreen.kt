@@ -196,9 +196,9 @@ fun SearchScreen(
                     LiquidIconButton(R.drawable.mic, stringResource(R.string.recognize_music),
                         { navController.navigate("recognition") }, plain = true)
                 }
-                Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(5.dp))
+                Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(24.dp))
                     .background(MaterialTheme.colorScheme.surface)
-                    .border(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = .35f), RoundedCornerShape(5.dp))
+                    .border(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = .35f), RoundedCornerShape(24.dp))
                     .padding(horizontal = 12.dp),
                     verticalAlignment = Alignment.CenterVertically) {
                     Icon(painterResource(R.drawable.search), null, Modifier.size(20.dp),

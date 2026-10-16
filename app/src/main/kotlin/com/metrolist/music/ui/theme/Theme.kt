@@ -22,53 +22,53 @@ import androidx.compose.ui.graphics.toArgb
 import androidx.palette.graphics.Palette
 import com.materialkolor.score.Score
 
-val DefaultThemeColor = Color(0xFFF4F0FF)
+val DefaultThemeColor = Color(0xFFF5F5F7)
 
-val MidnightCanvas = Color(0xFF030014)
-val FrostGlow = Color(0xFFF4F0FF)
-val MoonMist = Color(0xFFCDCCD0)
-val FogVeil = Color(0xFFA8A6B7)
-val GlassEdge = Color(0x18F4F0FF)
-val AuthViolet = Color(0xFF9382FF)
+val MidnightCanvas = Color(0xFF000000)
+val FrostGlow = Color(0xFFF5F5F7)
+val MoonMist = Color(0xFFD1D1D6)
+val FogVeil = Color(0xFFA1A1A6)
+val GlassEdge = Color(0x18FFFFFF)
+val AuthViolet = Color(0xFFF5F5F7)
 
 private val MidnightColors = darkColorScheme(
-    primary = Color(0xFF9382FF),
+    primary = Color(0xFFF5F5F7),
     onPrimary = MidnightCanvas,
-    primaryContainer = Color(0xFF10093A),
+    primaryContainer = Color(0xFF242424),
     onPrimaryContainer = FrostGlow,
-    secondary = Color(0xFFA8A6B7),
+    secondary = Color(0xFFA1A1A6),
     onSecondary = MidnightCanvas,
-    secondaryContainer = Color(0xFF10093A),
+    secondaryContainer = Color(0xFF242424),
     onSecondaryContainer = FrostGlow,
     tertiary = FrostGlow,
     onTertiary = MidnightCanvas,
-    tertiaryContainer = Color(0xFF10093A),
+    tertiaryContainer = Color(0xFF242424),
     onTertiaryContainer = FrostGlow,
     background = MidnightCanvas,
-    onBackground = Color(0xFFF4F0FF),
+    onBackground = Color(0xFFF5F5F7),
     surface = MidnightCanvas,
     onSurface = FrostGlow,
-    surfaceVariant = Color(0xFF10093A),
+    surfaceVariant = Color(0xFF242424),
     onSurfaceVariant = FogVeil,
     surfaceTint = Color.Transparent,
     surfaceContainerLowest = MidnightCanvas,
-    surfaceContainerLow = Color(0xFF060317),
-    surfaceContainer = Color(0xFF060317),
-    surfaceContainerHigh = Color(0xFF10093A),
-    surfaceContainerHighest = Color(0xFF10093A),
+    surfaceContainerLow = Color(0xFF141414),
+    surfaceContainer = Color(0xFF141414),
+    surfaceContainerHigh = Color(0xFF242424),
+    surfaceContainerHighest = Color(0xFF242424),
     inverseSurface = FrostGlow,
     inverseOnSurface = MidnightCanvas,
-    inversePrimary = Color(0xFF10093A),
-    outline = Color(0xFF54525F),
+    inversePrimary = Color(0xFF242424),
+    outline = Color(0xFF636366),
     outlineVariant = GlassEdge,
 )
 
 private val MidnightShapes = androidx.compose.material3.Shapes(
-    extraSmall = androidx.compose.foundation.shape.RoundedCornerShape(5.dp),
-    small = androidx.compose.foundation.shape.RoundedCornerShape(5.dp),
-    medium = androidx.compose.foundation.shape.RoundedCornerShape(16.dp),
-    large = androidx.compose.foundation.shape.RoundedCornerShape(16.dp),
-    extraLarge = androidx.compose.foundation.shape.RoundedCornerShape(16.dp),
+    extraSmall = androidx.compose.foundation.shape.RoundedCornerShape(12.dp),
+    small = androidx.compose.foundation.shape.RoundedCornerShape(24.dp),
+    medium = androidx.compose.foundation.shape.RoundedCornerShape(20.dp),
+    large = androidx.compose.foundation.shape.RoundedCornerShape(28.dp),
+    extraLarge = androidx.compose.foundation.shape.RoundedCornerShape(32.dp),
 )
 
 private val MidnightTypography = androidx.compose.material3.Typography().let { t ->

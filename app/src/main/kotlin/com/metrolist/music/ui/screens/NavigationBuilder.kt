@@ -154,26 +154,10 @@ fun NavGraphBuilder.navigationBuilder(
                     type = NavType.StringType
                 },
             ),
-        enterTransition = {
-            fadeIn(tween(250))
-        },
-        exitTransition = {
-            if (targetState.destination.route?.startsWith("search/") == true) {
-                fadeOut(tween(200))
-            } else {
-                fadeOut(tween(200)) + slideOutHorizontally { -it / 2 }
-            }
-        },
-        popEnterTransition = {
-            if (initialState.destination.route?.startsWith("search/") == true) {
-                fadeIn(tween(250))
-            } else {
-                fadeIn(tween(250)) + slideInHorizontally { -it / 2 }
-            }
-        },
-        popExitTransition = {
-            fadeOut(tween(200))
-        },
+        enterTransition = { fadeIn(tween(140, delayMillis = 90)) },
+        exitTransition = { fadeOut(tween(90)) },
+        popEnterTransition = { fadeIn(tween(140, delayMillis = 90)) },
+        popExitTransition = { fadeOut(tween(90)) },
     ) { backStackEntry ->
         OnlineSearchResult(
             savedStateHandle = backStackEntry.savedStateHandle

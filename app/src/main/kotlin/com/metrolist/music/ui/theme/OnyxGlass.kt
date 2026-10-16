@@ -50,7 +50,7 @@ fun Modifier.onyxGlass(
     emphasized: Boolean = false,
 ): Modifier {
     return clip(shape)
-        .background(if (emphasized) Color(0xFF10093A) else Color(0xFF060317))
+        .background(if (emphasized) Color(0xFF242424) else Color(0xFF141414))
         .drawWithCache {
             val innerLight = Brush.verticalGradient(listOf(Color.White.copy(alpha = 0.045f), Color.Transparent))
             onDrawBehind { drawRect(innerLight) }
@@ -60,16 +60,7 @@ fun Modifier.onyxGlass(
 
 @Composable
 fun Modifier.onyxBackdrop(): Modifier {
-    return background(MidnightCanvas).drawWithCache {
-        val stars = List(32) { i ->
-            Offset(((i * 73 + 19) % 997) / 997f * size.width, ((i * 137 + 43) % 991) / 991f * size.height)
-        }
-        onDrawBehind {
-            stars.forEachIndexed { i, point ->
-                drawCircle(FrostGlow.copy(alpha = if (i % 3 == 0) 0.12f else 0.05f), 0.65.dp.toPx(), point)
-            }
-        }
-    }
+    return background(MidnightCanvas)
 }
 
 @Composable

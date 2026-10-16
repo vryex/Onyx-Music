@@ -300,9 +300,9 @@ private fun NewMiniPlayer(
                     .then(if (isTabletLandscape) Modifier.width(500.dp).align(Alignment.Center) else Modifier.fillMaxWidth())
                     .height(56.dp)
                     .offset { IntOffset(offsetXAnimatable.value.roundToInt(), 0) }
-                    .clip(RoundedCornerShape(16.dp))
-                    .background(Color(0xFF060317))
-                    .border(1.dp, Color(0xFF9382FF).copy(alpha = 0.20f), RoundedCornerShape(16.dp))
+                    .clip(RoundedCornerShape(24.dp))
+                    .background(Color(0xFF141414))
+                    .border(1.dp, Color(0xFFF5F5F7).copy(alpha = 0.20f), RoundedCornerShape(24.dp))
                     .drawWithContent {
                         drawContent()
                         val y = size.height - 1.dp.toPx()
@@ -326,8 +326,8 @@ private fun NewMiniPlayer(
                 modifier = Modifier.fillMaxSize().padding(horizontal = 6.dp, vertical = 4.dp),
             ) {
                 Box(
-                    modifier = Modifier.size(44.dp).clip(RoundedCornerShape(5.dp))
-                        .background(Color(0xFF10093A)),
+                    modifier = Modifier.size(44.dp).clip(RoundedCornerShape(24.dp))
+                        .background(Color(0xFF242424)),
                     contentAlignment = Alignment.Center,
                 ) {
                     LegacyPlayPauseButton(
@@ -341,7 +341,7 @@ private fun NewMiniPlayer(
                 Spacer(Modifier.width(12.dp))
                 NewMiniPlayerSongInfo(
                     mediaMetadata = mediaMetadata,
-                    onSurfaceColor = Color(0xFFF4F0FF),
+                    onSurfaceColor = Color(0xFFF5F5F7),
                     errorColor = errorColor,
                     modifier = Modifier.weight(1f),
                 )
@@ -354,13 +354,13 @@ private fun NewMiniPlayer(
                     onClick = { playerConnection.seekToNext() },
                 ) {
                     Icon(painterResource(R.drawable.skip_next), stringResource(R.string.onyx_next_track),
-                        tint = Color(0xFFA8A6B7))
+                        tint = Color(0xFFA1A1A6))
                 }
                 AsyncImage(
                     model = mediaMetadata?.thumbnailUrl?.resize(120, 120),
                     contentDescription = null,
                     contentScale = ContentScale.Crop,
-                    modifier = Modifier.size(36.dp).clip(RoundedCornerShape(5.dp)),
+                    modifier = Modifier.size(36.dp).clip(RoundedCornerShape(24.dp)),
                 )
                 Spacer(Modifier.width(6.dp))
             }

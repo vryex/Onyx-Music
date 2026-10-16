@@ -158,6 +158,8 @@ fun Queue(
     showInlineLyrics: Boolean,
     playerBackground: PlayerBackgroundStyle = PlayerBackgroundStyle.DEFAULT,
     onToggleLyrics: () -> Unit = {},
+    onSleepTimer: () -> Unit = {},
+    timerLabel: String? = null,
 ) {
     val navController = LocalNavController.current
     val context = LocalContext.current
@@ -256,36 +258,31 @@ fun Queue(
         state = state,
         modifier = modifier,
         background = {
-            Box(Modifier.fillMaxSize().background(Color.Unspecified))
+            Box(Modifier.fillMaxSize().background(background))
         },
         collapsedContent = {
             if (useNewPlayerDesign) {
                 Row(
-                    modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp)
+                    Modifier.fillMaxWidth().padding(horizontal = 24.dp)
                         .windowInsetsPadding(WindowInsets.systemBars.only(WindowInsetsSides.Bottom + WindowInsetsSides.Horizontal)),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween,
                 ) {
-                    TextButton(onClick = { state.expandSoft() }) {
-                        Icon(painterResource(R.drawable.queue_music), null, Modifier.size(22.dp))
-                        Spacer(Modifier.width(8.dp))
-                        Text(stringResource(R.string.queue))
-                    }
-                    IconButton(onClick = {
-                        menuState.show {
-                            PlayerMenu(
-                                mediaMetadata = mediaMetadata,
-                                playerBottomSheetState = playerBottomSheetState,
-                                onShowDetailsDialog = {
-                                    mediaMetadata?.id?.let { id ->
-                                        bottomSheetPageState.show { ShowMediaInfo(id) }
-                                    }
-                                },
-                                onDismiss = menuState::dismiss,
-                            )
+                    listOf(
+                        Triple(R.drawable.lyrics, stringResource(R.string.lyrics), onToggleLyrics),
+                        Triple(R.drawable.timer, stringResource(R.string.sleep_timer), onSleepTimer),
+                        Triple(R.drawable.queue_music, stringResource(R.string.queue), { state.expandSoft() }),
+                    ).forEachIndexed { index, (icon, label, action) ->
+                        TextButton(onClick = action,
+                            enabled = index != 1 || !isListenTogetherGuest,
+                            modifier = Modifier.weight(1f).background(Color.White.copy(alpha = .08f), RoundedCornerShape(50)),
+                        ) {
+                            Icon(painterResource(icon), label, Modifier.size(20.dp))
+                            if (index == 1 && timerLabel != null) {
+                                Spacer(Modifier.width(4.dp))
+                                Text(timerLabel, style = MaterialTheme.typography.labelSmall, maxLines = 1)
+                            }
                         }
-                    }) {
-                        Icon(painterResource(R.drawable.more_vert), stringResource(R.string.more_options), tint = Color.White)
                     }
                 }
             } else {

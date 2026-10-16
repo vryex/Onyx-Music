@@ -394,7 +394,7 @@ fun Thumbnail(
             Text(
                 text = queueTitle.orEmpty(),
                 style = MaterialTheme.typography.labelSmall,
-                color = Color(0xFFA8A6B7),
+                color = Color(0xFFA1A1A6),
                 maxLines = 1,
                 overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
                 modifier = Modifier.align(Alignment.BottomCenter).padding(horizontal = 32.dp, vertical = 4.dp),
@@ -546,7 +546,7 @@ private fun ThumbnailItem(
             modifier = Modifier
                 .size(dimensions.thumbnailSize)
                 .clip(RoundedCornerShape(dimensions.cornerRadius))
-                .border(1.dp, Color(0xFF9382FF).copy(alpha = 0.25f), RoundedCornerShape(dimensions.cornerRadius))
+                .border(1.dp, Color(0xFFF5F5F7).copy(alpha = 0.25f), RoundedCornerShape(dimensions.cornerRadius))
         ) {
             if (hidePlayerThumbnail) {
                 HiddenThumbnailPlaceholder(textBackgroundColor = textBackgroundColor)
@@ -565,8 +565,8 @@ private fun ThumbnailItem(
             
             CastButton(
                 modifier = Modifier.align(Alignment.BottomStart).padding(12.dp)
-                    .clip(RoundedCornerShape(5.dp)).background(Color(0xFF060317).copy(alpha = 0.9f)),
-                tintColor = Color(0xFFF4F0FF)
+                    .clip(RoundedCornerShape(24.dp)).background(Color(0xFF141414).copy(alpha = 0.9f)),
+                tintColor = Color(0xFFF5F5F7)
             )
         }
     }

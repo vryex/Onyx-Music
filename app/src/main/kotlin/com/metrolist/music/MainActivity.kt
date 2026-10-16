@@ -1278,37 +1278,11 @@ class MainActivity : FragmentActivity() {
                                             NavigationTab.SEARCH -> Screens.Search
                                             NavigationTab.LIBRARY -> Screens.Library
                                         }.route,
-                                    enterTransition = {
-                                        val currentRouteIndex = routeIndexMap[targetState.destination.route] ?: -1
-                                        val previousRouteIndex = routeIndexMap[initialState.destination.route] ?: -1
-
-                                        if (currentRouteIndex >= 0 && previousRouteIndex >= 0) {
-                                            slideInHorizontally(animationSpec = tween(180)) {
-                                                if (currentRouteIndex > previousRouteIndex) it / 24 else -it / 24
-                                            }
-                                        } else if (currentRouteIndex == -1 || currentRouteIndex > previousRouteIndex) {
-                                            slideInHorizontally(animationSpec = tween(220)) { it / 16 }
-                                        } else {
-                                            slideInHorizontally(animationSpec = tween(220)) { -it / 16 }
-                                        }
-                                    },
-                                    exitTransition = { ExitTransition.None },
-                                    popEnterTransition = {
-                                        val currentRouteIndex = routeIndexMap[targetState.destination.route] ?: -1
-                                        val previousRouteIndex = routeIndexMap[initialState.destination.route] ?: -1
-
-                                        if (currentRouteIndex >= 0 && previousRouteIndex >= 0) {
-                                            slideInHorizontally(animationSpec = tween(180)) {
-                                                if (currentRouteIndex > previousRouteIndex) it / 24 else -it / 24
-                                            }
-                                        } else if (previousRouteIndex != -1 && previousRouteIndex < currentRouteIndex) {
-                                            slideInHorizontally(animationSpec = tween(220)) { it / 16 }
-                                        } else {
-                                            slideInHorizontally(animationSpec = tween(220)) { -it / 16 }
-                                        }
-                                    },
-                                    popExitTransition = { ExitTransition.None },
-                                    modifier = Modifier.nestedScroll(topAppBarScrollBehavior.nestedScrollConnection),
+                                    enterTransition = { fadeIn(tween(140, delayMillis = 90)) },
+                                    exitTransition = { fadeOut(tween(90)) },
+                                    popEnterTransition = { fadeIn(tween(140, delayMillis = 90)) },
+                                    popExitTransition = { fadeOut(tween(90)) },
+                                    modifier = Modifier.background(MaterialTheme.colorScheme.background).nestedScroll(topAppBarScrollBehavior.nestedScrollConnection),
                                 ) {
                                     navigationBuilder(
                                         navController = navController,

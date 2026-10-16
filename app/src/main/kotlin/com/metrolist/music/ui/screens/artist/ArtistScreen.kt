@@ -233,7 +233,7 @@ fun ArtistScreen(
                                 verticalAlignment = Alignment.CenterVertically) {
                                 OutlinedButton(
                                     onClick = { viewModel.toggleChannelSubscription() },
-                                    shape = RoundedCornerShape(5.dp),
+                                    shape = RoundedCornerShape(24.dp),
                                     colors = ButtonDefaults.outlinedButtonColors(
                                         containerColor = if (isChannelSubscribed) MaterialTheme.colorScheme.surfaceContainerHigh
                                             else MaterialTheme.colorScheme.surface),

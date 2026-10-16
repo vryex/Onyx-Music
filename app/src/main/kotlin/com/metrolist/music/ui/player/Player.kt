@@ -6,6 +6,7 @@
 package com.metrolist.music.ui.player
 
 import com.metrolist.music.ui.component.LiquidIconButton
+import com.metrolist.music.ui.theme.rememberArtworkColor
 import com.metrolist.music.ui.component.OnyxPlayerHeader
 import com.metrolist.music.ui.theme.rememberArtworkColor
 import androidx.compose.ui.draw.drawWithCache
@@ -242,7 +243,7 @@ fun BottomSheetPlayer(
         mutableStateOf(false)
     }
 
-    val playerBackground = PlayerBackgroundStyle.DEFAULT
+    val playerBackground = PlayerBackgroundStyle.GRADIENT
     val playerButtonsStyle by rememberEnumPreference(
         key = PlayerButtonsStyleKey,
         defaultValue = PlayerButtonsStyle.DEFAULT,
@@ -314,6 +315,7 @@ fun BottomSheetPlayer(
 
     val playbackState by playerConnection.playbackState.collectAsStateWithLifecycle()
     val mediaMetadata by playerConnection.mediaMetadata.collectAsStateWithLifecycle()
+    val artworkColor by rememberArtworkColor(mediaMetadata?.thumbnailUrl)
     val currentSong by playerConnection.currentSong.collectAsStateWithLifecycle(initialValue = null)
     val automix by playerConnection.service.automixItems.collectAsStateWithLifecycle()
     val repeatMode by playerConnection.repeatMode.collectAsStateWithLifecycle()
@@ -779,7 +781,7 @@ fun BottomSheetPlayer(
                     Modifier
                         .fillMaxSize()
                         .drawWithCache {
-                            val fill = Brush.verticalGradient(listOf(Color(0xFF030014), Color(0xFF060317)))
+                            val fill = Brush.verticalGradient(listOf(artworkColor, artworkColor.copy(red = artworkColor.red * .45f, green = artworkColor.green * .45f, blue = artworkColor.blue * .45f), Color.Black))
                             onDrawBehind { drawRect(fill) }
                         },
             ) {
@@ -879,12 +881,16 @@ fun BottomSheetPlayer(
             AnimatedVisibility(visible = !isFullScreen, enter = fadeIn(tween(180)), exit = fadeOut(tween(120))) {
                 Row(
                     Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 8.dp)
-                        .clip(RoundedCornerShape(16.dp)).background(Color(0xFF060317))
-                        .border(1.dp, Color(0xFF9382FF).copy(alpha = 0.18f), RoundedCornerShape(16.dp))
+                        .clip(RoundedCornerShape(50)).background(Color.White.copy(alpha = .06f))
                         .padding(horizontal = 8.dp, vertical = 4.dp),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.SpaceBetween,
                 ) {
+                    if (LocalConfiguration.current.orientation != Configuration.ORIENTATION_LANDSCAPE)
+                    PlayerIconButton(R.drawable.shuffle, stringResource(R.string.shuffle),
+                        onClick = { playerConnection.player.shuffleModeEnabled = !shuffleEnabled },
+                        enabled = !isListenTogetherGuest,
+                        modifier = Modifier.alpha(if (shuffleEnabled) 1f else .45f).semantics { selected = shuffleEnabled })
                     PlayerIconButton(R.drawable.skip_previous, stringResource(R.string.onyx_previous_track), playerConnection::seekToPrevious,
                         enabled = canSkipPrevious && !isListenTogetherGuest)
                     PlayerIconButton(
@@ -905,10 +911,19 @@ fun BottomSheetPlayer(
                             } else playerConnection.togglePlayPause()
                         },
                         modifier = Modifier.size(52.dp).focusRequester(focusRequester), emphasized = true,
-                        containerColor = Color(0xFF10093A), contentColor = Color(0xFFF4F0FF),
+                        containerColor = Color.White, contentColor = Color.Black,
                     )
                     PlayerIconButton(R.drawable.skip_next, stringResource(R.string.onyx_next_track), playerConnection::seekToNext,
                         enabled = canSkipNext && !isListenTogetherGuest)
+                    if (LocalConfiguration.current.orientation != Configuration.ORIENTATION_LANDSCAPE)
+                    PlayerIconButton(if (repeatMode == Player.REPEAT_MODE_ONE) R.drawable.repeat_one else R.drawable.repeat,
+                        stringResource(when (repeatMode) {
+                            Player.REPEAT_MODE_ONE -> R.string.repeat_mode_one
+                            Player.REPEAT_MODE_ALL -> R.string.repeat_mode_all
+                            else -> R.string.repeat_mode_off
+                        }), onClick = { playerConnection.player.toggleRepeatMode() }, enabled = !isListenTogetherGuest,
+                        modifier = Modifier.alpha(if (repeatMode == Player.REPEAT_MODE_OFF) .45f else 1f)
+                            .semantics { selected = repeatMode != Player.REPEAT_MODE_OFF })
                 }
             }
             when (sliderStyle) {
@@ -942,16 +957,16 @@ fun BottomSheetPlayer(
                         },
                         enabled = !isListenTogetherGuest,
                         thumb = {
-                            Box(Modifier.width(3.dp).height(12.dp).background(Color(0xFF9382FF), RoundedCornerShape(1.dp)))
+                            Box(Modifier.size(10.dp).background(Color.White, RoundedCornerShape(50)))
                         },
                         track = { sliderState ->
                             PlayerSliderTrack(
                                 sliderState = sliderState,
-                                colors = PlayerSliderColors.getSliderColors(Color(0xFF9382FF), playerBackground, useDarkTheme),
-                                trackHeight = 2.dp,
+                                colors = PlayerSliderColors.getSliderColors(Color(0xFFF5F5F7), playerBackground, useDarkTheme),
+                                trackHeight = 5.dp,
                             )
                         },
-                        colors = PlayerSliderColors.getSliderColors(Color(0xFF9382FF), playerBackground, useDarkTheme),
+                        colors = PlayerSliderColors.getSliderColors(Color(0xFFF5F5F7), playerBackground, useDarkTheme),
                         modifier = Modifier.padding(horizontal = PlayerHorizontalPadding),
                     )
                 }
@@ -977,7 +992,7 @@ fun BottomSheetPlayer(
                                 sliderPosition = null
                             },
                             modifier = Modifier.padding(horizontal = PlayerHorizontalPadding),
-                            colors = PlayerSliderColors.getSliderColors(Color(0xFF9382FF), playerBackground, useDarkTheme),
+                            colors = PlayerSliderColors.getSliderColors(Color(0xFFF5F5F7), playerBackground, useDarkTheme),
                             isPlaying = effectiveIsPlaying,
                         )
                     } else {
@@ -999,7 +1014,7 @@ fun BottomSheetPlayer(
                                 }
                                 sliderPosition = null
                             },
-                            colors = PlayerSliderColors.getSliderColors(Color(0xFF9382FF), playerBackground, useDarkTheme),
+                            colors = PlayerSliderColors.getSliderColors(Color(0xFFF5F5F7), playerBackground, useDarkTheme),
                             modifier = Modifier.padding(horizontal = PlayerHorizontalPadding),
                             isPlaying = effectiveIsPlaying,
                         )
@@ -1039,7 +1054,7 @@ fun BottomSheetPlayer(
                         track = { sliderState ->
                             PlayerSliderTrack(
                                 sliderState = sliderState,
-                                colors = PlayerSliderColors.getSliderColors(Color(0xFF9382FF), playerBackground, useDarkTheme),
+                                colors = PlayerSliderColors.getSliderColors(Color(0xFFF5F5F7), playerBackground, useDarkTheme),
                             )
                         },
                         modifier = Modifier.padding(horizontal = PlayerHorizontalPadding),
@@ -1061,7 +1076,7 @@ fun BottomSheetPlayer(
                     text = makeTimeString(sliderPosition ?: effectivePosition),
                     style = MaterialTheme.typography.labelMedium,
                     fontFamily = FontFamily.Monospace,
-                    color = Color(0xFFA8A6B7),
+                    color = Color(0xFFA1A1A6),
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
@@ -1070,61 +1085,20 @@ fun BottomSheetPlayer(
                     text = if (duration != C.TIME_UNSET) makeTimeString(duration) else "",
                     style = MaterialTheme.typography.labelMedium,
                     fontFamily = FontFamily.Monospace,
-                    color = Color(0xFFA8A6B7),
+                    color = Color(0xFFA1A1A6),
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
             }
 
-            AnimatedVisibility(visible = !isFullScreen, enter = fadeIn(tween(180)), exit = fadeOut(tween(120))) {
-                Column {
-                    Row(
-                        Modifier.fillMaxWidth().padding(horizontal = 32.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        PlayerIconButton(R.drawable.shuffle, stringResource(R.string.shuffle),
-                            onClick = { playerConnection.player.shuffleModeEnabled = !shuffleEnabled },
-                            enabled = !isListenTogetherGuest,
-                            modifier = Modifier.alpha(if (shuffleEnabled) 1f else 0.55f).semantics { selected = shuffleEnabled })
-                        TextButton(onClick = {
-                            context.startActivity(Intent.createChooser(Intent(Intent.ACTION_SEND).apply {
-                                type = "text/plain"
-                                putExtra(Intent.EXTRA_TEXT, "https://music.youtube.com/watch?v=" + mediaMetadata.id)
-                            }, null))
-                        }) {
-                            Icon(painterResource(R.drawable.share), null, Modifier.size(16.dp))
-                            Spacer(Modifier.width(8.dp))
-                            Text(stringResource(R.string.share), style = MaterialTheme.typography.labelMedium)
-                        }
-                        PlayerIconButton(if (repeatMode == Player.REPEAT_MODE_ONE) R.drawable.repeat_one else R.drawable.repeat,
-                            stringResource(when (repeatMode) {
-                                Player.REPEAT_MODE_ONE -> R.string.repeat_mode_one
-                                Player.REPEAT_MODE_ALL -> R.string.repeat_mode_all
-                                else -> R.string.repeat_mode_off
-                            }), onClick = { playerConnection.player.toggleRepeatMode() },
-                            enabled = !isListenTogetherGuest,
-                            modifier = Modifier.alpha(if (repeatMode == Player.REPEAT_MODE_OFF) 0.55f else 1f)
-                                .semantics { selected = repeatMode != Player.REPEAT_MODE_OFF })
-                    }
-                    Row(Modifier.fillMaxWidth().padding(horizontal = 24.dp), horizontalArrangement = Arrangement.SpaceBetween) {
-                        TextButton(onClick = { showInlineLyrics = !showInlineLyrics }) {
-                            Icon(painterResource(R.drawable.lyrics), stringResource(R.string.lyrics), Modifier.size(18.dp))
-                            Spacer(Modifier.width(8.dp))
-                            if (LocalConfiguration.current.orientation != Configuration.ORIENTATION_LANDSCAPE)
-                                Text(stringResource(R.string.lyrics), style = MaterialTheme.typography.labelLarge)
-                        }
-                        TextButton(onClick = {
-                            if (sleepTimerEnabled) playerConnection.service.sleepTimer?.clear()
-                            else showSleepTimerDialog = true
-                        }, enabled = !isListenTogetherGuest) {
-                            Icon(painterResource(R.drawable.timer), stringResource(R.string.sleep_timer), Modifier.size(18.dp))
-                            Spacer(Modifier.width(8.dp))
-                            if (LocalConfiguration.current.orientation != Configuration.ORIENTATION_LANDSCAPE)
-                                Text(if (sleepTimerEnabled) makeTimeString(sleepTimerTimeLeft.coerceAtLeast(0L))
-                                    else stringResource(R.string.sleep_timer), style = MaterialTheme.typography.labelLarge)
-                        }
-                    }
+            if (LocalConfiguration.current.orientation == Configuration.ORIENTATION_LANDSCAPE) {
+                Row(Modifier.fillMaxWidth().padding(horizontal = 24.dp), horizontalArrangement = Arrangement.SpaceBetween) {
+                    PlayerIconButton(R.drawable.shuffle, stringResource(R.string.shuffle),
+                        onClick = { playerConnection.player.shuffleModeEnabled = !shuffleEnabled }, enabled = !isListenTogetherGuest,
+                        modifier = Modifier.alpha(if (shuffleEnabled) 1f else .45f))
+                    PlayerIconButton(if (repeatMode == Player.REPEAT_MODE_ONE) R.drawable.repeat_one else R.drawable.repeat,
+                        stringResource(R.string.repeat_mode_all), onClick = { playerConnection.player.toggleRepeatMode() },
+                        enabled = !isListenTogetherGuest, modifier = Modifier.alpha(if (repeatMode == Player.REPEAT_MODE_OFF) .45f else 1f))
                 }
             }
         }
@@ -1270,7 +1244,7 @@ fun BottomSheetPlayer(
                     if (useBlackBackground) {
                         Color.Black
                     } else {
-                        Color(0xFF060317)
+                        Color(0xFF141414)
                     },
                 onBackgroundColor = onBackgroundColor,
                 TextBackgroundColor = TextBackgroundColor,
@@ -1279,6 +1253,11 @@ fun BottomSheetPlayer(
                 pureBlack = pureBlack,
                 showInlineLyrics = showInlineLyrics,
                 playerBackground = playerBackground,
+                onSleepTimer = {
+                    if (sleepTimerEnabled) playerConnection.service.sleepTimer?.clear()
+                    else showSleepTimerDialog = true
+                },
+                timerLabel = if (sleepTimerEnabled) makeTimeString(sleepTimerTimeLeft.coerceAtLeast(0L)) else null,
                 onToggleLyrics = {
                     showInlineLyrics = !showInlineLyrics
                 },

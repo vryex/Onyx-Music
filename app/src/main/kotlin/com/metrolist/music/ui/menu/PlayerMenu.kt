@@ -310,6 +310,17 @@ fun PlayerMenu(
             NewActionGrid(
                 actions =
                     listOfNotNull(
+                        NewAction(
+                            icon = { Icon(painterResource(R.drawable.share), null, Modifier.size(28.dp)) },
+                            text = stringResource(R.string.share),
+                            onClick = {
+                                context.startActivity(Intent.createChooser(Intent(Intent.ACTION_SEND).apply {
+                                    type = "text/plain"
+                                    putExtra(Intent.EXTRA_TEXT, "https://music.youtube.com/watch?v=" + mediaMetadata.id)
+                                }, null))
+                                onDismiss()
+                            },
+                        ),
                         if (!isListenTogetherGuest) {
                             NewAction(
                                 icon = {

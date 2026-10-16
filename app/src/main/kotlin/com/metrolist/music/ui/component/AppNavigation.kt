@@ -166,7 +166,7 @@ fun AppNavigationBar(
     onHomeLongHold: (() -> Unit)? = null,
 ) {
     val navigationScrim = remember {
-        Brush.verticalGradient(0f to Color(0xEB030014), 1f to Color(0xFF030014))
+        Brush.verticalGradient(0f to Color(0xEB000000), 1f to Color(0xFF000000))
     }
     val haptics = LocalHapticFeedback.current
     val viewConfiguration = LocalViewConfiguration.current

@@ -933,7 +933,7 @@ private fun AutoPlaylistHeader(
                         ),
                     )
                 },
-                shape = RoundedCornerShape(5.dp),
+                shape = RoundedCornerShape(24.dp),
                 color = MaterialTheme.colorScheme.surfaceContainerHigh,
                 modifier = Modifier.size(52.dp),
             ) {
@@ -962,7 +962,7 @@ private fun AutoPlaylistHeader(
                 },
                 color = MaterialTheme.colorScheme.surfaceContainerHigh,
                 border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.45f)),
-                shape = RoundedCornerShape(5.dp),
+                shape = RoundedCornerShape(24.dp),
                 modifier = Modifier.weight(1f).height(52.dp),
             ) {
                 Row(
@@ -1020,7 +1020,7 @@ private fun AutoPlaylistHeader(
                         )
                     }
                 },
-                shape = RoundedCornerShape(5.dp),
+                shape = RoundedCornerShape(24.dp),
                 color = MaterialTheme.colorScheme.surfaceContainerHigh,
                 modifier = Modifier.size(52.dp),
             ) {

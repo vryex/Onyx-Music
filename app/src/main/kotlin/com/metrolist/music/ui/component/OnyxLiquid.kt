@@ -56,7 +56,7 @@ fun LiquidIconButton(
     val interaction = remember { MutableInteractionSource() }
     val pressed by interaction.collectIsPressedAsState()
     val scale by animateFloatAsState(if (pressed) 0.96f else 1f, tween(130), label = "controlPress")
-    val shape = RoundedCornerShape(5.dp)
+    val shape = RoundedCornerShape(24.dp)
     val accent = MaterialTheme.colorScheme.primary
     val surface = if (emphasized) MaterialTheme.colorScheme.surfaceContainerHigh else MaterialTheme.colorScheme.surface
     Box(
@@ -68,8 +68,8 @@ fun LiquidIconButton(
             }
             .clip(shape)
             .then(
-                if (plain) Modifier else Modifier
-                    .background(containerColor?.takeUnless { it == accent } ?: surface)
+                if (plain && !emphasized) Modifier else Modifier
+                    .background(containerColor ?: surface)
                     .border(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = if (emphasized) 0.55f else 0.18f), shape),
             )
             .clickable(
@@ -108,31 +108,14 @@ private fun ObservatoryStars(modifier: Modifier = Modifier) {
 
 @Composable
 fun OnyxHomeObservatory() {
-    Box(Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 16.dp)) {
-        ObservatoryStars(Modifier.matchParentSize())
-        Column(
-            Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 20.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(14.dp),
-        ) {
-            Text(
-                stringResource(R.string.onyx_listening_space),
-                Modifier.clip(RoundedCornerShape(32.dp))
-                    .border(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = .26f), RoundedCornerShape(32.dp))
-                    .background(MaterialTheme.colorScheme.surface)
-                    .padding(horizontal = 12.dp, vertical = 7.dp),
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                letterSpacing = 1.5.sp,
-                textAlign = TextAlign.Center,
-            )
-            Text("Onyx", style = MaterialTheme.typography.displaySmall.copy(
-                fontWeight = FontWeight.Medium, fontSize = 40.sp, letterSpacing = (-1).sp),
-                color = MaterialTheme.colorScheme.onSurface)
-            Text(stringResource(R.string.onyx_home_intro),
-                style = MaterialTheme.typography.bodyMedium,
-                textAlign = TextAlign.Center, color = MaterialTheme.colorScheme.onSurfaceVariant)
-        }
+    Column(
+        Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 22.dp),
+        verticalArrangement = Arrangement.spacedBy(6.dp),
+    ) {
+        Text(stringResource(R.string.home), style = MaterialTheme.typography.displaySmall,
+            fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
+        Text(stringResource(R.string.onyx_home_intro), style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant)
     }
 }
 
@@ -147,9 +130,9 @@ fun OnyxHomeShortcuts(onHistory: () -> Unit, onExplore: () -> Unit) {
 
 @Composable
 private fun HomeShortcut(title: String, icon: Int, onClick: () -> Unit, modifier: Modifier) {
-    Row(modifier.clip(RoundedCornerShape(5.dp))
+    Row(modifier.clip(RoundedCornerShape(24.dp))
         .background(MaterialTheme.colorScheme.surface)
-        .border(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = .2f), RoundedCornerShape(5.dp))
+        .border(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = .2f), RoundedCornerShape(24.dp))
         .clickable(role = Role.Button, onClick = onClick)
         .heightIn(min = 48.dp).padding(horizontal = 12.dp, vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -161,11 +144,11 @@ private fun HomeShortcut(title: String, icon: Int, onClick: () -> Unit, modifier
 @Composable
 fun OnyxHomeHero(title: String?, artist: String?, artwork: String?, onPlay: () -> Unit, onExplore: () -> Unit) {
     if (title == null || artwork.isNullOrBlank()) return
-    val shape = RoundedCornerShape(16.dp)
+    val shape = RoundedCornerShape(28.dp)
     Column(Modifier.padding(horizontal = 20.dp, vertical = 20.dp).fillMaxWidth()
         .clip(shape).background(MaterialTheme.colorScheme.surface)
         .border(1.dp, Brush.linearGradient(listOf(
-            Color(0xFFE59CFF).copy(alpha = .32f), Color(0xFFBA9CFF).copy(alpha = .12f), Color(0xFF9CB2FF).copy(alpha = .32f),
+            Color.White.copy(alpha = .12f), Color.White.copy(alpha = .04f), Color.White.copy(alpha = .08f),
         )), shape).padding(20.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(16.dp)) {
@@ -177,9 +160,8 @@ fun OnyxHomeHero(title: String?, artist: String?, artwork: String?, onPlay: () -
                 tint = MaterialTheme.colorScheme.onSurfaceVariant)
         }
         Box(Modifier.fillMaxWidth().height(220.dp), contentAlignment = Alignment.Center) {
-            ObservatoryStars(Modifier.matchParentSize())
             AsyncImage(artwork, title, contentScale = ContentScale.Crop,
-                modifier = Modifier.size(204.dp).clip(RoundedCornerShape(12.dp))
+                modifier = Modifier.fillMaxWidth().height(220.dp).clip(RoundedCornerShape(20.dp))
                     .clickable(role = Role.Button, onClick = onExplore))
         }
         Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally,
@@ -190,9 +172,9 @@ fun OnyxHomeHero(title: String?, artist: String?, artwork: String?, onPlay: () -
                 color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 2,
                 textAlign = TextAlign.Center, overflow = TextOverflow.Ellipsis)
         }
-        Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(5.dp))
+        Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(24.dp))
             .background(MaterialTheme.colorScheme.surfaceContainerHigh)
-            .border(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = .45f), RoundedCornerShape(5.dp))
+            .border(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = .45f), RoundedCornerShape(24.dp))
             .clickable(role = Role.Button, onClick = onPlay).heightIn(min = 48.dp).padding(12.dp),
             verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.Center) {
             Icon(painterResource(R.drawable.play), null, Modifier.size(20.dp), tint = MaterialTheme.colorScheme.onSurface)
@@ -225,7 +207,7 @@ fun OnyxCollectionCard(title: String, subtitle: String, icon: Int, onClick: (() 
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-            Box(Modifier.size(42.dp).onyxGlass(RoundedCornerShape(5.dp), emphasized = true), contentAlignment = Alignment.Center) {
+            Box(Modifier.size(42.dp).onyxGlass(RoundedCornerShape(24.dp), emphasized = true), contentAlignment = Alignment.Center) {
                 Icon(painterResource(icon), null, Modifier.size(22.dp))
             }
             Icon(painterResource(R.drawable.arrow_forward), null, Modifier.size(16.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)

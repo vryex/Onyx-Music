@@ -318,7 +318,7 @@ fun AccountSettings(
         Spacer(Modifier.height(8.dp))
 
         Material3SettingsGroup(
-            items = listOf(
+            items = listOfNotNull(
                 Material3SettingsItem(
                     title = {
                         Text(
@@ -336,7 +336,7 @@ fun AccountSettings(
                         else showTokenEditor = true
                     }
                 ),
-                Material3SettingsItem(
+                if (isLoggedIn) Material3SettingsItem(
                     title = { Text(stringResource(R.string.more_content)) },
                     icon = painterResource(R.drawable.cached),
                     trailingContent = {
@@ -359,8 +359,8 @@ fun AccountSettings(
                         )
                     },
                     enabled = isLoggedIn
-                ),
-                Material3SettingsItem(
+                ) else null,
+                if (isLoggedIn) Material3SettingsItem(
                     title = { Text(stringResource(R.string.yt_sync)) },
                     icon = painterResource(R.drawable.cached),
                     trailingContent = {
@@ -380,7 +380,7 @@ fun AccountSettings(
                         )
                     },
                     enabled = isLoggedIn
-                )
+                ) else null
             ),
             useLowContrast = true
         )

@@ -71,6 +71,23 @@ assert adb('shell', 'pidof', PACKAGE).strip(), 'App terminated during launch'
 home = snapshot('01-home')
 tap_label(home, 'library')
 library = snapshot('02-library')
+for index, tab in enumerate(['home', 'library', 'home', 'library']):
+    root = snapshot('02-fast-tab-' + str(index))
+    matches = []
+    for node in root.iter('node'):
+        if node.get('text', '').lower() == tab:
+            bounds = [int(v) for v in re.findall(r'\d+', node.get('bounds', ''))]
+            if len(bounds) == 4:
+                matches.append(bounds)
+    assert matches, 'Missing navigation tab: ' + tab
+    left, top, right, bottom = max(matches, key=lambda b: b[3])
+    adb('shell', 'input', 'tap', str((left + right) // 2), str((top + bottom) // 2))
+    time.sleep(.06)
+    (OUT / ('02-transition-' + str(index) + '.png')).write_bytes(adb('exec-out', 'screencap', '-p'))
+time.sleep(.4)
+library = snapshot('02-after-interrupted-tabs')
+assert not any(n.get('text', '') == 'Made for your next favorite song.' for n in library.iter('node')), 'Home remained over the Library after tab navigation'
+
 assert any(
     node.get('selected') == 'true' and any(
         'library' in (child.get('text', '') + child.get('content-desc', '')).lower()

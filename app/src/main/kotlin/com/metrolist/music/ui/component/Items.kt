@@ -266,7 +266,7 @@ inline fun ListItem(
         modifier = modifier
             .height(ListItemHeight + 8.dp)
             .padding(horizontal = 12.dp)
-            .clip(RoundedCornerShape(5.dp))
+            .clip(RoundedCornerShape(24.dp))
             .background(
                 if (isSelected == true || isActive) MaterialTheme.colorScheme.surfaceContainerHigh
                 else Color.Transparent,
@@ -274,14 +274,14 @@ inline fun ListItem(
             .drawWithContent {
                 drawContent()
                 drawLine(
-                    color = Color(0xFFA8A6B7).copy(alpha = 0.12f),
+                    color = Color(0xFFA1A1A6).copy(alpha = 0.12f),
                     start = Offset(72.dp.toPx(), size.height - 1.dp.toPx()),
                     end = Offset(size.width - 8.dp.toPx(), size.height - 1.dp.toPx()),
                     strokeWidth = 1.dp.toPx(),
                 )
                 if (isActive || isSelected == true) {
                     drawLine(
-                        color = Color(0xFF9382FF),
+                        color = Color(0xFFF5F5F7),
                         start = Offset(1.dp.toPx(), size.height * 0.25f),
                         end = Offset(1.dp.toPx(), size.height * 0.75f),
                         strokeWidth = 2.dp.toPx(),
