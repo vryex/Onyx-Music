@@ -20,7 +20,7 @@ jobs:
         run: |
           python3 - <<'PY'
           import json, os, time, urllib.request
-          base = 'https://api.github.com/repos/xero-scripts-repo/Onyx-Music/actions/runs/38829577530'
+          base = 'https://api.github.com/repos/xero-scripts-repo/Onyx-Music/actions/runs/38849311115'
           def get(url):
               request = urllib.request.Request(url, headers={'Authorization': 'Bearer ' + os.environ['GH_TOKEN'], 'Accept': 'application/vnd.github+json'})
               with urllib.request.urlopen(request, timeout=30) as response:
@@ -39,7 +39,7 @@ jobs:
       - uses: actions/download-artifact@v4
         with:
           name: Onyx-Music-signed-release
-          run-id: 38829577530
+          run-id: 38849311115
           github-token: ${{ github.token }}
           path: dist
       - name: Enable emulator acceleration

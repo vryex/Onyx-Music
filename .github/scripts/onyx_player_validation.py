@@ -19,10 +19,13 @@ adb('shell', 'am', 'force-stop', package)
 db_path = '/data/user/0/' + package + '/databases/song.db'
 owner = adb('shell', 'stat', '-c', '%u', db_path).decode().strip()
 adb('pull', db_path, str(out / 'fixture.db'))
+# SQLite may keep the freshly created schema in its write-ahead log.
+adb('pull', db_path + '-wal', str(out / 'fixture.db-wal'), check=False)
 db = sqlite3.connect(out / 'fixture.db')
 
 def insert(table, values):
     columns = db.execute('PRAGMA table_info(' + table + ')').fetchall()
+    assert columns, 'Missing fixture table: ' + table
     row = {}
     for _, name, kind, required, default, _ in columns:
         if name in values:
