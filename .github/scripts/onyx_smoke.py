@@ -72,7 +72,7 @@ home = snapshot('01-home')
 tap_label(home, 'library')
 library = snapshot('02-library')
 for index, tab in enumerate(['home', 'library', 'home', 'library']):
-    root = snapshot('02-fast-tab-' + str(index))
+    root = library
     matches = []
     for node in root.iter('node'):
         if node.get('text', '').lower() == tab:
