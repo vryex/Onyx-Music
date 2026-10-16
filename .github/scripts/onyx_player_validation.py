@@ -57,8 +57,8 @@ for i, video in enumerate(['dQw4w9WgXcQ', 'jNQXAC9IVRw']):
 insert('artist', {'id': 'onyx-ui-check', 'name': 'Onyx Studio', 'lastUpdateTime': 1770000000000})
 for i, video in enumerate(['dQw4w9WgXcQ', 'jNQXAC9IVRw']):
     insert('song_artist_map', {'songId': video, 'artistId': 'onyx-ui-check', 'position': 0})
-insert('related_song_map', {'songId': 'dQw4w9WgXcQ', 'relatedSongId': 'jNQXAC9IVRw'})
-insert('related_song_map', {'songId': 'jNQXAC9IVRw', 'relatedSongId': 'dQw4w9WgXcQ'})
+insert('related_song_map', {'id': 1, 'songId': 'dQw4w9WgXcQ', 'relatedSongId': 'jNQXAC9IVRw'})
+insert('related_song_map', {'id': 2, 'songId': 'jNQXAC9IVRw', 'relatedSongId': 'dQw4w9WgXcQ'})
 db.commit()
 db.execute('PRAGMA wal_checkpoint(TRUNCATE)')
 db.close()
