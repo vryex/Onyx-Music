@@ -1,4 +1,6 @@
 """Exercise the release player's UI using disposable emulator-only library rows."""
+import atexit
+import re
 import runpy
 import sqlite3
 import subprocess
@@ -8,10 +10,23 @@ from pathlib import Path
 helpers = runpy.run_path('.github/scripts/onyx_smoke.py')
 adb = helpers['adb']
 snapshot = helpers['snapshot']
-tap_label = helpers['tap_label']
+base_tap_label = helpers['tap_label']
 package = helpers['PACKAGE']
 activity = helpers['ACTIVITY']
 out = helpers['OUT']
+
+def tap_label(root, label):
+    label = label.lower()
+    for attempt in range(8):
+        if any(label in (n.get('text', '') + ' ' + n.get('content-desc', '')).lower() for n in root.iter('node')):
+            return base_tap_label(root, label)
+        time.sleep(1)
+        root = snapshot('wait-' + re.sub(r'[^a-z0-9]+', '-', label) + '-' + str(attempt))
+    raise AssertionError('Missing visible control after accessibility settled: ' + label)
+
+def save_runtime_log():
+    (out / 'player-logcat.txt').write_bytes(adb('logcat', '-d', check=False))
+atexit.register(save_runtime_log)
 
 adb('root')
 adb('wait-for-device')
