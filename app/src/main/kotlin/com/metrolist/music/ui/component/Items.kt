@@ -427,7 +427,7 @@ fun GridItem(
                 Modifier.height(gridHeight)
             }
                 .aspectRatio(thumbnailRatio)
-                .clip(RoundedCornerShape(22.dp))
+                .clip(RoundedCornerShape(6.dp))
         ) {
             thumbnailContent()
         }
@@ -995,22 +995,6 @@ fun PlaylistGridItem(
     },
     fillMaxWidth: Boolean = false,
 ) {
-    if (autoPlaylist) {
-        val icon = when (playlist.playlist.name) {
-            stringResource(R.string.liked) -> R.drawable.favorite
-            stringResource(R.string.offline) -> R.drawable.offline
-            stringResource(R.string.cached_playlist) -> R.drawable.cached
-            stringResource(R.string.uploaded_playlist) -> R.drawable.backup
-            else -> R.drawable.trending_up
-        }
-        OnyxCollectionCard(
-            title = playlist.playlist.name,
-            subtitle = pluralStringResource(R.plurals.n_song, playlist.songCount, playlist.songCount),
-            icon = icon,
-            modifier = modifier.padding(8.dp),
-        )
-        return
-    }
     GridItem(
     title = {
         Text(

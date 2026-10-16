@@ -1208,6 +1208,15 @@ fun HomeScreen(
                 modifier = Modifier,
                 contentPadding = LocalPlayerAwareWindowInsets.current.asPaddingValues(),
             ) {
+                item {
+                    ChipsRow(
+                        chips = homePage?.chips?.map { it to it.title } ?: emptyList(),
+                        currentValue = selectedChip,
+                        onValueUpdate = {
+                            viewModel.toggleChip(it)
+                        },
+                    )
+                }
                 if (selectedChip == null && dailySelection.isNotEmpty()) {
                     item(key = "onyx_daily_selection") {
                         val pick = dailySelection.first()
@@ -1243,15 +1252,7 @@ fun HomeScreen(
                         }
                     }
                 }
-                item {
-                    ChipsRow(
-                        chips = homePage?.chips?.map { it to it.title } ?: emptyList(),
-                        currentValue = selectedChip,
-                        onValueUpdate = {
-                            viewModel.toggleChip(it)
-                        },
-                    )
-                }
+
 
                 if (isLoading && homePage?.chips.isNullOrEmpty() && speedDialItems.isEmpty()) {
                     item(key = "chips_shimmer") {
