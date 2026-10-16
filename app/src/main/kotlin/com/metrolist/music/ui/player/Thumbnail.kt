@@ -117,7 +117,7 @@ private fun calculateThumbnailDimensions(
     containerWidth: Dp,
     containerHeight: Dp = containerWidth,
     horizontalPadding: Dp = PlayerHorizontalPadding,
-    cornerRadius: Dp = 16.dp,
+    cornerRadius: Dp = 24.dp,
     isLandscape: Boolean = false
 ): ThumbnailDimensions {
     // In landscape, use height as the constraining dimension for a square thumbnail

@@ -877,54 +877,6 @@ fun BottomSheetPlayer(
             }
         }
         val controlsContent: @Composable ColumnScope.(MediaMetadata) -> Unit = { mediaMetadata ->
-            AnimatedVisibility(visible = !isFullScreen, enter = fadeIn(tween(180)), exit = fadeOut(tween(120))) {
-                Row(
-                    Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 8.dp)
-                        .clip(RoundedCornerShape(50)).background(Color.White.copy(alpha = .06f))
-                        .padding(horizontal = 8.dp, vertical = 4.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                ) {
-                    if (LocalConfiguration.current.orientation != Configuration.ORIENTATION_LANDSCAPE)
-                    PlayerIconButton(R.drawable.shuffle, stringResource(R.string.shuffle),
-                        onClick = { playerConnection.player.shuffleModeEnabled = !shuffleEnabled },
-                        enabled = !isListenTogetherGuest,
-                        modifier = Modifier.alpha(if (shuffleEnabled) 1f else .45f).semantics { selected = shuffleEnabled })
-                    PlayerIconButton(R.drawable.skip_previous, stringResource(R.string.onyx_previous_track), playerConnection::seekToPrevious,
-                        enabled = canSkipPrevious && !isListenTogetherGuest)
-                    PlayerIconButton(
-                        if (isListenTogetherGuest) {
-                            if (isMuted) R.drawable.volume_off else R.drawable.volume_up
-                        } else if (playbackState == STATE_ENDED) R.drawable.replay
-                        else if (effectiveIsPlaying) R.drawable.pause else R.drawable.play,
-                        if (isListenTogetherGuest) {
-                            if (isMuted) stringResource(R.string.unmute) else stringResource(R.string.mute)
-                        } else if (effectiveIsPlaying) stringResource(R.string.player_pause) else stringResource(R.string.play),
-                        onClick = {
-                            if (isListenTogetherGuest) playerConnection.toggleMute()
-                            else if (isCasting) {
-                                if (castIsPlaying) castHandler?.pause() else castHandler?.play()
-                            } else if (playbackState == STATE_ENDED) {
-                                playerConnection.player.seekTo(0, 0)
-                                playerConnection.player.playWhenReady = true
-                            } else playerConnection.togglePlayPause()
-                        },
-                        modifier = Modifier.size(52.dp).focusRequester(focusRequester), emphasized = true,
-                        containerColor = Color.White, contentColor = Color.Black,
-                    )
-                    PlayerIconButton(R.drawable.skip_next, stringResource(R.string.onyx_next_track), playerConnection::seekToNext,
-                        enabled = canSkipNext && !isListenTogetherGuest)
-                    if (LocalConfiguration.current.orientation != Configuration.ORIENTATION_LANDSCAPE)
-                    PlayerIconButton(if (repeatMode == Player.REPEAT_MODE_ONE) R.drawable.repeat_one else R.drawable.repeat,
-                        stringResource(when (repeatMode) {
-                            Player.REPEAT_MODE_ONE -> R.string.repeat_mode_one
-                            Player.REPEAT_MODE_ALL -> R.string.repeat_mode_all
-                            else -> R.string.repeat_mode_off
-                        }), onClick = { playerConnection.player.toggleRepeatMode() }, enabled = !isListenTogetherGuest,
-                        modifier = Modifier.alpha(if (repeatMode == Player.REPEAT_MODE_OFF) .45f else 1f)
-                            .semantics { selected = repeatMode != Player.REPEAT_MODE_OFF })
-                }
-            }
             when (sliderStyle) {
                 SliderStyle.DEFAULT -> {
                     val sliderValue = (sliderPosition ?: effectivePosition).toFloat()
@@ -1090,7 +1042,55 @@ fun BottomSheetPlayer(
                 )
             }
 
-            if (LocalConfiguration.current.orientation == Configuration.ORIENTATION_LANDSCAPE) {
+            AnimatedVisibility(visible = !isFullScreen, enter = fadeIn(tween(180)), exit = fadeOut(tween(120))) {
+                Row(
+                    Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 8.dp)
+                        .clip(RoundedCornerShape(50)).background(Color.White.copy(alpha = .06f))
+                        .padding(horizontal = 8.dp, vertical = 4.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                ) {
+                    if (LocalConfiguration.current.orientation != Configuration.ORIENTATION_LANDSCAPE)
+                    PlayerIconButton(R.drawable.shuffle, stringResource(R.string.shuffle),
+                        onClick = { playerConnection.player.shuffleModeEnabled = !shuffleEnabled },
+                        enabled = !isListenTogetherGuest,
+                        modifier = Modifier.alpha(if (shuffleEnabled) 1f else .45f).semantics { selected = shuffleEnabled })
+                    PlayerIconButton(R.drawable.skip_previous, stringResource(R.string.onyx_previous_track), playerConnection::seekToPrevious,
+                        enabled = canSkipPrevious && !isListenTogetherGuest)
+                    PlayerIconButton(
+                        if (isListenTogetherGuest) {
+                            if (isMuted) R.drawable.volume_off else R.drawable.volume_up
+                        } else if (playbackState == STATE_ENDED) R.drawable.replay
+                        else if (effectiveIsPlaying) R.drawable.pause else R.drawable.play,
+                        if (isListenTogetherGuest) {
+                            if (isMuted) stringResource(R.string.unmute) else stringResource(R.string.mute)
+                        } else if (effectiveIsPlaying) stringResource(R.string.player_pause) else stringResource(R.string.play),
+                        onClick = {
+                            if (isListenTogetherGuest) playerConnection.toggleMute()
+                            else if (isCasting) {
+                                if (castIsPlaying) castHandler?.pause() else castHandler?.play()
+                            } else if (playbackState == STATE_ENDED) {
+                                playerConnection.player.seekTo(0, 0)
+                                playerConnection.player.playWhenReady = true
+                            } else playerConnection.togglePlayPause()
+                        },
+                        modifier = Modifier.size(52.dp).focusRequester(focusRequester), emphasized = true,
+                        containerColor = Color.White, contentColor = Color.Black,
+                    )
+                    PlayerIconButton(R.drawable.skip_next, stringResource(R.string.onyx_next_track), playerConnection::seekToNext,
+                        enabled = canSkipNext && !isListenTogetherGuest)
+                    if (LocalConfiguration.current.orientation != Configuration.ORIENTATION_LANDSCAPE)
+                    PlayerIconButton(if (repeatMode == Player.REPEAT_MODE_ONE) R.drawable.repeat_one else R.drawable.repeat,
+                        stringResource(when (repeatMode) {
+                            Player.REPEAT_MODE_ONE -> R.string.repeat_mode_one
+                            Player.REPEAT_MODE_ALL -> R.string.repeat_mode_all
+                            else -> R.string.repeat_mode_off
+                        }), onClick = { playerConnection.player.toggleRepeatMode() }, enabled = !isListenTogetherGuest,
+                        modifier = Modifier.alpha(if (repeatMode == Player.REPEAT_MODE_OFF) .45f else 1f)
+                            .semantics { selected = repeatMode != Player.REPEAT_MODE_OFF })
+                }
+            }
+            if (!isFullScreen && LocalConfiguration.current.orientation == Configuration.ORIENTATION_LANDSCAPE) {
                 Row(Modifier.fillMaxWidth().padding(horizontal = 24.dp), horizontalArrangement = Arrangement.SpaceBetween) {
                     PlayerIconButton(R.drawable.shuffle, stringResource(R.string.shuffle),
                         onClick = { playerConnection.player.shuffleModeEnabled = !shuffleEnabled }, enabled = !isListenTogetherGuest,
@@ -1191,7 +1191,6 @@ fun BottomSheetPlayer(
                         onEqualizer = { com.metrolist.music.utils.openSystemEqualizer(context, playerConnection.player.audioSessionId) },
                         modifier = Modifier.windowInsetsPadding(WindowInsets.systemBars.only(WindowInsetsSides.Top)),
                     )
-                    mediaMetadata?.let { metadataContent(it) }
                     Box(
                         contentAlignment = Alignment.Center,
                         modifier = Modifier.weight(1f),
@@ -1223,6 +1222,7 @@ fun BottomSheetPlayer(
                     }
 
                     mediaMetadata?.let {
+                        metadataContent(it)
                         controlsContent(it)
                     }
 
