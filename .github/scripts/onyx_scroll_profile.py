@@ -62,6 +62,19 @@ for i in range(48):
             row[name] = '' if 'TEXT' in kind else 0
     keys = ','.join('"' + k + '"' for k in row)
     db.execute('INSERT OR REPLACE INTO album (' + keys + ') VALUES (' + ','.join('?' for _ in row) + ')', list(row.values()))
+pin_columns = db.execute('PRAGMA table_info(speed_dial_item)').fetchall()
+for i in range(24):
+    values = {'id': 'onyx-profile-pin-' + str(i), 'type': 'ALBUM',
+              'title': 'Fixed profile album ' + str(i), 'createDate': 1770000000000,
+              'thumbnailUrl': 'https://i.ytimg.com/vi/dQw4w9WgXcQ/hqdefault.jpg'}
+    row = {}
+    for _, name, kind, required, default, _ in pin_columns:
+        if name in values:
+            row[name] = values[name]
+        elif required and default is None:
+            row[name] = '' if 'TEXT' in kind else 0
+    keys = ','.join('"' + k + '"' for k in row)
+    db.execute('INSERT OR REPLACE INTO speed_dial_item (' + keys + ') VALUES (' + ','.join('?' for _ in row) + ')', list(row.values()))
 db.commit()
 db.execute('PRAGMA wal_checkpoint(TRUNCATE)')
 db.close()
@@ -97,7 +110,23 @@ def capture(name, action):
     (out / (label + '-' + name + '-gfxinfo.txt')).write_text(raw)
     match = re.search(r'Total frames rendered:\s*(\d+)', raw)
     assert match, 'Missing gfx frame count'
+    ui_times = []
+    for block in raw.split('---PROFILEDATA---'):
+        lines = [line.strip() for line in block.splitlines() if line.strip()]
+        if not lines or not lines[0].startswith('Flags,'):
+            continue
+        header = lines[0].split(',')
+        for line in lines[1:]:
+            fields = line.split(',')
+            try:
+                elapsed = (int(fields[header.index('SyncQueued')]) - int(fields[header.index('HandleInputStart')])) / 1_000_000
+                if int(fields[0]) == 0 and 0 < elapsed < 1000:
+                    ui_times.append(elapsed)
+            except (ValueError, IndexError):
+                continue
+    ui_times.sort()
     return {'frames': int(match.group(1)), 'elapsed_seconds': round(time.monotonic() - started, 2),
+            'ui_work_p90_ms': round(ui_times[int((len(ui_times) - 1) * .9)], 2) if ui_times else None,
             'p50_ms': re.search(r'50th percentile:\s*(\d+)ms', raw).group(1),
             'p90_ms': re.search(r'90th percentile:\s*(\d+)ms', raw).group(1)}
 
@@ -110,8 +139,31 @@ def scroll():
         adb('shell', 'input', 'swipe', str(width // 2), str(start), str(width // 2), str(end), '350')
         time.sleep(.2)
 scroll_result = capture('scroll', scroll)
-snapshot('after-scroll')
-metrics = {'label': label, 'idle': idle, 'scroll': scroll_result,
+grid = snapshot('after-scroll')
+def nav_point(text):
+    candidates = []
+    for n in grid.iter('node'):
+        if text in [n.get('text', '').lower(), n.get('content-desc', '').lower()]:
+            b = [int(v) for v in re.findall(r'\d+', n.get('bounds', ''))]
+            if len(b) == 4:
+                candidates.append(b)
+    assert candidates, 'Missing navigation target: ' + text
+    b = max(candidates, key=lambda b: b[3])
+    return str((b[0] + b[2]) // 2), str((b[1] + b[3]) // 2)
+home_point, library_point = nav_point('home'), nav_point('library')
+def navigate():
+    for _ in range(4):
+        for point in [home_point, library_point]:
+            adb('shell', 'input', 'tap', *point)
+            time.sleep(.75)
+navigation = capture('navigation', navigate)
+adb('shell', 'input', 'tap', *home_point)
+time.sleep(2)
+snapshot('pinned-home')
+home_idle = capture('home-idle', lambda: time.sleep(8))
+home_scroll = capture('home-scroll', scroll)
+snapshot('home-after-scroll')
+metrics = {'label': label, 'idle': idle, 'scroll': scroll_result, 'navigation': navigation, 'home_idle': home_idle, 'home_scroll': home_scroll,
            'note': 'Software-rendered emulator; relative probe, not phone FPS.'}
 (out / (label + '-metrics.json')).write_text(json.dumps(metrics, indent=2))
 adb('shell', 'svc', 'wifi', 'enable')
