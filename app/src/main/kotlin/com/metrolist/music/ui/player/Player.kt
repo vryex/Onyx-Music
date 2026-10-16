@@ -10,7 +10,6 @@ import com.metrolist.music.ui.component.OnyxPlayerHeader
 import com.metrolist.music.ui.theme.rememberArtworkColor
 import androidx.compose.ui.draw.drawWithCache
 import com.metrolist.music.ui.theme.onyxGlass
-import com.metrolist.music.ui.theme.onyxEntrance
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.rememberScrollState
@@ -28,7 +27,6 @@ import android.widget.Toast
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
@@ -790,7 +788,7 @@ fun BottomSheetPlayer(
                     Modifier
                         .fillMaxSize()
                         .drawWithCache {
-                            val fill = Brush.verticalGradient(listOf(artworkColor.value, Color(0xFF101012)))
+                            val fill = Brush.verticalGradient(listOf(artworkColor.value, Color(0xFF121212)))
                             onDrawBehind { drawRect(fill) }
                         },
             ) {
@@ -1055,7 +1053,7 @@ fun BottomSheetPlayer(
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     BoxWithConstraints(Modifier.fillMaxWidth().padding(horizontal = 20.dp)) {
                         val compact = maxWidth < 280.dp
-                        val playSize = if (maxWidth < 300.dp) 72.dp else 84.dp
+                        val playSize = 72.dp
                         Column {
                         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
                             if (!compact) PlayerIconButton(
@@ -1084,7 +1082,7 @@ fun BottomSheetPlayer(
                                     } else playerConnection.togglePlayPause()
                                 },
                                 modifier = Modifier.size(playSize).focusRequester(focusRequester), emphasized = true,
-                                containerColor = textButtonColor, contentColor = iconButtonColor,
+                                containerColor = MaterialTheme.colorScheme.primary, contentColor = Color.Black,
                             )
                             PlayerIconButton(R.drawable.skip_next, stringResource(R.string.onyx_next_track), playerConnection::seekToNext,
                                 enabled = canSkipNext && !isListenTogetherGuest)
@@ -1189,7 +1187,7 @@ fun BottomSheetPlayer(
                             } else {
                                 Thumbnail(
                                     sliderPositionProvider = sliderPositionProvider,
-                                    modifier = Modifier.animateContentSize(),
+                                    modifier = Modifier,
                                     isPlayerExpanded = isExpandedProvider,
                                     isLandscape = true,
                                     isListenTogetherGuest = isListenTogetherGuest,
@@ -1225,12 +1223,12 @@ fun BottomSheetPlayer(
                         Modifier
                             .windowInsetsPadding(WindowInsets.systemBars.only(WindowInsetsSides.Horizontal))
                             .padding(bottom = bottomPadding)
-                            .animateContentSize(),
+                            ,
                 ) {
                     OnyxPlayerHeader(
                         onCollapse = { state.collapseSoft() },
                         onEqualizer = { navController.navigate("equalizer"); state.collapseSoft() },
-                        modifier = Modifier.windowInsetsPadding(WindowInsets.systemBars.only(WindowInsetsSides.Top)).onyxEntrance(state.isExpanded),
+                        modifier = Modifier.windowInsetsPadding(WindowInsets.systemBars.only(WindowInsetsSides.Top)),
                     )
                     Box(
                         contentAlignment = Alignment.Center,
@@ -1273,8 +1271,8 @@ fun BottomSheetPlayer(
 
         AnimatedVisibility(
             visible = !isFullScreen,
-            enter = slideInVertically(initialOffsetY = { it }) + fadeIn(),
-            exit = shrinkVertically(shrinkTowards = Alignment.Top) + slideOutVertically(targetOffsetY = { it }) + fadeOut(),
+            enter = fadeIn(tween(160)),
+            exit = fadeOut(tween(120)),
         ) {
             Queue(
                 state = queueSheetState,
@@ -1283,7 +1281,7 @@ fun BottomSheetPlayer(
                     if (useBlackBackground) {
                         Color.Black
                     } else {
-                        Color(0xFF101012)
+                        Color(0xFF121212)
                     },
                 onBackgroundColor = onBackgroundColor,
                 TextBackgroundColor = TextBackgroundColor,

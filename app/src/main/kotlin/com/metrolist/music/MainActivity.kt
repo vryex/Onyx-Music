@@ -21,6 +21,7 @@ import android.view.WindowManager
 import android.widget.Toast
 import androidx.fragment.app.FragmentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.animation.EnterTransition
 import androidx.compose.animation.ExitTransition
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateDpAsState
@@ -988,13 +989,13 @@ class MainActivity : FragmentActivity() {
                         topBar = {
                             AnimatedVisibility(
                                 visible = shouldShowTopBar,
-                                enter = fadeIn(animationSpec = tween(durationMillis = 300)),
-                                exit = fadeOut(animationSpec = tween(durationMillis = 200)),
+                                enter = EnterTransition.None,
+                                exit = ExitTransition.None,
                             ) {
                                 Row {
                                     TopAppBar(
                                         title = {
-                                            OnyxBrand(subtitle = currentTitleRes?.let { stringResource(it) })
+                                            Text(currentTitleRes?.let { stringResource(it) } ?: "Onyx", style = MaterialTheme.typography.titleLarge)
                                         },
                                         actions = {
                                             if (showHistoryButton) {
@@ -1284,7 +1285,9 @@ class MainActivity : FragmentActivity() {
                                         val currentRouteIndex = routeIndexMap[targetState.destination.route] ?: -1
                                         val previousRouteIndex = routeIndexMap[initialState.destination.route] ?: -1
 
-                                        if (currentRouteIndex == -1 || currentRouteIndex > previousRouteIndex) {
+                                        if (currentRouteIndex >= 0 && previousRouteIndex >= 0) {
+                                            EnterTransition.None
+                                        } else if (currentRouteIndex == -1 || currentRouteIndex > previousRouteIndex) {
                                             slideInHorizontally(animationSpec = tween(220)) { it / 16 }
                                         } else {
                                             slideInHorizontally(animationSpec = tween(220)) { -it / 16 }
@@ -1295,7 +1298,9 @@ class MainActivity : FragmentActivity() {
                                         val currentRouteIndex = routeIndexMap[targetState.destination.route] ?: -1
                                         val previousRouteIndex = routeIndexMap[initialState.destination.route] ?: -1
 
-                                        if (previousRouteIndex != -1 && previousRouteIndex < currentRouteIndex) {
+                                        if (currentRouteIndex >= 0 && previousRouteIndex >= 0) {
+                                            EnterTransition.None
+                                        } else if (previousRouteIndex != -1 && previousRouteIndex < currentRouteIndex) {
                                             slideInHorizontally(animationSpec = tween(220)) { it / 16 }
                                         } else {
                                             slideInHorizontally(animationSpec = tween(220)) { -it / 16 }

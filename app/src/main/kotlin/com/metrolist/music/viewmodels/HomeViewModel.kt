@@ -88,6 +88,15 @@ internal fun buildSpeedDialItems(
         .distinctBy { it.id }
         .take(27)
 
+internal fun buildDailySelection(
+    discovery: List<SongItem>,
+    local: List<SongItem>,
+    online: List<SongItem>,
+): List<SongItem> = (discovery + local + online)
+    .filter { it.id.isNotBlank() && it.thumbnail.isNotBlank() }
+    .distinctBy { it.id }
+    .take(8)
+
 @HiltViewModel
 class HomeViewModel @Inject constructor(
     @ApplicationContext val context: Context,
@@ -186,8 +195,6 @@ class HomeViewModel @Inject constructor(
     suspend fun getRandomItem(): YTItem? {
         try {
             isRandomizing.value = true
-            // Visual feedback for the animation
-            kotlinx.coroutines.delay(1000)
 
             val userSongs = mutableListOf<YTItem>()
             val otherSources = mutableListOf<YTItem>()

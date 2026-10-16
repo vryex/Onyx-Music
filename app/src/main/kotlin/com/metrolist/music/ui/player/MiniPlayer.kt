@@ -259,7 +259,7 @@ private fun NewMiniPlayer(
     val primaryColor = if (forceLightColors) Color.White else MaterialTheme.colorScheme.primary
     val outlineColor = if (forceLightColors) Color.White else MaterialTheme.colorScheme.outline
     val onSurfaceColor = if (forceLightColors) Color.White else MaterialTheme.colorScheme.onSurface
-    val errorColor = onSurfaceColor
+    val errorColor = MaterialTheme.colorScheme.primary
 
     Box(
         modifier =
@@ -336,9 +336,9 @@ private fun NewMiniPlayer(
             modifier =
                 Modifier
                     .then(if (isTabletLandscape) Modifier.width(500.dp).align(Alignment.Center) else Modifier.fillMaxWidth())
-                    .height(64.dp)
+                    .height(56.dp)
                     .offset { IntOffset(offsetXAnimatable.value.roundToInt(), 0) }
-                    .clip(RoundedCornerShape(10.dp))
+                    .clip(RoundedCornerShape(6.dp))
                     .drawBehind {
                         drawRect(when (miniPlayerBackground) {
                             MiniPlayerBackgroundStyle.PURE_BLACK, MiniPlayerBackgroundStyle.TRANSPARENT -> backgroundColor

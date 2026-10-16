@@ -17,7 +17,7 @@ const val CONTENT_TYPE_ARTIST = 3
 const val CONTENT_TYPE_ALBUM = 4
 const val CONTENT_TYPE_PLAYLIST = 5
 
-val NavigationBarHeight = 80.dp
+val NavigationBarHeight = 64.dp
 val SlimNavBarHeight = 64.dp
 val MiniPlayerHeight = 64.dp
 val MinMiniPlayerHeight = 16.dp
@@ -33,7 +33,7 @@ val SmallGridThumbnailHeight = 104.dp
 val GridThumbnailHeight = 128.dp
 val AlbumThumbnailSize = 144.dp
 
-val ThumbnailCornerRadius = 16.dp
+val ThumbnailCornerRadius = 6.dp
 
 val PlayerHorizontalPadding = 32.dp
 

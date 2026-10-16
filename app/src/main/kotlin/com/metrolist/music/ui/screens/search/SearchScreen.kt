@@ -5,6 +5,7 @@
 
 package com.metrolist.music.ui.screens.search
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.asPaddingValues
@@ -190,10 +191,12 @@ fun SearchScreen(
                             modifier =
                                 Modifier
                                     .weight(1f)
-                                    .focusRequester(focusRequester),
+                                    .focusRequester(focusRequester)
+                                    .background(Color.White, androidx.compose.foundation.shape.RoundedCornerShape(6.dp))
+                                    .padding(horizontal = 12.dp, vertical = 10.dp),
                             textStyle =
                                 TextStyle(
-                                    color = MaterialTheme.colorScheme.onSurface,
+                                    color = Color.Black,
                                     fontSize = 16.sp,
                                 ),
                             cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
@@ -210,7 +213,7 @@ fun SearchScreen(
                                             ),
                                         style =
                                             TextStyle(
-                                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                                                color = Color(0xFF535353),
                                                 fontSize = 16.sp,
                                             ),
                                     )

@@ -72,24 +72,21 @@ fun <E> ChipsRow(
     Row(
         modifier.fillMaxWidth().horizontalScroll(rememberScrollState())
             .windowInsetsPadding(WindowInsets.systemBars.only(WindowInsetsSides.Horizontal))
-            .padding(horizontal = 20.dp, vertical = 10.dp),
+            .padding(horizontal = 16.dp, vertical = 8.dp),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         chips.forEach { (value, label) ->
             val selected = currentValue == value
-            val fill by androidx.compose.animation.animateColorAsState(
-                if (selected) MaterialTheme.colorScheme.onSurface else Color.Transparent,
-                tween(160), label = "filterSelection",
-            )
+            val fill = if (selected) Color.White else Color(0xFF2A2A2A)
             androidx.compose.foundation.layout.Box(
                 Modifier.clip(RoundedCornerShape(50)).background(fill)
                     .border(0.75.dp, if (selected) Color.Transparent else MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(50))
                     .selectable(selected = selected, role = androidx.compose.ui.semantics.Role.Tab, onClick = { onValueUpdate(value) })
-                    .heightIn(min = 44.dp).padding(horizontal = 18.dp, vertical = 12.dp),
+                    .heightIn(min = 40.dp).padding(horizontal = 16.dp, vertical = 8.dp),
                 contentAlignment = androidx.compose.ui.Alignment.Center,
             ) {
                 Text(label, style = MaterialTheme.typography.labelLarge,
-                    color = if (selected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant)
+                    color = if (selected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface)
             }
         }
     }

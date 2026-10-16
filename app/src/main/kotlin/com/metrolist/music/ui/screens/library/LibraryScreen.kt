@@ -33,7 +33,7 @@ fun LibraryScreen() {
 
     val filterContent = @Composable {
         Column {
-            OnyxPageHeader(title = stringResource(R.string.filter_library), subtitle = stringResource(R.string.onyx_library_subtitle))
+            OnyxPageHeader(title = stringResource(R.string.filter_library))
             ChipsRow(
                 chips = listOf(
                     LibraryFilter.PLAYLISTS to stringResource(R.string.filter_playlists),

@@ -60,7 +60,7 @@ fun LiquidIconButton(
                 scaleY = scale.value
                 alpha = if (enabled) 1f else 0.35f
             }
-            .then(if (emphasized) Modifier.clip(CircleShape).background(containerColor ?: Color(0xFFF3F3F5)) else if (plain) Modifier.clip(CircleShape) else Modifier.onyxGlass(CircleShape))
+            .then(if (emphasized) Modifier.clip(CircleShape).background(containerColor ?: MaterialTheme.colorScheme.primary) else if (plain) Modifier.clip(CircleShape) else Modifier.clip(CircleShape))
             .clickable(interactionSource = interaction, indication = null,
                 role = Role.Button, enabled = enabled, onClick = onClick),
         contentAlignment = Alignment.Center,
@@ -73,44 +73,22 @@ fun LiquidIconButton(
 
 @Composable
 fun OnyxHomeHero(title: String?, artist: String?, artwork: String?, onPlay: () -> Unit, onExplore: () -> Unit) {
-    val context = LocalContext.current
-    val request = remember(artwork, context) {
-        ImageRequest.Builder(context).data(artwork).size(560).build()
-    }
-    Column(
-        Modifier.padding(horizontal = 20.dp, vertical = 8.dp).fillMaxWidth()
-            .onyxGlass(RoundedCornerShape(32.dp), emphasized = true).padding(22.dp),
-        verticalArrangement = Arrangement.spacedBy(20.dp),
-    ) {
-        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(18.dp)) {
-            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                Text(stringResource(R.string.onyx_daily_selection),
-                    style = MaterialTheme.typography.labelSmall, letterSpacing = 2.sp,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant)
-                Text(stringResource(R.string.onyx_home_headline),
-                    style = MaterialTheme.typography.headlineLarge,
-                    letterSpacing = (-1).sp, fontWeight = FontWeight.Medium)
+    if (title == null || artwork.isNullOrBlank()) return
+    Column(Modifier.padding(horizontal = 16.dp, vertical = 12.dp)) {
+        Text(stringResource(R.string.onyx_daily_selection), style = MaterialTheme.typography.titleLarge,
+            modifier = Modifier.padding(bottom = 16.dp))
+        Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(8.dp)).background(Color(0xFF282828))
+            .clickable(role = Role.Button, onClick = onExplore), verticalAlignment = Alignment.CenterVertically) {
+            AsyncImage(artwork, null, contentScale = ContentScale.Crop,
+                modifier = Modifier.size(112.dp).clip(RoundedCornerShape(6.dp)))
+            Column(Modifier.weight(1f).padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                Text(title, style = MaterialTheme.typography.titleMedium, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                Text(artist.orEmpty(), style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 2, overflow = TextOverflow.Ellipsis)
             }
-            Box(
-                Modifier.widthIn(max = 128.dp).weight(0.8f).aspectRatio(0.92f)
-                    .graphicsLayer { rotationZ = 6f }
-                    .onyxGlass(RoundedCornerShape(24.dp)).padding(6.dp),
-                contentAlignment = Alignment.Center,
-            ) {
-                if (artwork != null) AsyncImage(request, null, contentScale = ContentScale.Crop,
-                    modifier = Modifier.fillMaxSize().clip(RoundedCornerShape(18.dp)))
-                else Icon(painterResource(R.drawable.onyx_mark), null, Modifier.size(64.dp))
-            }
-        }
-        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            LiquidIconButton(R.drawable.play, stringResource(R.string.play), onPlay, Modifier.size(56.dp), emphasized = true)
-            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
-                Text(title ?: stringResource(R.string.onyx_find_your_sound), style = MaterialTheme.typography.titleMedium,
-                    maxLines = 1, overflow = TextOverflow.Ellipsis)
-                Text(artist ?: stringResource(R.string.onyx_made_for_you), style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
-            }
-            LiquidIconButton(R.drawable.arrow_forward, stringResource(R.string.search), onExplore)
+            LiquidIconButton(R.drawable.play, stringResource(R.string.play), onPlay,
+                Modifier.padding(end = 12.dp).size(48.dp), emphasized = true,
+                containerColor = MaterialTheme.colorScheme.primary)
         }
     }
 }
@@ -142,9 +120,7 @@ fun OnyxPlayerHeader(onCollapse: () -> Unit, onEqualizer: () -> Unit, modifier: 
         verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
         LiquidIconButton(R.drawable.expand_more, stringResource(R.string.onyx_minimize_player), onCollapse, plain = true)
         Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(3.dp)) {
-            Text("ONYX", style = MaterialTheme.typography.labelMedium, letterSpacing = 4.sp)
-            Text(stringResource(R.string.onyx_now_playing), style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(stringResource(R.string.onyx_now_playing), style = MaterialTheme.typography.labelMedium)
         }
         LiquidIconButton(R.drawable.equalizer, stringResource(R.string.equalizer), onEqualizer, plain = true)
     }

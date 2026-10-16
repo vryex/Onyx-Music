@@ -49,17 +49,7 @@ fun Modifier.onyxGlass(
     shape: Shape = RoundedCornerShape(28.dp),
     emphasized: Boolean = false,
 ): Modifier {
-    val fill = remember(emphasized) {
-        Brush.linearGradient(listOf(
-            Color(if (emphasized) 0xFF383A40 else 0xFF242529),
-            Color(if (emphasized) 0xFF202126 else 0xFF121315),
-            Color(0xFF17181B),
-        ))
-    }
-    val edge = remember {
-        Brush.linearGradient(listOf(Color(0x5CFFFFFF), Color(0x0AFFFFFF), Color(0x27FFFFFF)))
-    }
-    return clip(shape).background(fill).border(0.75.dp, edge, shape)
+    return clip(shape).background(if (emphasized) Color(0xFF282828) else Color(0xFF181818))
 }
 
 @Composable
@@ -79,7 +69,7 @@ fun OnyxBrand(
     ) {
         Box(
             Modifier
-                .size(38.dp)
+                .size(32.dp)
                 .clip(RoundedCornerShape(50))
                 .background(MaterialTheme.colorScheme.surfaceContainerHigh)
                 .border(1.dp, GlassEdge, RoundedCornerShape(50)),
@@ -89,15 +79,15 @@ fun OnyxBrand(
                 painter = painterResource(R.drawable.onyx_mark),
                 contentDescription = null,
                 tint = FrostGlow,
-                modifier = Modifier.size(25.dp),
+                modifier = Modifier.size(23.dp),
             )
         }
         Column {
             Text(
                 text = "ONYX",
                 style = MaterialTheme.typography.titleLarge,
-                letterSpacing = 4.sp,
-                fontWeight = FontWeight.Medium,
+                letterSpacing = 0.sp,
+                fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onSurface,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
@@ -118,12 +108,12 @@ fun OnyxBrand(
 @Composable
 fun OnyxPageHeader(title: String, modifier: Modifier = Modifier, subtitle: String? = null) {
     Column(
-        modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 18.dp),
+        modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         Text(
             title, style = MaterialTheme.typography.displaySmall,
-            fontWeight = FontWeight.Medium, letterSpacing = (-1.4).sp,
+            fontWeight = FontWeight.Bold, letterSpacing = (-0.4).sp,
         )
         if (subtitle != null) Text(
             subtitle, style = MaterialTheme.typography.bodyMedium,

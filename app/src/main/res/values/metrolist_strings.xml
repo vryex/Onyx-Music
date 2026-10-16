@@ -826,7 +826,7 @@
     <string name="discord_status_online">Online</string>
     <string name="discord_status_idle">Idle</string>
     <string name="discord_status_dnd">Do Not Disturb</string>
-    <string name="speed_dial">Speed dial</string>
+    <string name="speed_dial">Your shortcuts</string>
     <string name="pin_to_speed_dial">Pin to speed dial</string>
     <string name="unpin_from_speed_dial">Unpin from speed dial</string>
     <string name="pin">Pin</string>
@@ -994,7 +994,7 @@
     <string name="stream_source_web_creator_desc">Creator web client.</string>
     <string name="top_result">Top result</string>
     <string name="other">Other</string>
-    <string name="onyx_daily_selection">DAILY SELECTION</string>
+    <string name="onyx_daily_selection">Daily selection</string>
     <string name="onyx_home_headline">Find your\nsound.</string>
     <string name="onyx_find_your_sound">Something worth hearing</string>
     <string name="onyx_made_for_you">Your next favorite starts here</string>

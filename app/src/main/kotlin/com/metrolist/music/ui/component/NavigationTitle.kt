@@ -57,7 +57,7 @@ fun NavigationTitle(
             .clickable(enabled = onClick != null) {
                 onClick?.invoke()
             }
-            .padding(horizontal = 20.dp, vertical = 16.dp)
+            .padding(horizontal = 16.dp, vertical = 12.dp)
     ) {
         thumbnail?.invoke()
 
@@ -76,7 +76,7 @@ fun NavigationTitle(
             Text(
                 text = title,
                 style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.SemiBold,
+                fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onSurface,
                 overflow = TextOverflow.Ellipsis,
                 maxLines = 1,
@@ -103,7 +103,7 @@ fun NavigationTitle(
         }
 
         if (onClick != null) {
-            Box(Modifier.size(36.dp).onyxGlass(CircleShape), contentAlignment = Alignment.Center) {
+            Box(Modifier.size(36.dp), contentAlignment = Alignment.Center) {
                 Icon(painterResource(R.drawable.arrow_forward), null, Modifier.size(18.dp), tint = MaterialTheme.colorScheme.onSurface)
             }
         }

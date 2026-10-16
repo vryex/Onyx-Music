@@ -30,7 +30,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.text.font.FontWeight
 import com.metrolist.music.ui.theme.onyxGlass
 import androidx.compose.foundation.selection.selectable
-import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.core.animateFloatAsState
@@ -167,7 +166,7 @@ fun AppNavigationBar(
     onHomeLongHold: (() -> Unit)? = null,
 ) {
     val navigationScrim = remember {
-        Brush.verticalGradient(0f to Color.Transparent, 0.3f to Color.Black.copy(alpha = 0.88f), 1f to Color.Black)
+        Brush.verticalGradient(0f to Color(0xEB121212), 1f to Color(0xFF121212))
     }
     val haptics = LocalHapticFeedback.current
     val viewConfiguration = LocalViewConfiguration.current
@@ -208,24 +207,11 @@ fun AppNavigationBar(
                     }
                 }
             }
-            val tint by animateColorAsState(
-                targetValue = if (selected) Color(0xFF111113) else Color(0xFFC4C4CB),
-                animationSpec = tween(300, easing = FastOutSlowInEasing),
-                label = "navigationTint",
-            )
-            val pillFill by animateColorAsState(
-                if (selected) Color.White else Color.Transparent,
-                tween(280, easing = FastOutSlowInEasing), label = "navigationPill",
-            )
-            val emphasis = animateFloatAsState(
-                if (selected) 1f else 0f,
-                tween(360, easing = FastOutSlowInEasing), label = "navigationLift",
-            )
+            val tint = if (selected) Color.White else Color(0xFFB3B3B3)
             Column(
                 modifier = Modifier
                     .weight(1f)
                     .clip(RoundedCornerShape(50))
-                    .background(pillFill)
                     .selectable(
                         selected = selected,
                         role = Role.Tab,
@@ -246,11 +232,7 @@ fun AppNavigationBar(
                     ),
                     contentDescription = stringResource(screen.titleId),
                     tint = tint,
-                    modifier = Modifier.size(25.dp).graphicsLayer {
-                        scaleX = 1f + emphasis.value * 0.12f
-                        scaleY = scaleX
-                        translationY = -2.dp.toPx() * emphasis.value
-                    },
+                    modifier = Modifier.size(24.dp),
                 )
                 if (!slimNav) {
                     Text(

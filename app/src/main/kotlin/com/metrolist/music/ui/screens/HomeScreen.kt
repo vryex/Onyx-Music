@@ -671,6 +671,22 @@ fun HomeScreen(
     val explorePage by viewModel.explorePage.collectAsStateWithLifecycle()
     val dailyDiscover by viewModel.dailyDiscover.collectAsStateWithLifecycle()
     val communityPlaylists by viewModel.communityPlaylists.collectAsStateWithLifecycle()
+    val dailySelection = remember(dailyDiscover, quickPicks, homePage) {
+        com.metrolist.music.viewmodels.buildDailySelection(
+            dailyDiscover.orEmpty().mapNotNull { it.recommendation as? SongItem },
+            quickPicks.orEmpty().map { song ->
+                val metadata = song.toMediaMetadata()
+                SongItem(id = metadata.id, title = metadata.title,
+                    artists = metadata.artists.map { com.metrolist.innertube.models.Artist(name = it.name, id = it.id) },
+                    album = metadata.album?.let { com.metrolist.innertube.models.Album(name = it.title, id = it.id) },
+                    duration = metadata.duration, explicit = metadata.explicit,
+                    musicVideoType = metadata.musicVideoType, isEpisode = metadata.isEpisode,
+                    thumbnail = metadata.thumbnailUrl.orEmpty())
+            },
+            homePage?.sections.orEmpty().flatMap { it.items }.filterIsInstance<SongItem>(),
+        )
+    }
+
 
     val allLocalItems by viewModel.allLocalItems.collectAsStateWithLifecycle()
     val allYtItems by viewModel.allYtItems.collectAsStateWithLifecycle()
@@ -1192,27 +1208,40 @@ fun HomeScreen(
                 modifier = Modifier,
                 contentPadding = LocalPlayerAwareWindowInsets.current.asPaddingValues(),
             ) {
-                item(key = "onyx_title") {
-                    OnyxPageHeader(
-                        title = stringResource(R.string.home),
-                        subtitle = stringResource(R.string.onyx_listen_subtitle),
-                    )
-                }
-                item(key = "onyx_daily_selection") {
-                    val pick = quickPicks?.firstOrNull()
-                    val queueTitle = stringResource(R.string.quick_picks)
-                    OnyxHomeHero(
-                        title = pick?.song?.title,
-                        artist = pick?.artists?.joinToString { it.name },
-                        artwork = pick?.song?.thumbnailUrl,
-                        onPlay = {
-                            if (pick == null) navController.navigate("search_input")
-                            else if (!isListenTogetherGuest) playerConnection.playQueue(
-                                ListQueue(title = queueTitle, items = quickPicks.orEmpty().distinctBy { it.id }.map { it.toMediaItem() }),
+                if (selectedChip == null && dailySelection.isNotEmpty()) {
+                    item(key = "onyx_daily_selection") {
+                        val pick = dailySelection.first()
+                        val queueTitle = stringResource(R.string.onyx_daily_selection)
+                        val playSelection = {
+                            if (!isListenTogetherGuest) playerConnection.playQueue(
+                                ListQueue(title = queueTitle, items = dailySelection.map { it.toMediaMetadata().toMediaItem() }),
                             )
-                        },
-                        onExplore = { navController.navigate("search_input") },
-                    )
+                        }
+                        OnyxHomeHero(pick.title, pick.artists.joinToString { it.name }, pick.thumbnail,
+                            onPlay = playSelection, onExplore = playSelection)
+                    }
+                    if (dailySelection.size > 1) {
+                        item(key = "onyx_daily_recommendations") {
+                            LazyRow(contentPadding = PaddingValues(horizontal = 16.dp),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                items(dailySelection.drop(1), key = { "daily_${it.id}" }) { recommendation ->
+                                    val queueTitle = stringResource(R.string.onyx_daily_selection)
+                                    YouTubeGridItem(item = recommendation, coroutineScope = scope, thumbnailRatio = 1f,
+                                        isActive = recommendation.id == mediaMetadata?.id, isPlaying = isPlaying,
+                                        modifier = Modifier.combinedClickable(onClick = {
+                                            if (!isListenTogetherGuest) playerConnection.playQueue(ListQueue(
+                                                title = queueTitle,
+                                                items = dailySelection.map { it.toMediaMetadata().toMediaItem() },
+                                                startIndex = dailySelection.indexOf(recommendation),
+                                            ))
+                                        }, onLongClick = {
+                                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                            menuState.show { YouTubeSongMenu(song = recommendation, onDismiss = menuState::dismiss) }
+                                        }))
+                                }
+                            }
+                        }
+                    }
                 }
                 item {
                     ChipsRow(
@@ -1224,7 +1253,7 @@ fun HomeScreen(
                     )
                 }
 
-                if (isLoading && homePage?.chips.isNullOrEmpty()) {
+                if (isLoading && homePage?.chips.isNullOrEmpty() && speedDialItems.isEmpty()) {
                     item(key = "chips_shimmer") {
                         ShimmerHost(showGradient = false) {
                             LazyRow(
@@ -1473,7 +1502,7 @@ fun HomeScreen(
                                 item(key = "speed_dial_list") {
                                     val targetItemSize = 160.dp
                                     val availableWidth = maxWidth - 32.dp
-                                    val columns = (availableWidth / targetItemSize).toInt().coerceAtLeast(3)
+                                    val columns = (availableWidth / targetItemSize).toInt().coerceIn(2, 4)
                                     val rows =
                                         if (columns >= 6) {
                                             1
@@ -1482,8 +1511,9 @@ fun HomeScreen(
                                         } else {
                                             3
                                         }
-                                    val itemsPerPage = columns * rows
+                                    val itemsPerPage = columns * rows - 1
                                     val itemWidth = availableWidth / columns
+                                    val itemHeight = 72.dp
 
                                     val pagerState = rememberPagerState(pageCount = { (items.size + itemsPerPage - 1) / itemsPerPage })
 
@@ -1499,7 +1529,7 @@ fun HomeScreen(
                                             modifier =
                                                 Modifier
                                                     .fillMaxWidth()
-                                                    .height(itemWidth * rows),
+                                                    .height(itemHeight * rows),
                                         ) { page ->
                                             val pageStartIndex = page * itemsPerPage
                                             val pageItems = items.drop(pageStartIndex).take(itemsPerPage)
@@ -1510,14 +1540,14 @@ fun HomeScreen(
                                                         for (col in 0 until columns) {
                                                             val itemIndex = row * columns + col
 
-                                                            val isRandomizeSlot = (page == 0 && itemIndex == itemsPerPage - 1)
+                                                            val isRandomizeSlot = itemIndex == columns * rows - 1
 
                                                             if (isRandomizeSlot) {
                                                                 Box(
                                                                     modifier =
                                                                         Modifier
                                                                             .width(itemWidth)
-                                                                            .height(itemWidth)
+                                                                            .height(itemHeight)
                                                                             .padding(4.dp),
                                                                 ) {
                                                                     RandomizeGridItem(
@@ -1596,16 +1626,13 @@ fun HomeScreen(
                                                                 }
                                                             } else if (itemIndex < pageItems.size) {
                                                                 val item = pageItems[itemIndex]
-                                                                val isPinned by database.speedDialDao
-                                                                    .isPinned(
-                                                                        item.id,
-                                                                    ).collectAsStateWithLifecycle(initialValue = false)
+                                                                val isPinned = pinnedSpeedDialItems.any { it.id == item.id }
 
                                                                 Box(
                                                                     modifier =
                                                                         Modifier
                                                                             .width(itemWidth)
-                                                                            .height(itemWidth)
+                                                                            .height(itemHeight)
                                                                             .padding(4.dp),
                                                                 ) {
                                                                     SpeedDialGridItem(
@@ -2505,7 +2532,7 @@ fun HomeScreen(
                 }
 
                 // Only show shimmer during initial loading, not for pagination
-                if (isLoading && homePage?.sections.isNullOrEmpty()) {
+                if (isLoading && homePage?.sections.isNullOrEmpty() && speedDialItems.isEmpty()) {
                     item(key = "loading_shimmer") {
                         ShimmerHost(
                         ) {
