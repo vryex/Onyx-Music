@@ -57,6 +57,8 @@ for i, video in enumerate(['dQw4w9WgXcQ', 'jNQXAC9IVRw']):
 insert('artist', {'id': 'onyx-ui-check', 'name': 'Onyx Studio', 'lastUpdateTime': 1770000000000})
 for i, video in enumerate(['dQw4w9WgXcQ', 'jNQXAC9IVRw']):
     insert('song_artist_map', {'songId': video, 'artistId': 'onyx-ui-check', 'position': 0})
+insert('related_song_map', {'songId': 'dQw4w9WgXcQ', 'relatedSongId': 'jNQXAC9IVRw'})
+insert('related_song_map', {'songId': 'jNQXAC9IVRw', 'relatedSongId': 'dQw4w9WgXcQ'})
 db.commit()
 db.execute('PRAGMA wal_checkpoint(TRUNCATE)')
 db.close()
@@ -67,7 +69,16 @@ adb('shell', 'restorecon', db_path)
 adb('shell', 'rm', '-f', db_path + '-wal', db_path + '-shm')
 adb('shell', 'am', 'start', '-W', '-n', activity)
 time.sleep(3)
-tap_label(snapshot('07-seeded-home'), 'library')
+home = snapshot('07-seeded-home')
+for attempt in range(8):
+    if any('daily selection' in n.get('text', '').lower() for n in home.iter('node')):
+        break
+    time.sleep(1)
+    home = snapshot('07-daily-selection-' + str(attempt))
+else:
+    raise AssertionError('Daily selection did not use available recommendation fixtures')
+assert any('Onyx UI check' in n.get('text', '') for n in home.iter('node')), 'Real recommendation title missing'
+tap_label(home, 'library')
 tap_label(snapshot('08-seeded-library'), 'liked')
 tap_label(snapshot('09-liked-songs'), 'onyx ui check 1')
 time.sleep(3)
