@@ -131,8 +131,8 @@ for attempt in range(5):
     if visible_bounds(landscape, 'Sleep timer'):
         break
     assert attempt < 4, 'Landscape timer must remain accessible by scrolling its controls'
-    adb('shell', 'input', 'swipe', str(int(height * .8)), str(int(width * .65)),
-        str(int(height * .8)), str(int(width * .3)), '350')
+    adb('shell', 'input', 'swipe', str(int(height * .8)), str(int(width * .5)),
+        str(int(height * .8)), str(int(width * .25)), '350')
     time.sleep(.5)
     landscape = snapshot('14-landscape-utilities-' + str(attempt))
 for timer in visible_bounds(landscape, 'Sleep timer'):
