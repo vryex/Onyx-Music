@@ -205,10 +205,7 @@ fun ExperimentalLyrics(
     val currentSong by playerConnection.currentSong.collectAsStateWithLifecycle(initialValue = null)
     val lyrics = remember(lyricsEntity) { lyricsEntity?.lyrics?.trim() }
 
-    val playerBackground by rememberEnumPreference(
-        key = PlayerBackgroundStyleKey,
-        defaultValue = PlayerBackgroundStyle.DEFAULT
-    )
+    val playerBackground = PlayerBackgroundStyle.DEFAULT
 
     val enabledLanguages = remember(romanizeLyricsList.value) {
         if (romanizeLyricsList.value.isEmpty()) {
