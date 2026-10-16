@@ -159,7 +159,12 @@ def navigate():
 navigation = capture('navigation', navigate)
 adb('shell', 'input', 'tap', *home_point)
 time.sleep(2)
-snapshot('pinned-home')
+home = snapshot('home-navigation')
+assert selected_label(home, 'home'), 'Home navigation did not complete'
+adb('shell', 'input', 'swipe', str(width // 2), str(int(height * .75)), str(width // 2), str(int(height * .4)), '350')
+time.sleep(1)
+home = snapshot('pinned-home')
+assert any('Fixed profile album' in n.get('text', '') for n in home.iter('node')), 'Home profile must expose seeded pinned albums'
 home_idle = capture('home-idle', lambda: time.sleep(8))
 home_scroll = capture('home-scroll', scroll)
 snapshot('home-after-scroll')
