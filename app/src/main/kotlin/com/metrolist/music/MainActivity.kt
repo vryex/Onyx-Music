@@ -1170,7 +1170,8 @@ class MainActivity : FragmentActivity() {
                                                                 totalHeightPx * (1 - navBarHeightPx / NavigationBarHeight.toPx())
                                                             slideOffset + hideOffset
                                                         }
-                                                },
+                                                }
+                                                .padding(bottom = bottomInset),
                                     )
 
                                     Box(

@@ -48,6 +48,7 @@ fun LiquidIconButton(
     enabled: Boolean = true,
     containerColor: Color? = null,
     contentColor: Color? = null,
+    plain: Boolean = false,
 ) {
     val interaction = remember { MutableInteractionSource() }
     val pressed by interaction.collectIsPressedAsState()
@@ -59,7 +60,7 @@ fun LiquidIconButton(
                 scaleY = scale.value
                 alpha = if (enabled) 1f else 0.35f
             }
-            .then(if (emphasized) Modifier.clip(CircleShape).background(containerColor ?: Color(0xFFF3F3F5)) else Modifier.onyxGlass(CircleShape))
+            .then(if (emphasized) Modifier.clip(CircleShape).background(containerColor ?: Color(0xFFF3F3F5)) else if (plain) Modifier.clip(CircleShape) else Modifier.onyxGlass(CircleShape))
             .clickable(interactionSource = interaction, indication = null,
                 role = Role.Button, enabled = enabled, onClick = onClick),
         contentAlignment = Alignment.Center,
@@ -139,12 +140,12 @@ fun OnyxCollectionCard(title: String, subtitle: String, icon: Int, onClick: (() 
 fun OnyxPlayerHeader(onCollapse: () -> Unit, onEqualizer: () -> Unit, modifier: Modifier = Modifier) {
     Row(modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
-        LiquidIconButton(R.drawable.expand_more, stringResource(R.string.onyx_minimize_player), onCollapse)
+        LiquidIconButton(R.drawable.expand_more, stringResource(R.string.onyx_minimize_player), onCollapse, plain = true)
         Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(3.dp)) {
             Text("ONYX", style = MaterialTheme.typography.labelMedium, letterSpacing = 4.sp)
             Text(stringResource(R.string.onyx_now_playing), style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
-        LiquidIconButton(R.drawable.equalizer, stringResource(R.string.equalizer), onEqualizer)
+        LiquidIconButton(R.drawable.equalizer, stringResource(R.string.equalizer), onEqualizer, plain = true)
     }
 }

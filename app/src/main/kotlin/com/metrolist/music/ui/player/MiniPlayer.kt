@@ -7,6 +7,8 @@
 
 package com.metrolist.music.ui.player
 
+import com.metrolist.music.ui.theme.rememberArtworkColor
+import androidx.compose.ui.draw.drawBehind
 import com.metrolist.music.ui.theme.onyxGlass
 import android.content.res.Configuration
 import androidx.compose.animation.AnimatedVisibility
@@ -241,6 +243,7 @@ private fun NewMiniPlayer(
             (600 / (1f + kotlin.math.exp(-(-11.44748 * swipeSensitivity + 9.04945)))).roundToInt()
         }
 
+    val artworkColor = rememberArtworkColor(mediaMetadata?.thumbnailUrl)
     // Memoize colors
     val backgroundColor = when (miniPlayerBackground) {
         MiniPlayerBackgroundStyle.DEFAULT    -> MaterialTheme.colorScheme.surfaceContainer
@@ -264,7 +267,7 @@ private fun NewMiniPlayer(
                 .fillMaxWidth()
                 .height(MiniPlayerHeight)
                 .windowInsetsPadding(WindowInsets.systemBars.only(WindowInsetsSides.Horizontal))
-                .padding(horizontal = 12.dp)
+                .padding(horizontal = 8.dp)
                 .let { baseModifier ->
                     if (swipeThumbnail) {
                         baseModifier.pointerInput(Unit) {
@@ -335,11 +338,13 @@ private fun NewMiniPlayer(
                     .then(if (isTabletLandscape) Modifier.width(500.dp).align(Alignment.Center) else Modifier.fillMaxWidth())
                     .height(64.dp)
                     .offset { IntOffset(offsetXAnimatable.value.roundToInt(), 0) }
-                    .then(
-                        if (miniPlayerBackground == MiniPlayerBackgroundStyle.PURE_BLACK || miniPlayerBackground == MiniPlayerBackgroundStyle.TRANSPARENT)
-                            Modifier.clip(RoundedCornerShape(36.dp)).background(backgroundColor)
-                        else Modifier.onyxGlass(RoundedCornerShape(36.dp), emphasized = true)
-                    )
+                    .clip(RoundedCornerShape(10.dp))
+                    .drawBehind {
+                        drawRect(when (miniPlayerBackground) {
+                            MiniPlayerBackgroundStyle.PURE_BLACK, MiniPlayerBackgroundStyle.TRANSPARENT -> backgroundColor
+                            else -> artworkColor.value
+                        })
+                    }
                     .drawWithContent {
                         drawContent()
                         val y = size.height - 1.dp.toPx()
@@ -362,20 +367,13 @@ private fun NewMiniPlayer(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier.fillMaxSize().padding(horizontal = 8.dp, vertical = 8.dp),
             ) {
-                // Play button with progress - isolated composable
-                NewMiniPlayerPlayButton(
-                    progressState = progressState,
-                    playbackState = playbackState,
-                    isCasting = isCasting,
-                    castHandler = castHandler,
-                    playerConnection = playerConnection,
-                    mediaMetadata = mediaMetadata,
-                    primaryColor = primaryColor,
-                    outlineColor = outlineColor,
-                    listenTogetherManager = listenTogetherManager,
+                AsyncImage(
+                    model = mediaMetadata?.thumbnailUrl?.resize(120, 120),
+                    contentDescription = null,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier.size(44.dp).clip(RoundedCornerShape(5.dp)),
                 )
-
-                Spacer(modifier = Modifier.width(16.dp))
+                Spacer(modifier = Modifier.width(12.dp))
 
                 // Song info - isolated composable
                 NewMiniPlayerSongInfo(
@@ -406,6 +404,14 @@ private fun NewMiniPlayer(
                     onSurfaceColor = onSurfaceColor,
                 )
                 }
+
+                LegacyPlayPauseButton(
+                    playbackState = playbackState,
+                    isCasting = isCasting,
+                    castHandler = castHandler,
+                    playerConnection = playerConnection,
+                    listenTogetherManager = listenTogetherManager,
+                )
             }
         }
     }
@@ -814,7 +820,12 @@ private fun LegacyPlayPauseButton(
                         else -> R.drawable.play
                     },
                 ),
-            contentDescription = null,
+            contentDescription = stringResource(when {
+                isListenTogetherGuest -> if (isMuted) R.string.unmute else R.string.mute
+                playbackState == Player.STATE_ENDED -> R.string.play
+                effectiveIsPlaying -> R.string.player_pause
+                else -> R.string.play
+            }),
         )
     }
 }

@@ -116,16 +116,16 @@ private fun calculateThumbnailDimensions(
     containerWidth: Dp,
     containerHeight: Dp = containerWidth,
     horizontalPadding: Dp = PlayerHorizontalPadding,
-    cornerRadius: Dp = 28.dp,
+    cornerRadius: Dp = 6.dp,
     isLandscape: Boolean = false
 ): ThumbnailDimensions {
     // In landscape, use height as the constraining dimension for a square thumbnail
-    val effectiveSize = (minOf(containerWidth, containerHeight) - horizontalPadding * 2).coerceAtLeast(1.dp)
+    val effectiveSize = minOf(containerWidth - horizontalPadding * 2, containerHeight).coerceAtLeast(1.dp)
     return ThumbnailDimensions(
         itemWidth = containerWidth,
         containerSize = containerWidth,
         thumbnailSize = effectiveSize,
-        cornerRadius = cornerRadius * 2
+        cornerRadius = cornerRadius
     )
 }
 
@@ -545,8 +545,6 @@ private fun ThumbnailItem(
         Box(
             modifier = Modifier
                 .size(dimensions.thumbnailSize)
-                .onyxGlass(RoundedCornerShape(dimensions.cornerRadius + 8.dp))
-                .padding(8.dp)
                 .clip(RoundedCornerShape(dimensions.cornerRadius))
         ) {
             if (hidePlayerThumbnail) {

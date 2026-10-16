@@ -33,6 +33,10 @@ import androidx.compose.foundation.selection.selectable
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.semantics.Role
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.clickable
@@ -169,9 +173,7 @@ fun AppNavigationBar(
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 4.dp)
-            .onyxGlass(RoundedCornerShape(50))
-            .padding(horizontal = 7.dp, vertical = 6.dp),
+            .padding(horizontal = 12.dp, vertical = 6.dp),
         horizontalArrangement = Arrangement.spacedBy(3.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -203,18 +205,18 @@ fun AppNavigationBar(
                     }
                 }
             }
-            val pillShape = RoundedCornerShape(50)
-            val selectedFill by animateColorAsState(
-                targetValue = if (selected) MaterialTheme.colorScheme.onSurface else Color.Transparent,
-                animationSpec = tween(180),
-                label = "navigationSelection",
+            val tint by animateColorAsState(
+                targetValue = if (selected) Color.White else Color(0xFF8C8C93),
+                animationSpec = tween(300, easing = FastOutSlowInEasing),
+                label = "navigationTint",
             )
-            Row(
+            val emphasis = animateFloatAsState(
+                if (selected) 1f else 0f,
+                tween(360, easing = FastOutSlowInEasing), label = "navigationLift",
+            )
+            Column(
                 modifier = Modifier
-                    .weight(if (selected && !slimNav) 1.65f else 1f)
-                    .animateContentSize(tween(180))
-                    .clip(pillShape)
-                    .background(selectedFill)
+                    .weight(1f)
                     .selectable(
                         selected = selected,
                         role = Role.Tab,
@@ -225,27 +227,30 @@ fun AppNavigationBar(
                         }
                     )
                     .heightIn(min = 48.dp)
-                    .padding(vertical = if (slimNav) 8.dp else 7.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.Center,
+                    .padding(vertical = 6.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(5.dp, Alignment.CenterVertically),
             ) {
                 Icon(
                     painter = painterResource(
                         if (selected) screen.iconIdActive else screen.iconIdInactive
                     ),
                     contentDescription = stringResource(screen.titleId),
-                    tint = if (selected) MaterialTheme.colorScheme.onPrimary else contentColor,
-                    modifier = Modifier.size(23.dp),
+                    tint = tint,
+                    modifier = Modifier.size(25.dp).graphicsLayer {
+                        scaleX = 1f + emphasis.value * 0.12f
+                        scaleY = scaleX
+                        translationY = -2.dp.toPx() * emphasis.value
+                    },
                 )
-                if (selected && !slimNav) {
-                    Spacer(Modifier.size(6.dp))
+                if (!slimNav) {
                     Text(
                         text = stringResource(screen.titleId),
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
-                        style = MaterialTheme.typography.labelSmall,
+                        style = MaterialTheme.typography.labelSmall.copy(fontSize = 11.sp),
                         fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
-                        color = if (selected) MaterialTheme.colorScheme.onPrimary else contentColor,
+                        color = tint,
                     )
                 }
             }

@@ -139,12 +139,12 @@ fun Modifier.onyxEntrance(key: Any? = Unit): Modifier {
     val progress = remember(key) { Animatable(if (appeared) 1f else 0f) }
     LaunchedEffect(key) {
         if (!appeared) {
-            progress.animateTo(1f, tween(320, easing = FastOutSlowInEasing))
+            progress.animateTo(1f, tween(440, easing = FastOutSlowInEasing))
             appeared = true
         }
     }
     return graphicsLayer {
         alpha = progress.value
-        translationY = (1f - progress.value) * 18.dp.toPx()
+        translationY = (1f - progress.value) * 26.dp.toPx()
     }
 }

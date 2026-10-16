@@ -7,6 +7,8 @@ package com.metrolist.music.ui.player
 
 import com.metrolist.music.ui.component.LiquidIconButton
 import com.metrolist.music.ui.component.OnyxPlayerHeader
+import com.metrolist.music.ui.theme.rememberArtworkColor
+import androidx.compose.ui.draw.drawWithCache
 import com.metrolist.music.ui.theme.onyxGlass
 import com.metrolist.music.ui.theme.onyxEntrance
 import androidx.compose.foundation.verticalScroll
@@ -776,7 +778,7 @@ fun BottomSheetPlayer(
             initialAnchor = 1,
         )
 
-    val bottomSheetBackgroundColor = MaterialTheme.colorScheme.background
+    val artworkColor = rememberArtworkColor(mediaMetadata?.thumbnailUrl)
 
 
     BottomSheet(
@@ -787,7 +789,10 @@ fun BottomSheetPlayer(
                 modifier =
                     Modifier
                         .fillMaxSize()
-                        .background(bottomSheetBackgroundColor),
+                        .drawWithCache {
+                            val fill = Brush.verticalGradient(listOf(artworkColor.value, Color(0xFF101012)))
+                            onDrawBehind { drawRect(fill) }
+                        },
             ) {
             }
         },
@@ -859,7 +864,7 @@ fun BottomSheetPlayer(
                     }
                 }
                 val favorite = if (currentSong?.song?.isEpisode == true) currentSong?.song?.inLibrary != null else currentSong?.song?.liked == true
-                LiquidIconButton(
+                PlayerIconButton(
                     if (showInlineLyrics) R.drawable.fullscreen else if (favorite) R.drawable.favorite else R.drawable.favorite_border,
                     if (showInlineLyrics) stringResource(R.string.onyx_fullscreen) else stringResource(R.string.liked),
                     onClick = { if (showInlineLyrics) isFullScreen = !isFullScreen else playerConnection.toggleLike() },
@@ -867,7 +872,7 @@ fun BottomSheetPlayer(
                 )
                 if (showInlineLyrics) {
                     val lyrics by playerConnection.currentLyrics.collectAsStateWithLifecycle(initialValue = null)
-                    LiquidIconButton(R.drawable.more_horiz, stringResource(R.string.onyx_lyrics_tools), onClick = {
+                    PlayerIconButton(R.drawable.more_horiz, stringResource(R.string.onyx_lyrics_tools), onClick = {
                         menuState.show {
                             com.metrolist.music.ui.menu.LyricsMenu(
                                 lyricsProvider = { lyrics }, songProvider = { currentSong?.song },
@@ -1053,15 +1058,15 @@ fun BottomSheetPlayer(
                         val playSize = if (maxWidth < 300.dp) 72.dp else 84.dp
                         Column {
                         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
-                            if (!compact) LiquidIconButton(
+                            if (!compact) PlayerIconButton(
                                 R.drawable.shuffle, stringResource(R.string.shuffle),
                                 onClick = { playerConnection.player.shuffleModeEnabled = !shuffleEnabled },
                                 enabled = !isListenTogetherGuest,
                                 modifier = Modifier.alpha(if (shuffleEnabled) 1f else 0.55f).semantics { selected = shuffleEnabled },
                             )
-                            LiquidIconButton(R.drawable.skip_previous, stringResource(R.string.onyx_previous_track), playerConnection::seekToPrevious,
+                            PlayerIconButton(R.drawable.skip_previous, stringResource(R.string.onyx_previous_track), playerConnection::seekToPrevious,
                                 enabled = canSkipPrevious && !isListenTogetherGuest)
-                            LiquidIconButton(
+                            PlayerIconButton(
                                 if (isListenTogetherGuest) {
                                     if (isMuted) R.drawable.volume_off else R.drawable.volume_up
                                 } else if (playbackState == STATE_ENDED) R.drawable.replay
@@ -1081,9 +1086,9 @@ fun BottomSheetPlayer(
                                 modifier = Modifier.size(playSize).focusRequester(focusRequester), emphasized = true,
                                 containerColor = textButtonColor, contentColor = iconButtonColor,
                             )
-                            LiquidIconButton(R.drawable.skip_next, stringResource(R.string.onyx_next_track), playerConnection::seekToNext,
+                            PlayerIconButton(R.drawable.skip_next, stringResource(R.string.onyx_next_track), playerConnection::seekToNext,
                                 enabled = canSkipNext && !isListenTogetherGuest)
-                            if (!compact) LiquidIconButton(
+                            if (!compact) PlayerIconButton(
                                 if (repeatMode == Player.REPEAT_MODE_ONE) R.drawable.repeat_one else R.drawable.repeat,
                                 stringResource(when (repeatMode) {
                                     Player.REPEAT_MODE_ONE -> R.string.repeat_mode_one
@@ -1097,10 +1102,10 @@ fun BottomSheetPlayer(
                         }
                         if (compact) {
                         Row(Modifier.fillMaxWidth().padding(horizontal = 24.dp), horizontalArrangement = Arrangement.SpaceEvenly) {
-                            LiquidIconButton(R.drawable.shuffle, stringResource(R.string.shuffle),
+                            PlayerIconButton(R.drawable.shuffle, stringResource(R.string.shuffle),
                                 onClick = { playerConnection.player.shuffleModeEnabled = !shuffleEnabled }, enabled = !isListenTogetherGuest,
                                 modifier = Modifier.semantics { selected = shuffleEnabled })
-                            LiquidIconButton(if (repeatMode == Player.REPEAT_MODE_ONE) R.drawable.repeat_one else R.drawable.repeat,
+                            PlayerIconButton(if (repeatMode == Player.REPEAT_MODE_ONE) R.drawable.repeat_one else R.drawable.repeat,
                                 stringResource(when (repeatMode) {
                                     Player.REPEAT_MODE_ONE -> R.string.repeat_mode_one
                                     Player.REPEAT_MODE_ALL -> R.string.repeat_mode_all
@@ -1118,7 +1123,7 @@ fun BottomSheetPlayer(
                             if (LocalConfiguration.current.orientation != Configuration.ORIENTATION_LANDSCAPE)
                                 Text(stringResource(R.string.lyrics), style = MaterialTheme.typography.labelLarge)
                         }
-                        LiquidIconButton(R.drawable.share, stringResource(R.string.share), onClick = {
+                        PlayerIconButton(R.drawable.share, stringResource(R.string.share), onClick = {
                             context.startActivity(Intent.createChooser(Intent(Intent.ACTION_SEND).apply {
                                 type = "text/plain"
                                 putExtra(Intent.EXTRA_TEXT, "https://music.youtube.com/watch?v=" + mediaMetadata.id)
@@ -1274,7 +1279,7 @@ fun BottomSheetPlayer(
                     if (useBlackBackground) {
                         Color.Black
                     } else {
-                        MaterialTheme.colorScheme.surfaceContainer
+                        Color(0xFF101012)
                     },
                 onBackgroundColor = onBackgroundColor,
                 TextBackgroundColor = TextBackgroundColor,
@@ -1476,3 +1481,16 @@ private fun PlayerMoreMenuButton(
         )
     }
 }
+
+@Composable
+private fun PlayerIconButton(
+    icon: Int,
+    description: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    emphasized: Boolean = false,
+    enabled: Boolean = true,
+    containerColor: Color? = null,
+    contentColor: Color? = null,
+) = LiquidIconButton(icon, description, onClick, modifier, emphasized, enabled,
+    containerColor, contentColor, plain = true)
