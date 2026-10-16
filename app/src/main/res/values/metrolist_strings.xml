@@ -994,4 +994,17 @@
     <string name="stream_source_web_creator_desc">Creator web client.</string>
     <string name="top_result">Top result</string>
     <string name="other">Other</string>
+    <string name="onyx_daily_selection">DAILY SELECTION</string>
+    <string name="onyx_home_headline">Find your\nsound.</string>
+    <string name="onyx_find_your_sound">Something worth hearing</string>
+    <string name="onyx_made_for_you">Your next favorite starts here</string>
+    <string name="onyx_library_subtitle">Your music. Your space.</string>
+    <string name="onyx_listen_subtitle">A new way to get lost in music.</string>
+    <string name="onyx_now_playing">NOW PLAYING</string>
+    <string name="onyx_minimize_player">Minimize player</string>
+    <string name="onyx_previous_track">Previous track</string>
+    <string name="onyx_next_track">Next track</string>
+    <string name="onyx_your_collection">Your collection</string>
+    <string name="onyx_fullscreen">Fullscreen lyrics</string>
+    <string name="onyx_lyrics_tools">Lyrics tools</string>
 </resources>

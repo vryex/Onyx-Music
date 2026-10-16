@@ -7,6 +7,7 @@
 
 package com.metrolist.music.ui.component
 
+import com.metrolist.music.ui.theme.onyxGlass
 import android.widget.Toast
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animate
@@ -427,11 +428,12 @@ fun GridItem(
                 Modifier.height(gridHeight)
             }
                 .aspectRatio(thumbnailRatio)
+                .clip(RoundedCornerShape(22.dp))
         ) {
             thumbnailContent()
         }
 
-        Spacer(modifier = Modifier.height(6.dp))
+        Spacer(modifier = Modifier.height(12.dp))
 
         title()
 
@@ -993,7 +995,24 @@ fun PlaylistGridItem(
         Icon.Download(downloadState)
     },
     fillMaxWidth: Boolean = false,
-) = GridItem(
+) {
+    if (autoPlaylist) {
+        val icon = when (playlist.playlist.name) {
+            stringResource(R.string.liked) -> R.drawable.favorite
+            stringResource(R.string.offline) -> R.drawable.offline
+            stringResource(R.string.cached_playlist) -> R.drawable.cached
+            stringResource(R.string.uploaded_playlist) -> R.drawable.backup
+            else -> R.drawable.trending_up
+        }
+        OnyxCollectionCard(
+            title = playlist.playlist.name,
+            subtitle = pluralStringResource(R.plurals.n_song, playlist.songCount, playlist.songCount),
+            icon = icon,
+            modifier = modifier.padding(8.dp),
+        )
+        return
+    }
+    GridItem(
     title = {
         Text(
             text = playlist.playlist.name,
@@ -1063,6 +1082,8 @@ fun PlaylistGridItem(
     fillMaxWidth = fillMaxWidth,
     modifier = modifier
 )
+
+}
 
 @Composable
 fun MediaMetadataListItem(

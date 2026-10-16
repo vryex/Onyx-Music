@@ -1,7 +1,7 @@
 name: Onyx Midnight Release
 on:
   push:
-    branches: [feat/onyx-authkit-20261015]
+    branches: [feat/onyx-authkit-20261015, feat/onyx-liquid-v2]
   workflow_dispatch:
 permissions:
   contents: write

@@ -30,6 +30,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.text.font.FontWeight
 import com.metrolist.music.ui.theme.onyxGlass
 import androidx.compose.foundation.selection.selectable
+import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.ui.semantics.Role
@@ -169,10 +170,8 @@ fun AppNavigationBar(
         modifier = modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp, vertical = 4.dp)
-            .clip(RoundedCornerShape(50))
-            .background(MaterialTheme.colorScheme.surfaceContainer)
-            .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(50))
-            .padding(horizontal = 7.dp, vertical = 5.dp),
+            .onyxGlass(RoundedCornerShape(50))
+            .padding(horizontal = 7.dp, vertical = 6.dp),
         horizontalArrangement = Arrangement.spacedBy(3.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -206,13 +205,14 @@ fun AppNavigationBar(
             }
             val pillShape = RoundedCornerShape(50)
             val selectedFill by animateColorAsState(
-                targetValue = if (selected) MaterialTheme.colorScheme.surfaceContainerHighest else Color.Transparent,
+                targetValue = if (selected) MaterialTheme.colorScheme.onSurface else Color.Transparent,
                 animationSpec = tween(180),
                 label = "navigationSelection",
             )
-            Column(
+            Row(
                 modifier = Modifier
-                    .weight(1f)
+                    .weight(if (selected && !slimNav) 1.65f else 1f)
+                    .animateContentSize(tween(180))
                     .clip(pillShape)
                     .background(selectedFill)
                     .selectable(
@@ -226,25 +226,26 @@ fun AppNavigationBar(
                     )
                     .heightIn(min = 48.dp)
                     .padding(vertical = if (slimNav) 8.dp else 7.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(3.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Center,
             ) {
                 Icon(
                     painter = painterResource(
                         if (selected) screen.iconIdActive else screen.iconIdInactive
                     ),
                     contentDescription = stringResource(screen.titleId),
-                    tint = if (selected) Color.White else contentColor,
+                    tint = if (selected) MaterialTheme.colorScheme.onPrimary else contentColor,
                     modifier = Modifier.size(23.dp),
                 )
-                if (!slimNav) {
+                if (selected && !slimNav) {
+                    Spacer(Modifier.size(6.dp))
                     Text(
                         text = stringResource(screen.titleId),
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                         style = MaterialTheme.typography.labelSmall,
                         fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
-                        color = if (selected) MaterialTheme.colorScheme.onSurface else contentColor,
+                        color = if (selected) MaterialTheme.colorScheme.onPrimary else contentColor,
                     )
                 }
             }

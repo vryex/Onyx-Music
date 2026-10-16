@@ -7,6 +7,7 @@
 
 package com.metrolist.music.ui.player
 
+import com.metrolist.music.ui.theme.onyxGlass
 import android.content.res.Configuration
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.Animatable
@@ -334,9 +335,11 @@ private fun NewMiniPlayer(
                     .then(if (isTabletLandscape) Modifier.width(500.dp).align(Alignment.Center) else Modifier.fillMaxWidth())
                     .height(64.dp)
                     .offset { IntOffset(offsetXAnimatable.value.roundToInt(), 0) }
-                    .clip(RoundedCornerShape(16.dp))
-                    .background(color = backgroundColor)
-                    .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(16.dp))
+                    .then(
+                        if (miniPlayerBackground == MiniPlayerBackgroundStyle.PURE_BLACK || miniPlayerBackground == MiniPlayerBackgroundStyle.TRANSPARENT)
+                            Modifier.clip(RoundedCornerShape(36.dp)).background(backgroundColor)
+                        else Modifier.onyxGlass(RoundedCornerShape(36.dp), emphasized = true)
+                    )
                     .drawWithContent {
                         drawContent()
                         val y = size.height - 1.dp.toPx()
@@ -394,19 +397,6 @@ private fun NewMiniPlayer(
                     )
                     Spacer(modifier = Modifier.width(12.dp))
                 }
-
-// Subscribe button - isolated composable
-                mediaMetadata?.artists?.firstOrNull()?.id?.let { artistId ->
-                    SubscribeButton(
-                        artistId = artistId,
-                        metadata = mediaMetadata!!,
-                        primaryColor = primaryColor,
-                        outlineColor = outlineColor,
-                        onSurfaceColor = onSurfaceColor,
-                    )
-                }
-
-                Spacer(modifier = Modifier.width(8.dp))
 
 // Favorite button - isolated composable
                 mediaMetadata?.let { FavoriteButton(

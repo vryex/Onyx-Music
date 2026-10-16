@@ -5,6 +5,7 @@
 
 package com.metrolist.music.ui.player
 
+import com.metrolist.music.ui.theme.onyxGlass
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -115,15 +116,11 @@ private fun calculateThumbnailDimensions(
     containerWidth: Dp,
     containerHeight: Dp = containerWidth,
     horizontalPadding: Dp = PlayerHorizontalPadding,
-    cornerRadius: Dp = ThumbnailCornerRadius,
+    cornerRadius: Dp = 28.dp,
     isLandscape: Boolean = false
 ): ThumbnailDimensions {
     // In landscape, use height as the constraining dimension for a square thumbnail
-    val effectiveSize = if (isLandscape) {
-        minOf(containerWidth, containerHeight) - (horizontalPadding * 2)
-    } else {
-        containerWidth - (horizontalPadding * 2)
-    }
+    val effectiveSize = (minOf(containerWidth, containerHeight) - horizontalPadding * 2).coerceAtLeast(1.dp)
     return ThumbnailDimensions(
         itemWidth = containerWidth,
         containerSize = containerWidth,
@@ -319,19 +316,19 @@ fun Thumbnail(
             exit = fadeOut(),
             modifier = Modifier
                 .fillMaxSize()
-                .then(if (!isLandscape) Modifier.statusBarsPadding() else Modifier),
+                ,
         ) {
             Column(
                 modifier = Modifier.fillMaxSize(),
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = if (isLandscape) Arrangement.Center else Arrangement.Top
             ) {
-                // Now Playing header - hide in landscape mode
-                if (!isLandscape) {
-                    ThumbnailHeader(
-                        queueTitle = queueTitle,
-                        albumTitle = mediaMetadata?.album?.title,
-                        textColor = textBackgroundColor
+                if (!isLandscape && !queueTitle.isNullOrBlank()) {
+                    Text(
+                        queueTitle.orEmpty(), style = MaterialTheme.typography.labelMedium,
+                        color = textBackgroundColor.copy(alpha = 0.5f), maxLines = 1,
+                        overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+                        modifier = Modifier.padding(horizontal = 32.dp, vertical = 4.dp),
                     )
                 }
                 
@@ -548,6 +545,8 @@ private fun ThumbnailItem(
         Box(
             modifier = Modifier
                 .size(dimensions.thumbnailSize)
+                .onyxGlass(RoundedCornerShape(dimensions.cornerRadius + 8.dp))
+                .padding(8.dp)
                 .clip(RoundedCornerShape(dimensions.cornerRadius))
         ) {
             if (hidePlayerThumbnail) {

@@ -17,6 +17,17 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.tween
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.unit.sp
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -35,15 +46,20 @@ import com.metrolist.music.R
 /** Transparent, draw-only glass surfaces without realtime bitmap blur. */
 @Composable
 fun Modifier.onyxGlass(
-    shape: Shape = RoundedCornerShape(16.dp),
+    shape: Shape = RoundedCornerShape(28.dp),
     emphasized: Boolean = false,
 ): Modifier {
-    val c = MaterialTheme.colorScheme
-    val surface = if (emphasized) c.surfaceContainerHigh else c.surfaceContainer
-    return this
-        .clip(shape)
-        .background(Brush.verticalGradient(listOf(surface, c.surfaceContainerLow)))
-        .border(1.dp, GlassEdge, shape)
+    val fill = remember(emphasized) {
+        Brush.linearGradient(listOf(
+            Color(if (emphasized) 0xFF383A40 else 0xFF242529),
+            Color(if (emphasized) 0xFF202126 else 0xFF121315),
+            Color(0xFF17181B),
+        ))
+    }
+    val edge = remember {
+        Brush.linearGradient(listOf(Color(0x5CFFFFFF), Color(0x0AFFFFFF), Color(0x27FFFFFF)))
+    }
+    return clip(shape).background(fill).border(0.75.dp, edge, shape)
 }
 
 @Composable
@@ -78,8 +94,9 @@ fun OnyxBrand(
         }
         Column {
             Text(
-                text = "Onyx Music",
-                style = MaterialTheme.typography.titleMedium,
+                text = "ONYX",
+                style = MaterialTheme.typography.titleLarge,
+                letterSpacing = 4.sp,
                 fontWeight = FontWeight.Medium,
                 color = MaterialTheme.colorScheme.onSurface,
                 maxLines = 1,
@@ -99,41 +116,35 @@ fun OnyxBrand(
 }
 
 @Composable
-fun OnyxPageHeader(title: String, modifier: Modifier = Modifier) {
-    val headingStyle = MaterialTheme.typography.headlineLarge.copy(
-        brush = Brush.verticalGradient(listOf(Color(0xFFD8ECF8), Color(0xFF98C0EF))),
-    )
-    Box(
-        modifier = modifier
-            .fillMaxWidth()
-            .padding(horizontal = 20.dp, vertical = 12.dp)
-            .clip(RoundedCornerShape(16.dp))
-            .drawWithCache {
-                val halo = Brush.radialGradient(
-                    listOf(Color(0x187C91B6), Color.Transparent),
-                    center = Offset(size.width * 0.85f, 0f),
-                    radius = size.width.coerceAtLeast(1f),
-                )
-                val cell = 48.dp.toPx()
-                onDrawBehind {
-                    drawRect(halo)
-                    var x = 0f
-                    while (x < size.width) {
-                        drawLine(Color(0x08BAD7F7), Offset(x, 0f), Offset(x, size.height), 1.dp.toPx())
-                        x += cell
-                    }
-                    var y = 0f
-                    while (y < size.height) {
-                        drawLine(Color(0x08BAD7F7), Offset(0f, y), Offset(size.width, y), 1.dp.toPx())
-                        y += cell
-                    }
-                }
-            },
+fun OnyxPageHeader(title: String, modifier: Modifier = Modifier, subtitle: String? = null) {
+    Column(
+        modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 18.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         Text(
-            text = title,
-            style = headingStyle,
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 24.dp),
+            title, style = MaterialTheme.typography.displaySmall,
+            fontWeight = FontWeight.Medium, letterSpacing = (-1.4).sp,
         )
+        if (subtitle != null) Text(
+            subtitle, style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
+}
+
+/** Saved per screen so returning a lazy header to view does not replay it. */
+@Composable
+fun Modifier.onyxEntrance(key: Any? = Unit): Modifier {
+    var appeared by rememberSaveable(key) { mutableStateOf(false) }
+    val progress = remember(key) { Animatable(if (appeared) 1f else 0f) }
+    LaunchedEffect(key) {
+        if (!appeared) {
+            progress.animateTo(1f, tween(320, easing = FastOutSlowInEasing))
+            appeared = true
+        }
+    }
+    return graphicsLayer {
+        alpha = progress.value
+        translationY = (1f - progress.value) * 18.dp.toPx()
     }
 }

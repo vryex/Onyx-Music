@@ -5,6 +5,7 @@
 
 package com.metrolist.music.ui.theme
 
+import androidx.compose.ui.text.font.FontWeight
 import android.graphics.Bitmap
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.ColorScheme
@@ -21,61 +22,72 @@ import androidx.compose.ui.graphics.toArgb
 import androidx.palette.graphics.Palette
 import com.materialkolor.score.Score
 
-val DefaultThemeColor = Color(0xFFD1E4FA)
+val DefaultThemeColor = Color(0xFFF3F3F5)
 
-val MidnightCanvas = Color(0xFF05060F)
-val FrostGlow = Color(0xFFD1E4FA)
-val MoonMist = Color(0xFFC7D3EA)
-val FogVeil = Color(0xFF9DA7BA)
-val GlassEdge = Color(0x1FBAD7F7)
+val MidnightCanvas = Color(0xFF050506)
+val FrostGlow = Color(0xFFF3F3F5)
+val MoonMist = Color(0xFFD3D3D8)
+val FogVeil = Color(0xFF999AA4)
+val GlassEdge = Color(0x24FFFFFF)
 val AuthViolet = Color(0xFF663AF3)
 
 private val MidnightColors = darkColorScheme(
     primary = FrostGlow,
     onPrimary = MidnightCanvas,
-    primaryContainer = Color(0xFF242C3A),
+    primaryContainer = Color(0xFF2C2D32),
     onPrimaryContainer = FrostGlow,
     secondary = MoonMist,
     onSecondary = MidnightCanvas,
-    secondaryContainer = Color(0xFF1B2230),
+    secondaryContainer = Color(0xFF202126),
     onSecondaryContainer = FrostGlow,
     tertiary = FrostGlow,
     onTertiary = MidnightCanvas,
-    tertiaryContainer = Color(0xFF242C3A),
+    tertiaryContainer = Color(0xFF2C2D32),
     onTertiaryContainer = FrostGlow,
     background = MidnightCanvas,
-    onBackground = Color(0xFFD8ECF8),
+    onBackground = Color(0xFFF3F3F5),
     surface = MidnightCanvas,
     onSurface = FrostGlow,
-    surfaceVariant = Color(0xFF171D29),
+    surfaceVariant = Color(0xFF191A1E),
     onSurfaceVariant = FogVeil,
     surfaceTint = Color.Transparent,
     surfaceContainerLowest = MidnightCanvas,
-    surfaceContainerLow = Color(0xFF0D101A),
-    surfaceContainer = Color(0xFF111622),
-    surfaceContainerHigh = Color(0xFF191F2C),
-    surfaceContainerHighest = Color(0xFF242C3A),
+    surfaceContainerLow = Color(0xFF0C0C0E),
+    surfaceContainer = Color(0xFF141416),
+    surfaceContainerHigh = Color(0xFF202126),
+    surfaceContainerHighest = Color(0xFF2C2D32),
     inverseSurface = FrostGlow,
     inverseOnSurface = MidnightCanvas,
-    inversePrimary = Color(0xFF242C3A),
-    outline = Color(0xFF647084),
+    inversePrimary = Color(0xFF2C2D32),
+    outline = Color(0xFF73747D),
     outlineVariant = GlassEdge,
 )
 
 private val MidnightShapes = androidx.compose.material3.Shapes(
-    extraSmall = androidx.compose.foundation.shape.RoundedCornerShape(6.dp),
-    small = androidx.compose.foundation.shape.RoundedCornerShape(6.dp),
+    extraSmall = androidx.compose.foundation.shape.RoundedCornerShape(12.dp),
+    small = androidx.compose.foundation.shape.RoundedCornerShape(12.dp),
     medium = androidx.compose.foundation.shape.RoundedCornerShape(16.dp),
-    large = androidx.compose.foundation.shape.RoundedCornerShape(16.dp),
-    extraLarge = androidx.compose.foundation.shape.RoundedCornerShape(16.dp),
+    large = androidx.compose.foundation.shape.RoundedCornerShape(28.dp),
+    extraLarge = androidx.compose.foundation.shape.RoundedCornerShape(36.dp),
 )
 
-private val MidnightTypography = androidx.compose.material3.Typography().let { type ->
-    type.copy(
-        headlineLarge = type.headlineLarge.copy(fontWeight = androidx.compose.ui.text.font.FontWeight.Medium, letterSpacing = (-0.4).sp),
-        headlineMedium = type.headlineMedium.copy(fontWeight = androidx.compose.ui.text.font.FontWeight.Medium, letterSpacing = (-0.3).sp),
-        titleLarge = type.titleLarge.copy(fontWeight = androidx.compose.ui.text.font.FontWeight.Medium, letterSpacing = (-0.24).sp),
-        bodyLarge = type.bodyLarge.copy(letterSpacing = (-0.16).sp),
+private val MidnightTypography = androidx.compose.material3.Typography().let { t ->
+    t.copy(
+        displayLarge = t.displayLarge.copy(fontFamily = Outfit, fontWeight = FontWeight.Medium, letterSpacing = (-2).sp),
+        displayMedium = t.displayMedium.copy(fontFamily = Outfit, fontWeight = FontWeight.Medium, letterSpacing = (-1.6).sp),
+        displaySmall = t.displaySmall.copy(fontFamily = Outfit, fontWeight = FontWeight.Medium, letterSpacing = (-1.2).sp),
+        headlineLarge = t.headlineLarge.copy(fontFamily = Outfit, fontWeight = FontWeight.Medium, letterSpacing = (-1).sp),
+        headlineMedium = t.headlineMedium.copy(fontFamily = Outfit, fontWeight = FontWeight.Medium, letterSpacing = (-0.6).sp),
+        headlineSmall = t.headlineSmall.copy(fontFamily = Outfit, fontWeight = FontWeight.Medium),
+        titleLarge = t.titleLarge.copy(fontFamily = Outfit, fontWeight = FontWeight.Medium, letterSpacing = (-0.4).sp),
+        titleMedium = t.titleMedium.copy(fontFamily = Outfit, fontWeight = FontWeight.Medium),
+        titleSmall = t.titleSmall.copy(fontFamily = Outfit, fontWeight = FontWeight.Medium),
+        bodyLarge = t.bodyLarge.copy(fontFamily = Outfit),
+        bodyMedium = t.bodyMedium.copy(fontFamily = Outfit),
+        bodySmall = t.bodySmall.copy(fontFamily = Outfit),
+        labelLarge = t.labelLarge.copy(fontFamily = Outfit, fontWeight = FontWeight.Medium),
+        labelMedium = t.labelMedium.copy(fontFamily = Outfit, fontWeight = FontWeight.Medium),
+        labelSmall = t.labelSmall.copy(fontFamily = Outfit),
     )
 }
 

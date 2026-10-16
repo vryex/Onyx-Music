@@ -21,6 +21,7 @@ import com.metrolist.music.constants.LibraryFilter
 import com.metrolist.music.constants.LibraryViewType
 import com.metrolist.music.constants.PlaylistViewTypeKey
 import com.metrolist.music.ui.theme.OnyxPageHeader
+import com.metrolist.music.ui.theme.onyxEntrance
 import com.metrolist.music.ui.component.ChipsRow
 import com.metrolist.music.utils.rememberEnumPreference
 
@@ -33,7 +34,7 @@ fun LibraryScreen() {
 
     val filterContent = @Composable {
         Column {
-            OnyxPageHeader(title = stringResource(R.string.filter_library))
+            OnyxPageHeader(title = stringResource(R.string.filter_library), subtitle = stringResource(R.string.onyx_library_subtitle))
             ChipsRow(
                 chips = listOf(
                     LibraryFilter.PLAYLISTS to stringResource(R.string.filter_playlists),
@@ -50,7 +51,7 @@ fun LibraryScreen() {
         }
     }
 
-    Box(modifier = Modifier.fillMaxSize()) {
+    Box(modifier = Modifier.fillMaxSize().onyxEntrance()) {
         when (filterType) {
             LibraryFilter.LIBRARY -> LibraryMixScreen(
                 navController = navController,

@@ -141,6 +141,8 @@ import com.metrolist.music.ui.component.HideOnScrollFAB
 import com.metrolist.music.ui.component.LocalBottomSheetPageState
 import com.metrolist.music.ui.component.LocalMenuState
 import com.metrolist.music.ui.theme.OnyxPageHeader
+import com.metrolist.music.ui.theme.onyxEntrance
+import com.metrolist.music.ui.component.OnyxHomeHero
 import com.metrolist.music.ui.component.NavigationTitle
 import com.metrolist.music.ui.component.RandomizeGridItem
 import com.metrolist.music.ui.component.SongGridItem
@@ -1188,10 +1190,30 @@ fun HomeScreen(
 
             LazyColumn(
                 state = lazylistState,
+                modifier = Modifier.onyxEntrance(),
                 contentPadding = LocalPlayerAwareWindowInsets.current.asPaddingValues(),
             ) {
                 item(key = "onyx_title") {
-                    OnyxPageHeader(title = stringResource(R.string.home))
+                    OnyxPageHeader(
+                        title = stringResource(R.string.home),
+                        subtitle = stringResource(R.string.onyx_listen_subtitle),
+                    )
+                }
+                item(key = "onyx_daily_selection") {
+                    val pick = quickPicks?.firstOrNull()
+                    val queueTitle = stringResource(R.string.quick_picks)
+                    OnyxHomeHero(
+                        title = pick?.song?.title,
+                        artist = pick?.artists?.joinToString { it.name },
+                        artwork = pick?.song?.thumbnailUrl,
+                        onPlay = {
+                            if (pick == null) navController.navigate("search_input")
+                            else if (!isListenTogetherGuest) playerConnection.playQueue(
+                                ListQueue(title = queueTitle, items = quickPicks.orEmpty().distinctBy { it.id }.map { it.toMediaItem() }),
+                            )
+                        },
+                        onExplore = { navController.navigate("search_input") },
+                    )
                 }
                 item {
                     ChipsRow(
