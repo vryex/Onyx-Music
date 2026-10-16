@@ -10,8 +10,8 @@ val bbhBartle = FontFamily(
 )
 
 val Outfit = FontFamily(
-    Font(R.font.outfit, FontWeight.Normal),
-    Font(R.font.outfit, FontWeight.Medium),
-    Font(R.font.outfit, FontWeight.SemiBold),
-    Font(R.font.outfit, FontWeight.Bold),
+    Font(R.font.outfit_regular, FontWeight.Normal),
+    Font(R.font.outfit_medium, FontWeight.Medium),
+    Font(R.font.outfit_semibold, FontWeight.SemiBold),
+    Font(R.font.outfit_bold, FontWeight.Bold),
 )
