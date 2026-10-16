@@ -17,7 +17,6 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkOut
 import androidx.compose.foundation.background
-import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.gestures.draggable
@@ -606,7 +605,7 @@ fun SongGridItem(
             fontWeight = FontWeight.Medium,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.basicMarquee().fillMaxWidth()
+            modifier = Modifier.fillMaxWidth()
         )
     },
     subtitle = {
@@ -837,7 +836,7 @@ fun AlbumGridItem(
             fontWeight = FontWeight.Medium,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.basicMarquee().fillMaxWidth()
+            modifier = Modifier.fillMaxWidth()
         )
     },
      subtitle = {
@@ -1020,7 +1019,7 @@ fun PlaylistGridItem(
             fontWeight = FontWeight.Medium,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.basicMarquee().fillMaxWidth()
+            modifier = Modifier.fillMaxWidth()
         )
     },
     subtitle = {
@@ -1293,7 +1292,7 @@ fun YouTubeGridItem(
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
             textAlign = if (item is ArtistItem) TextAlign.Center else TextAlign.Start,
-            modifier = Modifier.basicMarquee().fillMaxWidth()
+            modifier = Modifier.fillMaxWidth()
         )
     },
      subtitle = {
@@ -1380,11 +1379,7 @@ fun LocalSongsGrid(
             color = MaterialTheme.colorScheme.secondary,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.basicMarquee(
-                iterations = 3,
-                initialDelayMillis = 1000,
-                velocity = 30.dp
-            )
+            modifier = Modifier
         )
     },
     badges = badges,
@@ -1422,11 +1417,7 @@ fun LocalArtistsGrid(
             color = MaterialTheme.colorScheme.secondary,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.basicMarquee(
-                iterations = 3,
-                initialDelayMillis = 1000,
-                velocity = 30.dp
-            )
+            modifier = Modifier
         )
     },
     badges = badges,
@@ -1464,11 +1455,7 @@ fun LocalAlbumsGrid(
             color = MaterialTheme.colorScheme.secondary,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.basicMarquee(
-                iterations = 3,
-                initialDelayMillis = 1000,
-                velocity = 30.dp
-            )
+            modifier = Modifier
         )
     },
     badges = badges,

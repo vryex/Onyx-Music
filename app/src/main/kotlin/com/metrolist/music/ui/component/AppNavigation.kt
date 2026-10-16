@@ -48,6 +48,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
@@ -165,15 +166,17 @@ fun AppNavigationBar(
     onSearchLongClick: (() -> Unit)? = null,
     onHomeLongHold: (() -> Unit)? = null,
 ) {
-    val containerColor = if (pureBlack) Color.Black else MaterialTheme.colorScheme.surfaceContainer
-    val contentColor = MaterialTheme.colorScheme.onSurfaceVariant
+    val navigationScrim = remember {
+        Brush.verticalGradient(0f to Color.Transparent, 0.3f to Color.Black.copy(alpha = 0.88f), 1f to Color.Black)
+    }
     val haptics = LocalHapticFeedback.current
     val viewConfiguration = LocalViewConfiguration.current
 
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = 12.dp, vertical = 6.dp),
+            .background(navigationScrim)
+            .padding(horizontal = 16.dp, vertical = if (slimNav) 0.dp else 6.dp),
         horizontalArrangement = Arrangement.spacedBy(3.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -206,9 +209,13 @@ fun AppNavigationBar(
                 }
             }
             val tint by animateColorAsState(
-                targetValue = if (selected) Color.White else Color(0xFF8C8C93),
+                targetValue = if (selected) Color(0xFF111113) else Color(0xFFC4C4CB),
                 animationSpec = tween(300, easing = FastOutSlowInEasing),
                 label = "navigationTint",
+            )
+            val pillFill by animateColorAsState(
+                if (selected) Color.White else Color.Transparent,
+                tween(280, easing = FastOutSlowInEasing), label = "navigationPill",
             )
             val emphasis = animateFloatAsState(
                 if (selected) 1f else 0f,
@@ -217,6 +224,8 @@ fun AppNavigationBar(
             Column(
                 modifier = Modifier
                     .weight(1f)
+                    .clip(RoundedCornerShape(50))
+                    .background(pillFill)
                     .selectable(
                         selected = selected,
                         role = Role.Tab,
