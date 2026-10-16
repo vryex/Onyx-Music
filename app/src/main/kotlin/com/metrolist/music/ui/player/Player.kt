@@ -1129,11 +1129,15 @@ fun BottomSheetPlayer(
                                 putExtra(Intent.EXTRA_TEXT, "https://music.youtube.com/watch?v=" + mediaMetadata.id)
                             }, null))
                         })
-                        TextButton(onClick = { showSleepTimerDialog = true }, enabled = !isListenTogetherGuest) {
+                        TextButton(onClick = {
+                            if (sleepTimerEnabled) playerConnection.service.sleepTimer?.clear()
+                            else showSleepTimerDialog = true
+                        }, enabled = !isListenTogetherGuest) {
                             Icon(painterResource(R.drawable.timer), stringResource(R.string.sleep_timer), Modifier.size(18.dp))
                             Spacer(Modifier.width(8.dp))
                             if (LocalConfiguration.current.orientation != Configuration.ORIENTATION_LANDSCAPE)
-                                Text(stringResource(R.string.sleep_timer), style = MaterialTheme.typography.labelLarge)
+                                Text(if (sleepTimerEnabled) makeTimeString(sleepTimerTimeLeft.coerceAtLeast(0L))
+                                    else stringResource(R.string.sleep_timer), style = MaterialTheme.typography.labelLarge)
                         }
                     }
                 }
