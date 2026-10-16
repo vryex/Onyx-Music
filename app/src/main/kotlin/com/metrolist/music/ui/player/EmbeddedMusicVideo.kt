@@ -4,6 +4,7 @@ import android.content.Intent
 import android.annotation.SuppressLint
 import android.webkit.ConsoleMessage
 import android.webkit.WebChromeClient
+import android.webkit.WebResourceError
 import android.webkit.WebResourceRequest
 import android.webkit.WebSettings
 import android.webkit.WebView
@@ -72,6 +73,12 @@ fun EmbeddedMusicVideo(
             settings.allowContentAccess = false
             settings.mixedContentMode = WebSettings.MIXED_CONTENT_NEVER_ALLOW
             webViewClient = object : WebViewClient() {
+                override fun onReceivedError(view: WebView, request: WebResourceRequest, error: WebResourceError) {
+                    if (request.isForMainFrame && !failed) {
+                        failed = true
+                        view.post { latestUnavailable() }
+                    }
+                }
                 override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {
                     if (!request.isForMainFrame) return false
                     val host = request.url.host.orEmpty()
@@ -88,6 +95,7 @@ fun EmbeddedMusicVideo(
                     when {
                         message.message() == "ONYX_VIDEO_READY" -> ready = true
                         message.message() == "ONYX_VIDEO_PLAYING" -> playing = true
+                        message.message() == "ONYX_VIDEO_WAITING" -> playing = false
                         message.message().startsWith("ONYX_VIDEO_ERROR:") -> if (!failed) {
                             failed = true
                             post { latestUnavailable() }
