@@ -107,6 +107,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.palette.graphics.Palette
@@ -554,21 +555,28 @@ fun OriginalLyrics(
         selectedIndices.clear()
     }
 
-    LaunchedEffect(lyrics) {
+    LaunchedEffect(lyrics, lifecycleOwner) {
         if (lyrics.isNullOrEmpty() || !lyrics.startsWith("[")) {
             currentLineIndex = -1
             return@LaunchedEffect
         }
-        while (isActive) {
-            delay(8) // Faster update for word-by-word animation
-            val sliderPosition = sliderPositionProvider()
-            isSeeking = sliderPosition != null
-            val position = sliderPosition ?: playerConnection.player.currentPosition
-            currentPlaybackPosition = position
-            val lyricsOffset = currentSong?.song?.lyricsOffset ?: 0
-            currentLineIndex = findCurrentLineIndex(lines, position + lyricsOffset)
+        lifecycleOwner.lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
+            while (isActive) {
+                if (playerConnection.player.isPlaying || sliderPositionProvider() != null) {
+                    androidx.compose.runtime.withFrameNanos { }
+                } else {
+                    delay(100)
+                }
+                val sliderPosition = sliderPositionProvider()
+                isSeeking = sliderPosition != null
+                val position = sliderPosition ?: playerConnection.player.currentPosition
+                currentPlaybackPosition = position
+                val lyricsOffset = currentSong?.song?.lyricsOffset ?: 0
+                currentLineIndex = findCurrentLineIndex(lines, position + lyricsOffset)
+            }
         }
     }
+
 
     LaunchedEffect(isSeeking, lastPreviewTime) {
         if (isSeeking) {
