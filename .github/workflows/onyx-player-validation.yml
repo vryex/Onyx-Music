@@ -3,6 +3,7 @@ on:
   push:
     branches: [feat/onyx-liquid-v2]
     paths:
+      - app/**
       - .github/scripts/onyx_smoke.py
       - .github/scripts/onyx_player_validation.py
       - .github/scripts/onyx_scroll_profile.py
@@ -17,7 +18,7 @@ concurrency:
 jobs:
   player:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 40
     steps:
       - uses: actions/checkout@v4
       - name: Wait for the release artifact
@@ -33,7 +34,7 @@ jobs:
               request = urllib.request.Request(url, headers={'Authorization': 'Bearer ' + os.environ['GH_TOKEN'], 'Accept': 'application/vnd.github+json'})
               with urllib.request.urlopen(request, timeout=30) as response:
                   return json.load(response)
-          for _ in range(90):
+          for _ in range(120):
               runs = get(api + '/workflows/onyx-midnight.yml/runs?per_page=30')['workflow_runs']
               matching = [r for r in runs if r['head_sha'] == os.environ['TARGET_SHA']]
               if matching:

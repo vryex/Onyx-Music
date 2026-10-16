@@ -174,9 +174,9 @@ fun AppNavigationBar(
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = 24.dp, vertical = if (slimNav) 0.dp else 5.dp)
+            .padding(horizontal = 24.dp, vertical = if (slimNav) 0.dp else 3.dp)
             .onyxGlass(RoundedCornerShape(50))
-            .padding(horizontal = 5.dp, vertical = 4.dp),
+            .padding(horizontal = 5.dp, vertical = 2.dp),
         horizontalArrangement = Arrangement.spacedBy(3.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -228,9 +228,9 @@ fun AppNavigationBar(
                         }
                     )
                     .heightIn(min = 48.dp)
-                    .padding(vertical = 6.dp),
+                    .padding(vertical = 4.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(5.dp, Alignment.CenterVertically),
+                verticalArrangement = Arrangement.spacedBy(3.dp, Alignment.CenterVertically),
             ) {
                 Icon(
                     painter = painterResource(
@@ -238,7 +238,7 @@ fun AppNavigationBar(
                     ),
                     contentDescription = stringResource(screen.titleId),
                     tint = tint,
-                    modifier = Modifier.size(24.dp),
+                    modifier = Modifier.size(22.dp),
                 )
                 if (!slimNav) {
                     Text(
