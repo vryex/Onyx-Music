@@ -225,7 +225,7 @@ fun YouTubeAlbumMenu(
                         Text(
                             text = ArtistNameAliases.resolve(artistNameAliases, artist.id, artist.name),
                             fontSize = 18.sp,
-                            fontWeight = FontWeight.Bold,
+                            fontWeight = FontWeight.Medium,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
                         )

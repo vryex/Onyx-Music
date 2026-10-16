@@ -346,7 +346,7 @@ fun ListenTogetherScreen(
                         Spacer(Modifier.width(8.dp))
                         Text(
                             stringResource(R.string.leave_room),
-                            fontWeight = FontWeight.SemiBold,
+                            fontWeight = FontWeight.Medium,
                         )
                     }
                 }
@@ -454,7 +454,7 @@ private fun NotConfiguredContent() {
             Text(
                 text = stringResource(R.string.listen_together),
                 style = MaterialTheme.typography.headlineMedium,
-                fontWeight = FontWeight.Bold,
+                fontWeight = FontWeight.Medium,
                 color = MaterialTheme.colorScheme.primary,
             )
             Spacer(modifier = Modifier.height(8.dp))
@@ -495,7 +495,7 @@ private fun HeaderSection(isInRoom: Boolean = false) {
         Text(
             text = stringResource(R.string.listen_together),
             style = MaterialTheme.typography.headlineMedium,
-            fontWeight = FontWeight.Bold,
+            fontWeight = FontWeight.Medium,
             color = MaterialTheme.colorScheme.onBackground,
         )
         Spacer(modifier = Modifier.height(4.dp))
@@ -573,7 +573,7 @@ private fun ConnectionStatusCard(
                             ConnectionState.DISCONNECTED -> stringResource(R.string.listen_together_disconnected)
                         },
                     style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
+                    fontWeight = FontWeight.Medium,
                     color =
                         when (connectionState) {
                             ConnectionState.CONNECTED -> MaterialTheme.colorScheme.primary
@@ -617,7 +617,7 @@ private fun ConnectionStatusCard(
                             modifier = Modifier.size(18.dp),
                         )
                         Spacer(Modifier.width(6.dp))
-                        Text(stringResource(R.string.connect), fontWeight = FontWeight.SemiBold)
+                        Text(stringResource(R.string.connect), fontWeight = FontWeight.Medium)
                     }
                 } else {
                     Button(
@@ -629,14 +629,14 @@ private fun ConnectionStatusCard(
                                 containerColor = MaterialTheme.colorScheme.primary,
                             ),
                     ) {
-                        Text(stringResource(R.string.disconnect), fontWeight = FontWeight.SemiBold)
+                        Text(stringResource(R.string.disconnect), fontWeight = FontWeight.Medium)
                     }
                     FilledTonalButton(
                         onClick = onReconnect,
                         modifier = Modifier.weight(1f),
                         shape = RoundedCornerShape(12.dp),
                     ) {
-                        Text("Reconnect", fontWeight = FontWeight.SemiBold)
+                        Text("Reconnect", fontWeight = FontWeight.Medium)
                     }
                 }
             }
@@ -676,7 +676,7 @@ private fun RoomStatusCard(
                 text = roomCode,
                 style = MaterialTheme.typography.displaySmall,
                 color = MaterialTheme.colorScheme.primary,
-                fontWeight = FontWeight.Bold,
+                fontWeight = FontWeight.Medium,
                 letterSpacing = 6.sp,
                 textAlign = TextAlign.Center,
             )
@@ -766,7 +766,7 @@ private fun ConnectedUsersSection(
             Text(
                 text = "${stringResource(R.string.connected_users)} (${users.size})",
                 style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
+                fontWeight = FontWeight.Medium,
                 color = MaterialTheme.colorScheme.primary,
             )
             Spacer(modifier = Modifier.height(12.dp))
@@ -825,7 +825,7 @@ private fun UserAvatar(
                     Text(
                         text = user.username.take(1).uppercase(),
                         style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.Bold,
+                        fontWeight = FontWeight.Medium,
                         color =
                             when {
                                 user.isHost -> MaterialTheme.colorScheme.onPrimary
@@ -869,7 +869,7 @@ private fun UserAvatar(
         Text(
             text = user.username,
             style = MaterialTheme.typography.labelMedium,
-            fontWeight = if (isCurrentUser) FontWeight.Bold else FontWeight.Medium,
+            fontWeight = if (isCurrentUser) FontWeight.Medium else FontWeight.Medium,
             color = if (user.isHost) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
@@ -912,7 +912,7 @@ private fun PendingJoinRequestsSection(
             Text(
                 text = stringResource(R.string.listen_together_join_requests),
                 style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
+                fontWeight = FontWeight.Medium,
                 color = MaterialTheme.colorScheme.primary,
             )
             Spacer(modifier = Modifier.height(12.dp))
@@ -937,7 +937,7 @@ private fun PendingJoinRequestsSection(
                             Text(
                                 text = request.username.take(1).uppercase(),
                                 style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Bold,
+                                fontWeight = FontWeight.Medium,
                                 color = MaterialTheme.colorScheme.onSecondary,
                             )
                         }
@@ -991,7 +991,7 @@ private fun PendingSuggestionsSection(
             Text(
                 text = stringResource(R.string.pending_suggestions),
                 style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
+                fontWeight = FontWeight.Medium,
                 color = MaterialTheme.colorScheme.primary,
             )
             Spacer(modifier = Modifier.height(12.dp))
@@ -1246,7 +1246,7 @@ private fun JoinCreateRoomSection(
                         modifier = Modifier.size(20.dp),
                     )
                     Spacer(Modifier.width(8.dp))
-                    Text(stringResource(R.string.create_room), fontWeight = FontWeight.SemiBold)
+                    Text(stringResource(R.string.create_room), fontWeight = FontWeight.Medium)
                 }
             }
 
@@ -1268,7 +1268,7 @@ private fun JoinCreateRoomSection(
                         modifier = Modifier.size(20.dp),
                     )
                     Spacer(Modifier.width(8.dp))
-                    Text(stringResource(R.string.join_room), fontWeight = FontWeight.SemiBold)
+                    Text(stringResource(R.string.join_room), fontWeight = FontWeight.Medium)
                 }
             }
         }
@@ -1342,7 +1342,7 @@ private fun UserActionDialog(
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 Text(
                     text = stringResource(R.string.manage_user),
-                    fontWeight = FontWeight.Bold,
+                    fontWeight = FontWeight.Medium,
                 )
                 Text(
                     text = username,
@@ -1384,7 +1384,7 @@ private fun UserActionDialog(
                         Text(
                             text = stringResource(R.string.kick_user),
                             style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.SemiBold,
+                            fontWeight = FontWeight.Medium,
                             color = MaterialTheme.colorScheme.error,
                         )
                         Text(
@@ -1420,7 +1420,7 @@ private fun UserActionDialog(
                         Text(
                             text = stringResource(R.string.permanently_kick_user),
                             style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.SemiBold,
+                            fontWeight = FontWeight.Medium,
                         )
                         Text(
                             text = stringResource(R.string.permanently_kick_user_desc),
@@ -1455,7 +1455,7 @@ private fun UserActionDialog(
                         Text(
                             text = stringResource(R.string.transfer_ownership),
                             style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.SemiBold,
+                            fontWeight = FontWeight.Medium,
                             color = MaterialTheme.colorScheme.primary,
                         )
                         Text(

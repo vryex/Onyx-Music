@@ -319,7 +319,7 @@ private fun NoEqualizationItem(
         content = {
             Text(
                 stringResource(R.string.eq_disabled),
-                fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal
+                fontWeight = if (isSelected) FontWeight.Medium else FontWeight.Normal
             )
         },
         leadingContent = {
@@ -347,7 +347,7 @@ private fun EQProfileItem(
         content = {
             Text(
                 text = profile.deviceModel,
-                fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal
+                fontWeight = if (isSelected) FontWeight.Medium else FontWeight.Normal
             )
         },
         supportingContent = {

@@ -1232,7 +1232,7 @@ fun LocalPlaylistHeader(
         Text(
             text = playlist.playlist.name,
             style = MaterialTheme.typography.headlineMedium,
-            fontWeight = FontWeight.Bold,
+            fontWeight = FontWeight.Medium,
             textAlign = TextAlign.Center,
             maxLines = 2,
             overflow = TextOverflow.Ellipsis,

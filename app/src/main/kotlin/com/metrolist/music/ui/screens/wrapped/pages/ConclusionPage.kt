@@ -46,7 +46,7 @@ fun ConclusionPage(onClose: () -> Unit) {
                 text = stringResource(R.string.wrapped_thank_you),
                 style = TextStyle(
                     fontSize = 28.sp,
-                    fontWeight = FontWeight.Bold,
+                    fontWeight = FontWeight.Medium,
                     color = Color.White
                 )
             )
@@ -68,7 +68,7 @@ fun ConclusionPage(onClose: () -> Unit) {
                     text = stringResource(R.string.wrapped_close),
                     style = TextStyle(
                         color = Color.Black,
-                        fontWeight = FontWeight.Bold
+                        fontWeight = FontWeight.Medium
                     )
                 )
             }

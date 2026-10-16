@@ -1007,4 +1007,9 @@
     <string name="onyx_your_collection">Your collection</string>
     <string name="onyx_fullscreen">Fullscreen lyrics</string>
     <string name="onyx_lyrics_tools">Lyrics tools</string>
+    <string name="onyx_listening_space">YOUR LISTENING SPACE</string>
+    <string name="onyx_home_intro">A little space. A world of sound.</string>
+    <string name="onyx_quick_access">Close at hand</string>
+    <string name="system_equalizer_unavailable">System equalizer is unavailable on this device.</string>
+    <string name="onyx_random_selection">Discover something random</string>
 </resources>

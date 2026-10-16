@@ -46,15 +46,30 @@ import com.metrolist.music.R
 /** Transparent, draw-only glass surfaces without realtime bitmap blur. */
 @Composable
 fun Modifier.onyxGlass(
-    shape: Shape = RoundedCornerShape(28.dp),
+    shape: Shape = RoundedCornerShape(16.dp),
     emphasized: Boolean = false,
 ): Modifier {
-    return clip(shape).background(if (emphasized) Color(0xFF282828) else Color(0xFF181818))
+    return clip(shape)
+        .background(if (emphasized) Color(0xFF10093A) else Color(0xFF060317))
+        .drawWithCache {
+            val innerLight = Brush.verticalGradient(listOf(Color.White.copy(alpha = 0.045f), Color.Transparent))
+            onDrawBehind { drawRect(innerLight) }
+        }
+        .border(1.dp, GlassEdge, shape)
 }
 
 @Composable
 fun Modifier.onyxBackdrop(): Modifier {
-    return background(MidnightCanvas)
+    return background(MidnightCanvas).drawWithCache {
+        val stars = List(32) { i ->
+            Offset(((i * 73 + 19) % 997) / 997f * size.width, ((i * 137 + 43) % 991) / 991f * size.height)
+        }
+        onDrawBehind {
+            stars.forEachIndexed { i, point ->
+                drawCircle(FrostGlow.copy(alpha = if (i % 3 == 0) 0.12f else 0.05f), 0.65.dp.toPx(), point)
+            }
+        }
+    }
 }
 
 @Composable
@@ -84,10 +99,10 @@ fun OnyxBrand(
         }
         Column {
             Text(
-                text = "ONYX",
+                text = "Onyx Music",
                 style = MaterialTheme.typography.titleLarge,
-                letterSpacing = 0.sp,
-                fontWeight = FontWeight.Bold,
+                letterSpacing = (-0.5).sp,
+                fontWeight = FontWeight.Medium,
                 color = MaterialTheme.colorScheme.onSurface,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
@@ -108,12 +123,13 @@ fun OnyxBrand(
 @Composable
 fun OnyxPageHeader(title: String, modifier: Modifier = Modifier, subtitle: String? = null) {
     Column(
-        modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp),
+        modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 24.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         Text(
             title, style = MaterialTheme.typography.displaySmall,
-            fontWeight = FontWeight.Bold, letterSpacing = (-0.4).sp,
+            fontWeight = FontWeight.Medium, letterSpacing = (-0.4).sp,
         )
         if (subtitle != null) Text(
             subtitle, style = MaterialTheme.typography.bodyMedium,

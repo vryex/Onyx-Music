@@ -21,31 +21,38 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Wait for the release artifact
+        id: release
         env:
           GH_TOKEN: ${{ github.token }}
+          TARGET_SHA: ${{ github.sha }}
         run: |
           python3 - <<'PY'
           import json, os, time, urllib.request
-          base = 'https://api.github.com/repos/xero-scripts-repo/Onyx-Music/actions/runs/38886477497'
+          api = 'https://api.github.com/repos/xero-scripts-repo/Onyx-Music/actions'
           def get(url):
               request = urllib.request.Request(url, headers={'Authorization': 'Bearer ' + os.environ['GH_TOKEN'], 'Accept': 'application/vnd.github+json'})
               with urllib.request.urlopen(request, timeout=30) as response:
                   return json.load(response)
           for _ in range(90):
-              if any(a['name'] == 'Onyx-Music-signed-release' for a in get(base + '/artifacts')['artifacts']):
-                  print('Release artifact available')
-                  break
-              run = get(base)
-              if run['status'] == 'completed':
-                  raise SystemExit('Release build finished without its APK artifact: ' + str(run['conclusion']))
+              runs = get(api + '/workflows/onyx-midnight.yml/runs?per_page=30')['workflow_runs']
+              matching = [r for r in runs if r['head_sha'] == os.environ['TARGET_SHA']]
+              if matching:
+                  run = matching[0]
+                  if any(a['name'] == 'Onyx-Music-signed-release' for a in get(api + '/runs/' + str(run['id']) + '/artifacts')['artifacts']):
+                      with open(os.environ['GITHUB_OUTPUT'], 'a') as out:
+                          out.write('run_id=' + str(run['id']) + '\n')
+                      print('Matched release artifact to source', run['head_sha'])
+                      break
+                  if run['status'] == 'completed':
+                      raise SystemExit('Release finished without its APK artifact: ' + str(run['conclusion']))
               time.sleep(10)
           else:
-              raise SystemExit('Timed out waiting for release artifact')
+              raise SystemExit('Timed out waiting for matching release artifact')
           PY
       - uses: actions/download-artifact@v4
         with:
           name: Onyx-Music-signed-release
-          run-id: 38886477497
+          run-id: ${{ steps.release.outputs.run_id }}
           github-token: ${{ github.token }}
           path: dist
       - uses: actions/download-artifact@v4

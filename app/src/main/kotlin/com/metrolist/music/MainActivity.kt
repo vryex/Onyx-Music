@@ -685,7 +685,7 @@ class MainActivity : FragmentActivity() {
                 }
                 val (forceBottomNav) = rememberPreference(ForceBottomNavBarKey, defaultValue = false)
                 val (slimNav) = rememberPreference(SlimNavBarKey, defaultValue = false)
-                val (useNewMiniPlayerDesign) = rememberPreference(UseNewMiniPlayerDesignKey, defaultValue = true)
+                val useNewMiniPlayerDesign = true
                 val (defaultOpenTabInt) = rememberPreference(DefaultOpenTabKey, defaultValue = NavigationTab.HOME.name)
                 val defaultOpenTab = remember(defaultOpenTabInt) {
                     try {
@@ -850,13 +850,6 @@ class MainActivity : FragmentActivity() {
 
                     topAppBarScrollBehavior.state.resetHeightOffset()
 
-                    // Collapse player when navigating to equalizer
-                    if (navBackStackEntry?.destination?.route == "equalizer" &&
-                        playerBottomSheetState.isExpanded
-                    ) {
-                        playerBottomSheetState.collapseSoft()
-                    }
-
                     // Track previous tab for animations
                     navController.currentBackStackEntry?.destination?.route?.let {
                         setPreviousTab(it)
@@ -963,7 +956,7 @@ class MainActivity : FragmentActivity() {
                         !(pauseListenHistory && eventCount == 0)
                     }
 
-                val baseBg = Color.Black
+                val baseBg = com.metrolist.music.ui.theme.MidnightCanvas
                 val artistNameAliases by ArtistNameAliases.aliases.collectAsStateWithLifecycle()
 
                 CompositionLocalProvider(
@@ -993,63 +986,67 @@ class MainActivity : FragmentActivity() {
                                 exit = ExitTransition.None,
                             ) {
                                 Row {
-                                    TopAppBar(
-                                        title = {
-                                            Text(currentTitleRes?.let { stringResource(it) } ?: "Onyx", style = MaterialTheme.typography.titleLarge)
-                                        },
-                                        actions = {
-                                            if (showHistoryButton) {
-                                                IconButton(onClick = { navController.navigate("history") }) {
-                                                    Icon(
-                                                        painter = painterResource(R.drawable.history),
-                                                        contentDescription = stringResource(R.string.history),
-                                                    )
-                                                }
-                                            }
-                                            IconButton(onClick = { navController.navigate("stats") }) {
-                                                Icon(
-                                                    painter = painterResource(R.drawable.stats),
-                                                    contentDescription = stringResource(R.string.stats),
-                                                )
-                                            }
-                                            if (listenTogetherInTopBar) {
-                                                IconButton(onClick = { navController.navigate("listen_together_from_topbar") }) {
-                                                    Icon(
-                                                        painter = painterResource(R.drawable.group_outlined),
-                                                        contentDescription = stringResource(R.string.together),
-                                                    )
-                                                }
-                                            }
+                                    androidx.compose.material3.CenterAlignedTopAppBar(
+                                        title = { OnyxBrand() },
+                                        navigationIcon = {
                                             IconButton(onClick = { showAccountDialog = true }) {
                                                 BadgedBox(badge = {
-                                                    if (latestVersionName != BuildConfig.BASE_VERSION_NAME) {
-                                                        Badge()
-                                                    }
+                                                    if (latestVersionName != BuildConfig.BASE_VERSION_NAME) Badge()
                                                 }) {
                                                     if (accountImageUrl != null) {
                                                         AsyncImage(
                                                             model = accountImageUrl,
                                                             contentDescription = stringResource(R.string.account),
-                                                            modifier =
-                                                                Modifier
-                                                                    .size(24.dp)
-                                                                    .clip(CircleShape),
+                                                            modifier = Modifier.size(28.dp).clip(RoundedCornerShape(8.dp)),
                                                         )
                                                     } else {
-                                                        Icon(
-                                                            painter = painterResource(R.drawable.account),
-                                                            contentDescription = stringResource(R.string.account),
-                                                            modifier = Modifier.size(24.dp),
+                                                        Icon(painterResource(R.drawable.account), stringResource(R.string.account))
+                                                    }
+                                                }
+                                            }
+                                        },
+                                        actions = {
+                                            var utilityMenu by remember { mutableStateOf(false) }
+                                            Box {
+                                                IconButton(onClick = { utilityMenu = true }) {
+                                                    Icon(painterResource(R.drawable.more_vert), stringResource(R.string.more_options))
+                                                }
+                                                androidx.compose.material3.DropdownMenu(
+                                                    expanded = utilityMenu,
+                                                    onDismissRequest = { utilityMenu = false },
+                                                ) {
+                                                    if (showHistoryButton) {
+                                                        androidx.compose.material3.DropdownMenuItem(
+                                                            text = { Text(stringResource(R.string.history)) },
+                                                            leadingIcon = { Icon(painterResource(R.drawable.history), null) },
+                                                            onClick = { utilityMenu = false; navController.navigate("history") },
                                                         )
                                                     }
+                                                    androidx.compose.material3.DropdownMenuItem(
+                                                        text = { Text(stringResource(R.string.stats)) },
+                                                        leadingIcon = { Icon(painterResource(R.drawable.stats), null) },
+                                                        onClick = { utilityMenu = false; navController.navigate("stats") },
+                                                    )
+                                                    if (listenTogetherInTopBar) {
+                                                        androidx.compose.material3.DropdownMenuItem(
+                                                            text = { Text(stringResource(R.string.together)) },
+                                                            leadingIcon = { Icon(painterResource(R.drawable.group_outlined), null) },
+                                                            onClick = { utilityMenu = false; navController.navigate("listen_together_from_topbar") },
+                                                        )
+                                                    }
+                                                    androidx.compose.material3.DropdownMenuItem(
+                                                        text = { Text(stringResource(R.string.settings)) },
+                                                        leadingIcon = { Icon(painterResource(R.drawable.settings), null) },
+                                                        onClick = { utilityMenu = false; navController.navigate("settings") },
+                                                    )
                                                 }
                                             }
                                         },
                                         scrollBehavior = topAppBarScrollBehavior,
                                         colors =
                                             TopAppBarDefaults.topAppBarColors(
-                                                containerColor = if (pureBlack) Color.Black else MaterialTheme.colorScheme.surface.copy(alpha = 0.92f),
-                                                scrolledContainerColor = if (pureBlack) Color.Black else MaterialTheme.colorScheme.surface.copy(alpha = 0.92f),
+                                                containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.96f),
+                                                scrolledContainerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.96f),
                                                 titleContentColor = MaterialTheme.colorScheme.onSurface,
                                                 actionIconContentColor = MaterialTheme.colorScheme.onSurfaceVariant,
                                                 navigationIconContentColor = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -1286,7 +1283,9 @@ class MainActivity : FragmentActivity() {
                                         val previousRouteIndex = routeIndexMap[initialState.destination.route] ?: -1
 
                                         if (currentRouteIndex >= 0 && previousRouteIndex >= 0) {
-                                            EnterTransition.None
+                                            slideInHorizontally(animationSpec = tween(180)) {
+                                                if (currentRouteIndex > previousRouteIndex) it / 24 else -it / 24
+                                            }
                                         } else if (currentRouteIndex == -1 || currentRouteIndex > previousRouteIndex) {
                                             slideInHorizontally(animationSpec = tween(220)) { it / 16 }
                                         } else {
@@ -1299,7 +1298,9 @@ class MainActivity : FragmentActivity() {
                                         val previousRouteIndex = routeIndexMap[initialState.destination.route] ?: -1
 
                                         if (currentRouteIndex >= 0 && previousRouteIndex >= 0) {
-                                            EnterTransition.None
+                                            slideInHorizontally(animationSpec = tween(180)) {
+                                                if (currentRouteIndex > previousRouteIndex) it / 24 else -it / 24
+                                            }
                                         } else if (previousRouteIndex != -1 && previousRouteIndex < currentRouteIndex) {
                                             slideInHorizontally(animationSpec = tween(220)) { it / 16 }
                                         } else {
@@ -1320,6 +1321,8 @@ class MainActivity : FragmentActivity() {
                             }
                         }
                     }
+
+                    com.metrolist.music.ui.theme.OnyxLaunchIntro()
 
                     BottomSheetMenu(
                         state = LocalMenuState.current,

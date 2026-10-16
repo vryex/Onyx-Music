@@ -10,6 +10,7 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.border
 import androidx.compose.foundation.background
 import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.gestures.detectTapGestures
@@ -116,11 +117,11 @@ private fun calculateThumbnailDimensions(
     containerWidth: Dp,
     containerHeight: Dp = containerWidth,
     horizontalPadding: Dp = PlayerHorizontalPadding,
-    cornerRadius: Dp = 6.dp,
+    cornerRadius: Dp = 16.dp,
     isLandscape: Boolean = false
 ): ThumbnailDimensions {
     // In landscape, use height as the constraining dimension for a square thumbnail
-    val effectiveSize = minOf(containerWidth - horizontalPadding * 2, containerHeight).coerceAtLeast(1.dp)
+    val effectiveSize = minOf(containerWidth - horizontalPadding * 2 - 32.dp, containerHeight - 48.dp).coerceAtLeast(1.dp)
     return ThumbnailDimensions(
         itemWidth = containerWidth,
         containerSize = containerWidth,
@@ -321,17 +322,8 @@ fun Thumbnail(
             Column(
                 modifier = Modifier.fillMaxSize(),
                 horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = if (isLandscape) Arrangement.Center else Arrangement.Top
+                verticalArrangement = Arrangement.Center
             ) {
-                if (!isLandscape && !queueTitle.isNullOrBlank()) {
-                    Text(
-                        queueTitle.orEmpty(), style = MaterialTheme.typography.labelMedium,
-                        color = textBackgroundColor.copy(alpha = 0.5f), maxLines = 1,
-                        overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
-                        modifier = Modifier.padding(horizontal = 32.dp, vertical = 4.dp),
-                    )
-                }
-                
                 // Thumbnail content
                 BoxWithConstraints(
                     contentAlignment = Alignment.Center,
@@ -399,6 +391,17 @@ fun Thumbnail(
                     }
                 }
             }
+        }
+
+        if (!isLandscape && !queueTitle.isNullOrBlank()) {
+            Text(
+                text = queueTitle.orEmpty(),
+                style = MaterialTheme.typography.labelSmall,
+                color = Color(0xFFA8A6B7),
+                maxLines = 1,
+                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+                modifier = Modifier.align(Alignment.BottomCenter).padding(horizontal = 32.dp, vertical = 4.dp),
+            )
         }
 
         // Seek effect
@@ -546,6 +549,7 @@ private fun ThumbnailItem(
             modifier = Modifier
                 .size(dimensions.thumbnailSize)
                 .clip(RoundedCornerShape(dimensions.cornerRadius))
+                .border(1.dp, Color(0xFF9382FF).copy(alpha = 0.25f), RoundedCornerShape(dimensions.cornerRadius))
         ) {
             if (hidePlayerThumbnail) {
                 HiddenThumbnailPlaceholder(textBackgroundColor = textBackgroundColor)
@@ -562,12 +566,10 @@ private fun ThumbnailItem(
                 )
             }
             
-            // Cast button at top-right corner of thumbnail
             CastButton(
-                modifier = Modifier
-                    .align(Alignment.TopEnd)
-                    .padding(8.dp),
-                tintColor = textBackgroundColor
+                modifier = Modifier.align(Alignment.BottomStart).padding(12.dp)
+                    .clip(RoundedCornerShape(5.dp)).background(Color(0xFF060317).copy(alpha = 0.9f)),
+                tintColor = Color(0xFFF4F0FF)
             )
         }
     }
@@ -640,7 +642,7 @@ private fun SeekEffectOverlay(
         text = seekDirection,
         color = Color.White,
         fontSize = 16.sp,
-        fontWeight = FontWeight.Bold,
+        fontWeight = FontWeight.Medium,
         textAlign = TextAlign.Center,
         modifier = modifier
             .background(Color.Black.copy(alpha = 0.7f), RoundedCornerShape(8.dp))

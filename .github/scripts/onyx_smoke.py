@@ -47,6 +47,21 @@ def tap_label(root, label):
     time.sleep(2)
 
 
+def scroll_to_label(root, label, name='find-control', max_swipes=6):
+    width, height = map(int, re.search(r'(\d+)x(\d+)', adb('shell', 'wm', 'size').decode()).groups())
+    for attempt in range(max_swipes + 1):
+        if any(label.lower() in (n.get('text', '') + ' ' + n.get('content-desc', '')).lower()
+               for n in root.iter('node')):
+            return root
+        if attempt == max_swipes:
+            break
+        adb('shell', 'input', 'swipe', str(width // 2), str(int(height * .76)),
+            str(width // 2), str(int(height * .38)), '350')
+        time.sleep(.5)
+        root = snapshot(name + '-' + str(attempt))
+    raise AssertionError('Missing control after scrolling: ' + label)
+
+
 adb('install', '-r', 'dist/Onyx-Music.apk')
 adb('shell', 'pm', 'grant', PACKAGE, 'android.permission.POST_NOTIFICATIONS', check=False)
 adb('logcat', '-c')
@@ -68,7 +83,7 @@ time.sleep(3)
 snapshot('03-library-landscape')
 adb('shell', 'settings', 'put', 'system', 'user_rotation', '0')
 time.sleep(2)
-tap_label(snapshot('04-library-portrait'), 'search')
+tap_label(scroll_to_label(snapshot('04-library-portrait'), 'search', '04-library-search'), 'search')
 search = snapshot('05-search')
 assert any(n.get('class', '').endswith('EditText') for n in search.iter('node')), 'Search input did not open'
 adb('shell', 'input', 'keyevent', 'KEYCODE_BACK')

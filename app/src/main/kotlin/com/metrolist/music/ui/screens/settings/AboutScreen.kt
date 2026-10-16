@@ -272,7 +272,7 @@ fun AboutScreen(
                     Text(
                         text = metrolistName,
                         style = MaterialTheme.typography.headlineLarge,
-                        fontWeight = FontWeight.Black,
+                        fontWeight = FontWeight.Medium,
                         color = MaterialTheme.colorScheme.onSurface,
                         letterSpacing = (-0.5).sp
                     )
@@ -289,7 +289,7 @@ fun AboutScreen(
                             Text(
                                 text = BuildConfig.VERSION_NAME,
                                 style = MaterialTheme.typography.labelMedium,
-                                fontWeight = FontWeight.Bold,
+                                fontWeight = FontWeight.Medium,
                                 color = MaterialTheme.colorScheme.primary,
                                 modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
                             )
@@ -302,7 +302,7 @@ fun AboutScreen(
                             Text(
                                 text = BuildConfig.ARCHITECTURE.uppercase(),
                                 style = MaterialTheme.typography.labelMedium,
-                                fontWeight = FontWeight.Bold,
+                                fontWeight = FontWeight.Medium,
                                 color = MaterialTheme.colorScheme.onSecondaryContainer,
                                 modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
                             )
@@ -316,7 +316,7 @@ fun AboutScreen(
                                 Text(
                                     text = "DEBUG",
                                     style = MaterialTheme.typography.labelMedium,
-                                    fontWeight = FontWeight.Bold,
+                                    fontWeight = FontWeight.Medium,
                                     color = MaterialTheme.colorScheme.onTertiaryContainer,
                                     modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
                                 )
@@ -369,7 +369,7 @@ fun AboutScreen(
                         Text(
                             text = leadDeveloper.name,
                             style = MaterialTheme.typography.headlineLarge,
-                            fontWeight = FontWeight.Black,
+                            fontWeight = FontWeight.Medium,
                             color = MaterialTheme.colorScheme.onSurface,
                             lineHeight = 38.sp,
                             letterSpacing = (-0.5).sp
@@ -378,7 +378,7 @@ fun AboutScreen(
                             text = stringResource(R.string.credits_lead_developer),
                             style = MaterialTheme.typography.titleMedium,
                             color = MaterialTheme.colorScheme.primary,
-                            fontWeight = FontWeight.SemiBold
+                            fontWeight = FontWeight.Medium
                         )
                     }
                 }
@@ -400,7 +400,7 @@ fun AboutScreen(
                 ) {
                     Icon(painterResource(R.drawable.buymeacoffee), contentDescription = null, modifier = Modifier.size(20.dp))
                     Spacer(Modifier.width(12.dp))
-                    Text(stringResource(R.string.buy_mo_a_coffee), fontWeight = FontWeight.ExtraBold, fontSize = 16.sp)
+                    Text(stringResource(R.string.buy_mo_a_coffee), fontWeight = FontWeight.Medium, fontSize = 16.sp)
                 }
             }
         }
@@ -433,7 +433,7 @@ fun AboutScreen(
                             }
                         )
                     },
-                    title = { Text(text = contributor.name, fontWeight = FontWeight.SemiBold) },
+                    title = { Text(text = contributor.name, fontWeight = FontWeight.Medium) },
                     description = { Text(stringResource(contributor.roleRes)) },
                     trailingContent = {
                         Row(
@@ -478,7 +478,7 @@ fun AboutScreen(
             items = communityLinks.map { link ->
                 Material3SettingsItem(
                     icon = painterResource(link.iconRes),
-                    title = { Text(stringResource(link.labelRes), fontWeight = FontWeight.SemiBold) },
+                    title = { Text(stringResource(link.labelRes), fontWeight = FontWeight.Medium) },
                     description = if (link.labelRes == R.string.credits_license_name) {
                         { Text(stringResource(R.string.credits_license_desc)) }
                     } else null,
@@ -492,7 +492,7 @@ fun AboutScreen(
         Text(
             text = stringResource(R.string.stands_with_palestine),
             style = MaterialTheme.typography.labelLarge,
-            fontWeight = FontWeight.Bold,
+            fontWeight = FontWeight.Medium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
         

@@ -67,7 +67,7 @@ fun TimeTransfer(
                     if (sourceSong.value != null) {
                         Text(
                             text = formatMillis(sourceSong.value!!.timeListened),
-                            fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
+                            fontWeight = androidx.compose.ui.text.font.FontWeight.Medium,
                         )
                     }
                 }
@@ -88,7 +88,7 @@ fun TimeTransfer(
                     if (targetSong.value != null) {
                         Text(
                             text = formatMillis(targetSong.value!!.timeListened),
-                            fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
+                            fontWeight = androidx.compose.ui.text.font.FontWeight.Medium,
                         )
                     }
                 }

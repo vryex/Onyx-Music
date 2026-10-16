@@ -798,7 +798,7 @@ fun OriginalLyrics(
                     fontSize = 20.sp,
                     color = MaterialTheme.colorScheme.secondary,
                     textAlign = TextAlign.Center,
-                    fontWeight = FontWeight.Bold,
+                    fontWeight = FontWeight.Medium,
                     modifier = Modifier.alpha(0.5f),
                 )
             }
@@ -1138,9 +1138,9 @@ fun OriginalLyrics(
                                             val wordColor = expressiveAccent.copy(alpha = wordAlpha)
                                             val wordWeight =
                                                 when {
-                                                    !isActiveLine -> FontWeight.Bold
-                                                    hasWordPassed -> FontWeight.Bold
-                                                    isWordActive -> FontWeight.ExtraBold
+                                                    !isActiveLine -> FontWeight.Medium
+                                                    hasWordPassed -> FontWeight.Medium
+                                                    isWordActive -> FontWeight.Medium
                                                     else -> FontWeight.Medium
                                                 }
 
@@ -1191,9 +1191,9 @@ fun OriginalLyrics(
                                             val wordColor = expressiveAccent.copy(alpha = wordAlpha)
                                             val wordWeight =
                                                 when {
-                                                    !isActiveLine -> FontWeight.Bold
-                                                    hasWordPassed -> FontWeight.Bold
-                                                    isWordActive -> FontWeight.ExtraBold
+                                                    !isActiveLine -> FontWeight.Medium
+                                                    hasWordPassed -> FontWeight.Medium
+                                                    isWordActive -> FontWeight.Medium
                                                     else -> FontWeight.Medium
                                                 }
                                             // Enhanced shadow for active words
@@ -1269,9 +1269,9 @@ fun OriginalLyrics(
                                                 }
                                             val wordWeight =
                                                 when {
-                                                    !isActiveLine -> FontWeight.Bold
-                                                    isWordActive -> FontWeight.ExtraBold
-                                                    hasWordPassed -> FontWeight.Bold
+                                                    !isActiveLine -> FontWeight.Medium
+                                                    isWordActive -> FontWeight.Medium
+                                                    hasWordPassed -> FontWeight.Medium
                                                     else -> FontWeight.Medium
                                                 }
                                             val wordShadow =
@@ -1345,7 +1345,7 @@ fun OriginalLyrics(
                                                     style =
                                                         SpanStyle(
                                                             brush = slideBrush,
-                                                            fontWeight = FontWeight.ExtraBold,
+                                                            fontWeight = FontWeight.Medium,
                                                             shadow =
                                                                 Shadow(
                                                                     color = expressiveAccent.copy(alpha = 0.4f * glowIntensity),
@@ -1362,7 +1362,7 @@ fun OriginalLyrics(
                                                     style =
                                                         SpanStyle(
                                                             color = expressiveAccent,
-                                                            fontWeight = FontWeight.Bold,
+                                                            fontWeight = FontWeight.Medium,
                                                             shadow =
                                                                 Shadow(
                                                                     color = expressiveAccent.copy(alpha = 0.4f),
@@ -1439,7 +1439,7 @@ fun OriginalLyrics(
                                                     style =
                                                         SpanStyle(
                                                             brush = wordBrush,
-                                                            fontWeight = FontWeight.ExtraBold,
+                                                            fontWeight = FontWeight.Medium,
                                                             shadow = wordShadow,
                                                         ),
                                                 ) {
@@ -1451,7 +1451,7 @@ fun OriginalLyrics(
                                                     style =
                                                         SpanStyle(
                                                             color = expressiveAccent,
-                                                            fontWeight = FontWeight.Bold,
+                                                            fontWeight = FontWeight.Medium,
                                                             shadow =
                                                                 Shadow(
                                                                     color = expressiveAccent.copy(alpha = 0.25f),
@@ -1520,9 +1520,9 @@ fun OriginalLyrics(
                                             val wordColor = expressiveAccent.copy(alpha = wordAlpha)
                                             val wordWeight =
                                                 when {
-                                                    !isActiveLine -> FontWeight.SemiBold
-                                                    hasWordPassed -> FontWeight.Bold
-                                                    isWordActive -> FontWeight.ExtraBold
+                                                    !isActiveLine -> FontWeight.Medium
+                                                    hasWordPassed -> FontWeight.Medium
+                                                    isWordActive -> FontWeight.Medium
                                                     else -> FontWeight.Normal
                                                 }
                                             // Enhanced shadow with better glow intensity
@@ -1648,7 +1648,7 @@ fun OriginalLyrics(
                                     text = styledText,
                                     fontSize = lyricsTextSize.sp,
                                     textAlign = alignment,
-                                    fontWeight = FontWeight.ExtraBold,
+                                    fontWeight = FontWeight.Medium,
                                     lineHeight = (lyricsTextSize * lyricsLineSpacing).sp,
                                     modifier =
                                         Modifier
@@ -1664,7 +1664,7 @@ fun OriginalLyrics(
                                     fontSize = lyricsTextSize.sp,
                                     color = expressiveAccent,
                                     textAlign = alignment,
-                                    fontWeight = FontWeight.ExtraBold,
+                                    fontWeight = FontWeight.Medium,
                                     lineHeight = (lyricsTextSize * lyricsLineSpacing).sp,
                                 )
                             } else {
@@ -1674,7 +1674,7 @@ fun OriginalLyrics(
                                     fontSize = lyricsTextSize.sp,
                                     color = lineColor,
                                     textAlign = alignment,
-                                    fontWeight = FontWeight.Bold,
+                                    fontWeight = FontWeight.Medium,
                                     lineHeight = (lyricsTextSize * lyricsLineSpacing).sp,
                                 )
                             }
@@ -1836,7 +1836,7 @@ fun OriginalLyrics(
                     Column(modifier = Modifier.padding(20.dp)) {
                         Text(
                             text = stringResource(R.string.share_lyrics),
-                            fontWeight = FontWeight.Bold,
+                            fontWeight = FontWeight.Medium,
                             fontSize = 20.sp,
                             color = MaterialTheme.colorScheme.onSurface,
                         )
@@ -1955,7 +1955,7 @@ fun OriginalLyrics(
             val textStyleForMeasurement =
                 TextStyle(
                     color = previewTextColor,
-                    fontWeight = FontWeight.Bold,
+                    fontWeight = FontWeight.Medium,
                     textAlign = lyricsTextAlign,
                 )
             val textMeasurer = rememberTextMeasurer()

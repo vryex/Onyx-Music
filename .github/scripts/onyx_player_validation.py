@@ -11,6 +11,7 @@ helpers = runpy.run_path('.github/scripts/onyx_smoke.py')
 adb = helpers['adb']
 snapshot = helpers['snapshot']
 base_tap_label = helpers['tap_label']
+scroll_to_label = helpers['scroll_to_label']
 package = helpers['PACKAGE']
 activity = helpers['ACTIVITY']
 out = helpers['OUT']
@@ -79,12 +80,13 @@ for attempt in range(8):
     home = snapshot('07-daily-selection-' + str(attempt))
 else:
     raise AssertionError('Daily selection did not use available recommendation fixtures')
+home = scroll_to_label(home, 'onyx ui check', '07-recommendation-title')
 assert any('Onyx UI check' in n.get('text', '') for n in home.iter('node')), 'Real recommendation title missing'
 adb('shell', 'svc', 'wifi', 'enable')
 adb('shell', 'svc', 'data', 'enable')
 tap_label(home, 'library')
-tap_label(snapshot('08-seeded-library'), 'liked')
-tap_label(snapshot('09-liked-songs'), 'onyx ui check 1')
+tap_label(scroll_to_label(snapshot('08-seeded-library'), 'liked', '08-find-liked'), 'liked')
+tap_label(scroll_to_label(snapshot('09-liked-songs'), 'onyx ui check 1', '09-find-song'), 'onyx ui check 1')
 time.sleep(3)
 adb('shell', 'input', 'keyevent', 'KEYCODE_MEDIA_PAUSE')
 tap_label(snapshot('10-mini-player'), 'onyx ui check 1')

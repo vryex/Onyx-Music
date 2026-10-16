@@ -35,9 +35,10 @@ fun LibraryScreen() {
         Column {
             ChipsRow(
                 chips = listOf(
+                    LibraryFilter.LIBRARY to stringResource(R.string.filter_library),
                     LibraryFilter.PLAYLISTS to stringResource(R.string.filter_playlists),
-                    LibraryFilter.SONGS to stringResource(R.string.filter_songs),
                     LibraryFilter.ALBUMS to stringResource(R.string.filter_albums),
+                    LibraryFilter.SONGS to stringResource(R.string.filter_songs),
                     LibraryFilter.ARTISTS to stringResource(R.string.filter_artists),
                     LibraryFilter.PODCASTS to stringResource(R.string.filter_podcasts),
                 ),

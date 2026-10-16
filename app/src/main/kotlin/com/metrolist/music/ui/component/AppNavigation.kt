@@ -83,7 +83,7 @@ fun AppNavigationRail(
     onSearchLongClick: (() -> Unit)? = null,
     onHomeLongHold: (() -> Unit)? = null,
 ) {
-    val containerColor = Color.Black
+    val containerColor = MaterialTheme.colorScheme.surfaceContainerLow
     val haptics = LocalHapticFeedback.current
     val viewConfiguration = LocalViewConfiguration.current
 
@@ -166,7 +166,7 @@ fun AppNavigationBar(
     onHomeLongHold: (() -> Unit)? = null,
 ) {
     val navigationScrim = remember {
-        Brush.verticalGradient(0f to Color(0xEB121212), 1f to Color(0xFF121212))
+        Brush.verticalGradient(0f to Color(0xEB030014), 1f to Color(0xFF030014))
     }
     val haptics = LocalHapticFeedback.current
     val viewConfiguration = LocalViewConfiguration.current
@@ -174,8 +174,9 @@ fun AppNavigationBar(
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .background(navigationScrim)
-            .padding(horizontal = 16.dp, vertical = if (slimNav) 0.dp else 6.dp),
+            .padding(horizontal = 24.dp, vertical = if (slimNav) 0.dp else 5.dp)
+            .onyxGlass(RoundedCornerShape(50))
+            .padding(horizontal = 5.dp, vertical = 4.dp),
         horizontalArrangement = Arrangement.spacedBy(3.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -207,11 +208,16 @@ fun AppNavigationBar(
                     }
                 }
             }
-            val tint = if (selected) Color.White else Color(0xFFB3B3B3)
+            val highlight by animateColorAsState(
+                if (selected) MaterialTheme.colorScheme.onSurface else Color.Transparent,
+                tween(180), label = "dock selection",
+            )
+            val tint = if (selected) MaterialTheme.colorScheme.surface else MaterialTheme.colorScheme.onSurfaceVariant
             Column(
                 modifier = Modifier
                     .weight(1f)
                     .clip(RoundedCornerShape(50))
+                    .background(highlight)
                     .selectable(
                         selected = selected,
                         role = Role.Tab,
@@ -240,7 +246,7 @@ fun AppNavigationBar(
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                         style = MaterialTheme.typography.labelSmall.copy(fontSize = 11.sp),
-                        fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
+                        fontWeight = if (selected) FontWeight.Medium else FontWeight.Normal,
                         color = tint,
                     )
                 }

@@ -404,7 +404,7 @@ fun SongMenu(
                     Text(
                         text = artist.name,
                         fontSize = 18.sp,
-                        fontWeight = FontWeight.Bold,
+                        fontWeight = FontWeight.Medium,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                         modifier =
