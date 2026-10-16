@@ -1146,7 +1146,7 @@ fun BottomSheetPlayer(
                         Modifier
                             .windowInsetsPadding(
                                 WindowInsets.systemBars.only(WindowInsetsSides.Horizontal).add(verticalWindowInsets),
-                            ).padding(bottom = 24.dp)
+                            ).padding(bottom = if (isFullScreen) 0.dp else queueSheetState.collapsedBound)
                             .fillMaxSize(),
                 ) {
                     Box(

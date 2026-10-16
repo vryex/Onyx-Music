@@ -118,6 +118,27 @@ for control in ['Previous track', 'Next track']:
     assert nodes, 'Expanded landscape transport missing: ' + control
     bounds = [int(v) for v in re.findall(r'\d+', nodes[0].get('bounds', ''))]
     assert len(bounds) == 4 and 0 <= bounds[0] < bounds[2] <= height and 0 <= bounds[1] < bounds[3] <= width, 'Landscape control outside viewport: ' + control
+def visible_bounds(root, description):
+    result = []
+    for n in root.iter('node'):
+        if description in n.get('content-desc', ''):
+            bounds = [int(v) for v in re.findall(r'\d+', n.get('bounds', ''))]
+            if len(bounds) == 4 and bounds[2] > bounds[0] and bounds[3] - bounds[1] >= 40:
+                result.append(bounds)
+    return result
+
+for attempt in range(5):
+    if visible_bounds(landscape, 'Sleep timer'):
+        break
+    assert attempt < 4, 'Landscape timer must remain accessible by scrolling its controls'
+    adb('shell', 'input', 'swipe', str(int(height * .8)), str(int(width * .65)),
+        str(int(height * .8)), str(int(width * .3)), '350')
+    time.sleep(.5)
+    landscape = snapshot('14-landscape-utilities-' + str(attempt))
+for timer in visible_bounds(landscape, 'Sleep timer'):
+    for menu in visible_bounds(landscape, 'More options'):
+        assert max(timer[0], menu[0]) >= min(timer[2], menu[2]) or max(timer[1], menu[1]) >= min(timer[3], menu[3]), 'Landscape timer overlaps player menu'
+snapshot('14-landscape-utilities-verified')
 adb('shell', 'wm', 'size', 'reset')
 adb('shell', 'settings', 'put', 'system', 'user_rotation', '0')
 time.sleep(2)
