@@ -25,7 +25,7 @@ jobs:
         run: |
           python3 - <<'PY'
           import json, os, time, urllib.request
-          base = 'https://api.github.com/repos/xero-scripts-repo/Onyx-Music/actions/runs/38884723164'
+          base = 'https://api.github.com/repos/xero-scripts-repo/Onyx-Music/actions/runs/38886477497'
           def get(url):
               request = urllib.request.Request(url, headers={'Authorization': 'Bearer ' + os.environ['GH_TOKEN'], 'Accept': 'application/vnd.github+json'})
               with urllib.request.urlopen(request, timeout=30) as response:
@@ -44,7 +44,7 @@ jobs:
       - uses: actions/download-artifact@v4
         with:
           name: Onyx-Music-signed-release
-          run-id: 38884723164
+          run-id: 38886477497
           github-token: ${{ github.token }}
           path: dist
       - uses: actions/download-artifact@v4

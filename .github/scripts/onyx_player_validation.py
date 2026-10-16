@@ -67,6 +67,8 @@ adb('shell', 'chown', owner + ':' + owner, db_path)
 adb('shell', 'chmod', '660', db_path)
 adb('shell', 'restorecon', db_path)
 adb('shell', 'rm', '-f', db_path + '-wal', db_path + '-shm')
+adb('shell', 'svc', 'wifi', 'disable')
+adb('shell', 'svc', 'data', 'disable')
 adb('shell', 'am', 'start', '-W', '-n', activity)
 time.sleep(3)
 home = snapshot('07-seeded-home')
@@ -78,6 +80,8 @@ for attempt in range(8):
 else:
     raise AssertionError('Daily selection did not use available recommendation fixtures')
 assert any('Onyx UI check' in n.get('text', '') for n in home.iter('node')), 'Real recommendation title missing'
+adb('shell', 'svc', 'wifi', 'enable')
+adb('shell', 'svc', 'data', 'enable')
 tap_label(home, 'library')
 tap_label(snapshot('08-seeded-library'), 'liked')
 tap_label(snapshot('09-liked-songs'), 'onyx ui check 1')
