@@ -73,8 +73,15 @@ adb('shell', 'rm', '-f', db_path + '-wal', db_path + '-shm')
 adb('shell', 'am', 'start', '-W', '-n', activity)
 time.sleep(4)
 tap(snapshot('home'), 'library')
-tap(snapshot('library'), 'albums')
+library = snapshot('library')
+def selected_label(root, text):
+    return any(n.get('selected') == 'true' and any(
+        c.get('text', '').strip().lower() == text for c in n.iter('node')
+    ) for n in root.iter('node'))
+if not selected_label(library, 'albums'):
+    tap(library, 'albums')
 albums = snapshot('albums')
+assert selected_label(albums, 'albums') and selected_label(albums, 'liked'), 'Profile must stay in the liked-albums-only screen'
 assert any('Onyx performance album' in n.get('text', '') for n in albums.iter('node')), 'Profile grid missing fixtures'
 # The same artwork was cached by functional validation; remove network variability.
 adb('shell', 'svc', 'wifi', 'disable')
