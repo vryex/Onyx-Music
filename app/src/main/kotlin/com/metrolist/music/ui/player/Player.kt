@@ -6,7 +6,6 @@
 package com.metrolist.music.ui.player
 
 import com.metrolist.music.ui.component.LiquidIconButton
-import com.metrolist.music.ui.theme.rememberArtworkColor
 import com.metrolist.music.ui.component.OnyxPlayerHeader
 import com.metrolist.music.ui.theme.rememberArtworkColor
 import androidx.compose.ui.draw.drawWithCache
