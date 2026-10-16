@@ -88,6 +88,8 @@ jobs:
           disable-animations: false
           script: |
             python3 .github/scripts/onyx_player_validation.py
+            adb reconnect offline
+            timeout 60 adb wait-for-device
             adb uninstall com.onyx.music
             adb install baseline-profile.apk
             adb shell pm grant com.onyx.music android.permission.POST_NOTIFICATIONS

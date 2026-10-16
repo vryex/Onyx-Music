@@ -53,7 +53,7 @@ def insert(table, values):
 
 for i, video in enumerate(['dQw4w9WgXcQ', 'jNQXAC9IVRw']):
     insert('song', {'id': video, 'title': 'Onyx UI check ' + str(i + 1), 'duration': 180,
-                    'liked': 1, 'likedDate': 1770000000000, 'inLibrary': 1770000000000,
+                    'isVideo': 1, 'liked': 1, 'likedDate': 1770000000000, 'inLibrary': 1770000000000,
                     'thumbnailUrl': 'https://i.ytimg.com/vi/' + video + '/hqdefault.jpg'})
 insert('artist', {'id': 'onyx-ui-check', 'name': 'Onyx Studio', 'lastUpdateTime': 1770000000000})
 for i, video in enumerate(['dQw4w9WgXcQ', 'jNQXAC9IVRw']):
@@ -74,7 +74,7 @@ adb('shell', 'am', 'start', '-W', '-n', activity)
 time.sleep(3)
 home = snapshot('07-seeded-home')
 for attempt in range(8):
-    if any('daily selection' in n.get('text', '').lower() for n in home.iter('node')):
+    if any('recomendaciones' in n.get('text', '').lower() for n in home.iter('node')):
         break
     time.sleep(1)
     home = snapshot('07-daily-selection-' + str(attempt))
@@ -149,6 +149,25 @@ if not any('Minimize player' in n.get('content-desc', '') for n in portrait.iter
 tap_label(portrait, 'lyrics')
 tap_label(snapshot('16-lyrics'), 'lyrics tools')
 snapshot('17-lyrics-tools')
+adb('shell', 'input', 'keyevent', 'KEYCODE_BACK')
+tap_label(snapshot('18-return-player'), 'lyrics')
+video_header = snapshot('18-video-toggle')
+tap_label(video_header, 'video')
+video_result = None
+for attempt in range(26):
+    video = snapshot('19-video-' + str(attempt))
+    descriptions = [n.get('content-desc', '') for n in video.iter('node')]
+    if any('Video playing' in d or 'Video ready' in d for d in descriptions):
+        video_result = 'Embedded video initialized'
+        break
+    if not any(d == 'Video' for d in descriptions) and any('Minimize player' in d for d in descriptions):
+        video_result = 'YouTube unavailable: cover fallback preserved audio player'
+        break
+    time.sleep(1)
+assert video_result is not None, 'Video did not initialize or return to the cover after timeout'
+(out / 'video-result.txt').write_text(video_result)
+print('VIDEO:', video_result)
+
 log = adb('logcat', '-d').decode(errors='replace')
 (out / 'player-logcat.txt').write_text(log)
 assert 'FATAL EXCEPTION' not in log or 'Process: ' + package not in log, 'App crash; inspect player-logcat'

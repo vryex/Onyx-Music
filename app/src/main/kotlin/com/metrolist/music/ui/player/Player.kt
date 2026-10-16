@@ -8,6 +8,8 @@ package com.metrolist.music.ui.player
 import com.metrolist.music.ui.component.LiquidIconButton
 import com.metrolist.music.ui.component.OnyxPlayerHeader
 import com.metrolist.music.ui.theme.rememberArtworkColor
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.draw.drawWithCache
 import com.metrolist.music.ui.theme.onyxGlass
 import androidx.compose.foundation.verticalScroll
@@ -315,6 +317,8 @@ fun BottomSheetPlayer(
     val playbackState by playerConnection.playbackState.collectAsStateWithLifecycle()
     val mediaMetadata by playerConnection.mediaMetadata.collectAsStateWithLifecycle()
     val artworkColor by rememberArtworkColor(mediaMetadata?.thumbnailUrl)
+    var showVideo by rememberSaveable { mutableStateOf(false) }
+    var videoUnavailable by remember(mediaMetadata?.id) { mutableStateOf(false) }
     val currentSong by playerConnection.currentSong.collectAsStateWithLifecycle(initialValue = null)
     val automix by playerConnection.service.automixItems.collectAsStateWithLifecycle()
     val repeatMode by playerConnection.repeatMode.collectAsStateWithLifecycle()
@@ -345,6 +349,13 @@ fun BottomSheetPlayer(
     val castDuration by castHandler?.castDuration?.collectAsStateWithLifecycle() ?: remember { mutableLongStateOf(0L) }
     val castIsPlaying by castHandler?.castIsPlaying?.collectAsStateWithLifecycle() ?: remember { mutableStateOf(false) }
 
+    val canShowVideo = !videoUnavailable && !isCasting && !isListenTogetherGuest &&
+        (mediaMetadata?.isVideoSong == true || currentSong?.song?.isVideo == true) &&
+        mediaMetadata?.id?.matches(Regex("[A-Za-z0-9_-]{11}")) == true
+    val onVideoUnavailable: () -> Unit = {
+        videoUnavailable = true
+        Toast.makeText(context, R.string.onyx_video_unavailable, Toast.LENGTH_SHORT).show()
+    }
     val focusRequester = remember { FocusRequester() }
 
     LaunchedEffect(state.isExpanded) {
@@ -854,11 +865,13 @@ fun BottomSheetPlayer(
                     }
                 }
                 val favorite = if (currentSong?.song?.isEpisode == true) currentSong?.song?.inLibrary != null else currentSong?.song?.liked == true
+                val favoriteScale by animateFloatAsState(if (favorite && !showInlineLyrics) 1.12f else 1f, tween(180), label = "favoritePulse")
                 PlayerIconButton(
                     if (showInlineLyrics) R.drawable.fullscreen else if (favorite) R.drawable.favorite else R.drawable.favorite_border,
                     if (showInlineLyrics) stringResource(R.string.onyx_fullscreen) else stringResource(R.string.liked),
                     onClick = { if (showInlineLyrics) isFullScreen = !isFullScreen else playerConnection.toggleLike() },
-                    modifier = Modifier.semantics { selected = favorite },
+                    modifier = Modifier.scale(favoriteScale).semantics { selected = favorite },
+                    contentColor = Color.White,
                 )
                 if (showInlineLyrics) {
                     val lyrics by playerConnection.currentLyrics.collectAsStateWithLifecycle(initialValue = null)
@@ -885,6 +898,8 @@ fun BottomSheetPlayer(
                         SliderState(value = sliderValue, trackRange = sliderRange)
                     }
                     sliderState.value = sliderValue
+                    val scrubSize by animateDpAsState(if (sliderPosition != null) 18.dp else 12.dp, tween(140), label = "scrubThumb")
+                    val scrubTrackHeight by animateDpAsState(if (sliderPosition != null) 8.dp else 6.dp, tween(140), label = "scrubTrack")
                     Slider(
                         state = sliderState,
                         onValueChange = {
@@ -908,13 +923,15 @@ fun BottomSheetPlayer(
                         },
                         enabled = !isListenTogetherGuest,
                         thumb = {
-                            Box(Modifier.size(10.dp).background(Color.White, RoundedCornerShape(50)))
+                            Box(Modifier.size(scrubSize).shadow(4.dp, CircleShape).background(Color.White, CircleShape))
                         },
                         track = { sliderState ->
                             PlayerSliderTrack(
                                 sliderState = sliderState,
                                 colors = PlayerSliderColors.getSliderColors(Color(0xFFF5F5F7), playerBackground, useDarkTheme),
-                                trackHeight = 5.dp,
+                                trackHeight = scrubTrackHeight,
+                                accentColor = artworkColor,
+                                bufferedFraction = if (duration > 0L) playerConnection.player.bufferedPosition.toFloat() / duration else 0f,
                             )
                         },
                         colors = PlayerSliderColors.getSliderColors(Color(0xFFF5F5F7), playerBackground, useDarkTheme),
@@ -1095,6 +1112,8 @@ fun BottomSheetPlayer(
                     PlayerIconButton(R.drawable.shuffle, stringResource(R.string.shuffle),
                         onClick = { playerConnection.player.shuffleModeEnabled = !shuffleEnabled }, enabled = !isListenTogetherGuest,
                         modifier = Modifier.alpha(if (shuffleEnabled) 1f else .45f))
+                    if (canShowVideo) PlayerIconButton(R.drawable.slow_motion_video, stringResource(R.string.onyx_video),
+                        onClick = { showVideo = !showVideo }, modifier = Modifier.semantics { selected = showVideo })
                     PlayerIconButton(if (repeatMode == Player.REPEAT_MODE_ONE) R.drawable.repeat_one else R.drawable.repeat,
                         stringResource(R.string.repeat_mode_all), onClick = { playerConnection.player.toggleRepeatMode() },
                         enabled = !isListenTogetherGuest, modifier = Modifier.alpha(if (repeatMode == Player.REPEAT_MODE_OFF) .45f else 1f))
@@ -1144,6 +1163,14 @@ fun BottomSheetPlayer(
                                     showLyrics = showLyrics,
                                     positionProvider = { effectivePosition },
                                 )
+                            } else if (showVideo && canShowVideo && state.isExpanded) {
+                                EmbeddedMusicVideo(
+                                    videoId = mediaMetadata!!.id,
+                                    positionProvider = { effectivePosition },
+                                    playingProvider = { effectiveIsPlaying },
+                                    speedProvider = { playerConnection.player.playbackParameters.speed },
+                                    onUnavailable = onVideoUnavailable,
+                                )
                             } else {
                                 Thumbnail(
                                     sliderPositionProvider = sliderPositionProvider,
@@ -1189,6 +1216,8 @@ fun BottomSheetPlayer(
                     OnyxPlayerHeader(
                         onCollapse = { state.collapseSoft() },
                         onEqualizer = { com.metrolist.music.utils.openSystemEqualizer(context, playerConnection.player.audioSessionId) },
+                        onVideo = if (canShowVideo) ({ showVideo = !showVideo }) else null,
+                        videoSelected = showVideo && canShowVideo,
                         modifier = Modifier.windowInsetsPadding(WindowInsets.systemBars.only(WindowInsetsSides.Top)),
                     )
                     Box(
@@ -1209,6 +1238,14 @@ fun BottomSheetPlayer(
                                     mediaMetadata = mediaMetadata,
                                     showLyrics = showLyrics,
                                     positionProvider = { effectivePosition },
+                                )
+                            } else if (showVideo && canShowVideo && state.isExpanded) {
+                                EmbeddedMusicVideo(
+                                    videoId = mediaMetadata!!.id,
+                                    positionProvider = { effectivePosition },
+                                    playingProvider = { effectiveIsPlaying },
+                                    speedProvider = { playerConnection.player.playbackParameters.speed },
+                                    onUnavailable = onVideoUnavailable,
                                 )
                             } else {
                                 Thumbnail(

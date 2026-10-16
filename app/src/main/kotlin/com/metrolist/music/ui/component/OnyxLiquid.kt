@@ -20,6 +20,9 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import com.metrolist.music.ui.utils.recommendationArtworkUrl
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -144,6 +147,7 @@ private fun HomeShortcut(title: String, icon: Int, onClick: () -> Unit, modifier
 @Composable
 fun OnyxHomeHero(title: String?, artist: String?, artwork: String?, onPlay: () -> Unit, onExplore: () -> Unit) {
     if (title == null || artwork.isNullOrBlank()) return
+    var useOriginalArtwork by remember(artwork) { mutableStateOf(false) }
     val shape = RoundedCornerShape(28.dp)
     Column(Modifier.padding(horizontal = 20.dp, vertical = 20.dp).fillMaxWidth()
         .clip(shape).background(MaterialTheme.colorScheme.surface)
@@ -160,7 +164,8 @@ fun OnyxHomeHero(title: String?, artist: String?, artwork: String?, onPlay: () -
                 tint = MaterialTheme.colorScheme.onSurfaceVariant)
         }
         Box(Modifier.fillMaxWidth().height(220.dp), contentAlignment = Alignment.Center) {
-            AsyncImage(artwork, title, contentScale = ContentScale.Crop,
+            AsyncImage(if (useOriginalArtwork) artwork else artwork.recommendationArtworkUrl(), title,
+                onError = { useOriginalArtwork = true }, contentScale = ContentScale.Crop,
                 modifier = Modifier.fillMaxWidth().height(220.dp).clip(RoundedCornerShape(20.dp))
                     .clickable(role = Role.Button, onClick = onExplore))
         }
@@ -221,12 +226,16 @@ fun OnyxCollectionCard(title: String, subtitle: String, icon: Int, onClick: (() 
 }
 
 @Composable
-fun OnyxPlayerHeader(onCollapse: () -> Unit, onEqualizer: () -> Unit, modifier: Modifier = Modifier) {
+fun OnyxPlayerHeader(onCollapse: () -> Unit, onEqualizer: () -> Unit, modifier: Modifier = Modifier, onVideo: (() -> Unit)? = null, videoSelected: Boolean = false) {
     Row(modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
         LiquidIconButton(R.drawable.expand_more, stringResource(R.string.onyx_minimize_player), onCollapse, plain = true)
         Text(stringResource(R.string.onyx_now_playing), style = MaterialTheme.typography.labelMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant, letterSpacing = 2.sp)
-        LiquidIconButton(R.drawable.equalizer, stringResource(R.string.equalizer), onEqualizer, plain = true)
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            if (onVideo != null) LiquidIconButton(R.drawable.slow_motion_video, stringResource(R.string.onyx_video), onVideo,
+                emphasized = videoSelected, plain = !videoSelected)
+            LiquidIconButton(R.drawable.equalizer, stringResource(R.string.equalizer), onEqualizer, plain = true)
+        }
     }
 }

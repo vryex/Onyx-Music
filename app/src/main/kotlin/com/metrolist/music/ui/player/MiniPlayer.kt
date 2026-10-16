@@ -219,6 +219,7 @@ private fun NewMiniPlayer(
         }
 
 
+    val artworkColor by rememberArtworkColor(mediaMetadata?.thumbnailUrl)
     val primaryColor = MaterialTheme.colorScheme.primary
     val outlineColor = MaterialTheme.colorScheme.outline
     val errorColor = MaterialTheme.colorScheme.primary
@@ -301,7 +302,7 @@ private fun NewMiniPlayer(
                     .height(56.dp)
                     .offset { IntOffset(offsetXAnimatable.value.roundToInt(), 0) }
                     .clip(RoundedCornerShape(24.dp))
-                    .background(Color(0xFF141414))
+                    .background(androidx.compose.ui.graphics.Brush.horizontalGradient(listOf(artworkColor, artworkColor.copy(red = artworkColor.red * .62f, green = artworkColor.green * .62f, blue = artworkColor.blue * .62f))))
                     .border(1.dp, Color(0xFFF5F5F7).copy(alpha = 0.20f), RoundedCornerShape(24.dp))
                     .drawWithContent {
                         drawContent()

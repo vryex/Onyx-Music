@@ -38,11 +38,9 @@ fun rememberArtworkColor(artwork: String?): State<Color> {
                         .allowHardware(false).build(),
                 ).image ?: return@withContext artworkFallback
                 val palette = Palette.from(image.toBitmap()).maximumColorCount(16).generate()
-                val source = Color(palette.getDominantColor(0xFF252529.toInt()))
-                val peak = maxOf(source.red, source.green, source.blue)
-                val factor = if (peak > 0.42f) 0.42f / peak else 1f
-                source.copy(red = source.red * factor, green = source.green * factor,
-                    blue = source.blue * factor, alpha = 1f).also { artworkColors.put(artwork, it) }
+                val swatches = palette.swatches
+                val source = ArtworkPalette.select(swatches.map { it.rgb }.toIntArray(), swatches.map { it.population }.toIntArray())
+                Color(ArtworkPalette.surface(source)).also { artworkColors.put(artwork, it) }
             } catch (cancelled: CancellationException) {
                 throw cancelled
             } catch (_: Exception) {
