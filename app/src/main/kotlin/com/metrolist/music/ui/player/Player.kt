@@ -822,6 +822,16 @@ fun BottomSheetPlayer(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
             ) {
+                if (showInlineLyrics && !mediaMetadata.thumbnailUrl.isNullOrBlank()) {
+                    // Artwork + title share a single compact row in lyrics mode.
+                    // All transport and lyrics tools keep their existing positions.
+                    AsyncImage(
+                        model = mediaMetadata.thumbnailUrl,
+                        contentDescription = null,
+                        modifier = Modifier.size(48.dp).clip(RoundedCornerShape(12.dp)),
+                        contentScale = ContentScale.Crop,
+                    )
+                }
                 Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                     Text(
                         mediaMetadata.title,
