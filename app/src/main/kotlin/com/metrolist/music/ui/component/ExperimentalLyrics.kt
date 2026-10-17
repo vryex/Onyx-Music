@@ -88,6 +88,7 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.metrolist.music.LocalDatabase
 import com.metrolist.music.LocalListenTogetherManager
+import com.metrolist.music.ui.theme.rememberLyricsAccent
 import com.metrolist.music.LocalPlayerConnection
 import com.metrolist.music.R
 import com.metrolist.music.constants.AiProviderKey
@@ -294,10 +295,8 @@ fun ExperimentalLyrics(
         }
     }
 
-    val expressiveAccent = when (playerBackground) {
-        PlayerBackgroundStyle.DEFAULT -> MaterialTheme.colorScheme.primary
-        PlayerBackgroundStyle.BLUR, PlayerBackgroundStyle.GRADIENT -> Color.White
-    }
+    // Distinct artwork accent for synced active words; background stays unchanged.
+    val expressiveAccent by rememberLyricsAccent(mediaMetadata?.thumbnailUrl)
 
     var activeLineIndices by remember { mutableStateOf(emptySet<Int>()) }
     var scrollTargetIndex by rememberSaveable { mutableIntStateOf(-1) }
