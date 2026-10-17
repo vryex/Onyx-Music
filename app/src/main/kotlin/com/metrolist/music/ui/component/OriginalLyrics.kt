@@ -1047,7 +1047,7 @@ fun OriginalLyrics(
                                 if (isActiveLine) {
                                     if (item.isBackground) expressiveAccent.copy(alpha = 0.85f) else expressiveAccent
                                 } else {
-                                    expressiveAccent.copy(alpha = if (item.isBackground) 0.5f else 0.7f)
+                                    Color.White.copy(alpha = if (item.isBackground) 0.32f else 0.68f)
                                 }
                             val alignment = agentTextAlign
 
