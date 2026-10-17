@@ -22,7 +22,8 @@ import com.metrolist.music.ui.theme.rememberArtworkColor
 import com.metrolist.music.ui.utils.resize
 
 /**
- * Vertical photo-colored wash behind individual artists only.
+ * Horizontal photo-colored wash behind individual artists: vivid on the right,
+ * fading smoothly toward pure black on the left.
  * Keeps songs/albums and the search background unchanged; no expensive blur effects.
  */
 @Composable
@@ -31,11 +32,11 @@ internal fun Modifier.artistSearchTint(item: YTItem): Modifier {
     val artwork = artist.thumbnail?.takeIf { it.isNotBlank() } ?: return this
     val tint by rememberArtworkColor(artwork.resize(144, 144))
     val gradient = remember(tint) {
-        Brush.verticalGradient(
-            0.00f to lerp(Color.Black, tint, 0.84f),
-            0.38f to lerp(Color.Black, tint, 0.48f),
-            0.78f to lerp(Color.Black, tint, 0.14f),
-            1.00f to Color.Black,
+        Brush.horizontalGradient(
+            0.00f to Color.Black,
+            0.26f to lerp(Color.Black, tint, 0.10f),
+            0.62f to lerp(Color.Black, tint, 0.43f),
+            1.00f to lerp(Color.Black, tint, 0.84f),
         )
     }
     // Draw-only highlight: unlike layout padding/clipping, this moves neither the
