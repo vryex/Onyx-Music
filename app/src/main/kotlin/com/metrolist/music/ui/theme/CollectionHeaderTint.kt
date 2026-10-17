@@ -31,15 +31,30 @@ fun CollectionHeaderTint(
     artwork: String?,
     scrollState: LazyListState? = null,
     height: Dp = 480.dp,
+    queueStyle: Boolean = false,
 ) {
     val color by rememberArtworkColor(artwork)
-    val gradient = remember(color) {
-        Brush.verticalGradient(
-            0.00f to lerp(Color.Black, color, 0.45f),
-            0.36f to lerp(Color.Black, color, 0.22f),
-            0.72f to lerp(Color.Black, color, 0.05f),
-            1.00f to Color.Black,
-        )
+    val gradient = remember(color, queueStyle) {
+        if (queueStyle) {
+            // Player artwork is intentionally darkened for readable white labels.
+            // Lift it slightly only for the queue; otherwise its 440dp wash had
+            // already disappeared by the time the scrolling song rows began.
+            val visibleTint = lerp(color, Color.White, 0.13f)
+            Brush.verticalGradient(
+                0.00f to lerp(Color.Black, visibleTint, 0.88f),
+                0.33f to lerp(Color.Black, visibleTint, 0.52f),
+                0.65f to lerp(Color.Black, visibleTint, 0.12f),
+                0.94f to Color.Black,
+                1.00f to Color.Black,
+            )
+        } else {
+            Brush.verticalGradient(
+                0.00f to lerp(Color.Black, color, 0.45f),
+                0.36f to lerp(Color.Black, color, 0.22f),
+                0.72f to lerp(Color.Black, color, 0.05f),
+                1.00f to Color.Black,
+            )
+        }
     }
     // Collection pages scroll their tint away; the queue keeps its short wash fixed
     // because it automatically scrolls to the current song, often below item zero.

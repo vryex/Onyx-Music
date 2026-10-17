@@ -614,14 +614,14 @@ fun Queue(
         }
 
         Box(modifier = Modifier.fillMaxSize()) {
-            // The queue auto-scrolls to the playing track. Render the color behind
-            // the song rows instead of beneath opaque item cards.
-            if (mutableQueueWindows.isNotEmpty() &&
-                lazyListState.firstVisibleItemIndex <= mutableQueueWindows.size
-            ) {
+            // The queue may open at any track index. Keep one subdued artwork wash
+            // behind all queue rows, independent of the auto-scroll position.
+            // The related-song rows below have their own opaque black background.
+            if (mutableQueueWindows.isNotEmpty()) {
                 CollectionHeaderTint(
                     artwork = mediaMetadata?.thumbnailUrl,
-                    height = 440.dp,
+                    height = 720.dp,
+                    queueStyle = true,
                 )
             }
             LazyColumn(
