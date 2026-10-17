@@ -112,6 +112,7 @@ fun LibrarySongsScreen(
     val uploadFailedStr = stringResource(R.string.upload_failed)
     val uploadCompleteStr = stringResource(R.string.upload_complete)
     val queueAllSongsStr = stringResource(R.string.queue_all_songs)
+    val libraryPlaybackSource = stringResource(R.string.sonet_playback_library)
     val playerConnection = LocalPlayerConnection.current ?: return
     val isPlaying by playerConnection.isEffectivelyPlaying.collectAsStateWithLifecycle()
     val mediaMetadata by playerConnection.mediaMetadata.collectAsStateWithLifecycle()
@@ -470,6 +471,7 @@ fun LibrarySongsScreen(
                                             items = filteredSongs.map { it.toMediaItem() },
                                             startIndex = index,
                                         ),
+                                        source = libraryPlaybackSource,
                                     )
                                 }
                             }.animateItem(),
@@ -500,6 +502,7 @@ fun LibrarySongsScreen(
                             title = queueAllSongsStr,
                             items = filteredSongs.shuffled().map { it.toMediaItem() },
                         ),
+                        source = libraryPlaybackSource,
                     )
                 }
             },
