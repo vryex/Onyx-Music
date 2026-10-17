@@ -1166,6 +1166,7 @@ fun BottomSheetPlayer(
                             } else if (showVideo && canShowVideo && state.isExpanded) {
                                 EmbeddedMusicVideo(
                                     videoId = mediaMetadata!!.id,
+                                    artworkUrl = mediaMetadata?.thumbnailUrl,
                                     positionProvider = { effectivePosition },
                                     playingProvider = { effectiveIsPlaying },
                                     speedProvider = { playerConnection.player.playbackParameters.speed },
@@ -1242,6 +1243,7 @@ fun BottomSheetPlayer(
                             } else if (showVideo && canShowVideo && state.isExpanded) {
                                 EmbeddedMusicVideo(
                                     videoId = mediaMetadata!!.id,
+                                    artworkUrl = mediaMetadata?.thumbnailUrl,
                                     positionProvider = { effectivePosition },
                                     playingProvider = { effectiveIsPlaying },
                                     speedProvider = { playerConnection.player.playbackParameters.speed },

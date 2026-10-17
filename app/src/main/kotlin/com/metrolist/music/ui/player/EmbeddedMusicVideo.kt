@@ -33,6 +33,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.layout.ContentScale
+import coil3.compose.AsyncImage
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
@@ -46,6 +48,7 @@ import kotlinx.coroutines.isActive
 @Composable
 fun EmbeddedMusicVideo(
     videoId: String,
+    artworkUrl: String?,
     positionProvider: () -> Long,
     playingProvider: () -> Boolean,
     speedProvider: () -> Float,
@@ -59,6 +62,7 @@ fun EmbeddedMusicVideo(
     val latestUnavailable by rememberUpdatedState(onUnavailable)
     var ready by remember(videoId) { mutableStateOf(false) }
     var playing by remember(videoId) { mutableStateOf(false) }
+    var hasRenderedVideo by remember(videoId) { mutableStateOf(false) }
     var failed by remember(videoId) { mutableStateOf(false) }
     val origin = remember(context) { "https://${context.packageName}" }
     val script = remember(context) { context.assets.open("onyx_video.js").bufferedReader().use { it.readText() } }
@@ -94,7 +98,7 @@ fun EmbeddedMusicVideo(
                     if (!message.sourceId().startsWith(origin)) return false
                     when {
                         message.message() == "ONYX_VIDEO_READY" -> ready = true
-                        message.message() == "ONYX_VIDEO_PLAYING" -> playing = true
+                        message.message() == "ONYX_VIDEO_PLAYING" -> { playing = true; hasRenderedVideo = true }
                         message.message() == "ONYX_VIDEO_WAITING" -> playing = false
                         message.message().startsWith("ONYX_VIDEO_ERROR:") -> if (!failed) {
                             failed = true
@@ -143,9 +147,14 @@ fun EmbeddedMusicVideo(
     }
     Box(Modifier.fillMaxWidth().padding(24.dp), contentAlignment = Alignment.Center) {
         key(videoId) {
-            AndroidView(factory = { webView }, modifier = Modifier.fillMaxWidth().aspectRatio(1f)
-                .clip(RoundedCornerShape(24.dp)).background(Color.Black)
-                .semantics { contentDescription = if (playing) "Video playing" else if (ready) "Video ready" else "Video loading" })
+            val videoStatus = if (playing) "Video playing" else if (ready) "Video ready" else "Video loading"
+            Box(Modifier.fillMaxWidth().aspectRatio(1f).clip(RoundedCornerShape(24.dp)).background(Color.Black)) {
+                AndroidView(factory = { webView }, update = { it.contentDescription = videoStatus },
+                    modifier = Modifier.fillMaxSize().semantics { contentDescription = videoStatus })
+                // The iframe can be ready without a decoded frame when audio is paused.
+                if (!hasRenderedVideo) AsyncImage(artworkUrl, null, contentScale = ContentScale.Crop,
+                    modifier = Modifier.fillMaxSize())
+            }
         }
     }
 }
