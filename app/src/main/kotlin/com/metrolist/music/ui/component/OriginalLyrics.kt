@@ -480,10 +480,6 @@ fun OriginalLyrics(
     val selectedIndices = remember { mutableStateListOf<Int>() }
     var showMaxSelectionToast by remember { mutableStateOf(false) } // State for showing max selection toast
 
-    val isLyricsProviderShown =
-        lyricsEntity?.provider != null && lyricsEntity?.provider != "Unknown" && lyricsEntity?.provider != "Manual" &&
-            !isSelectionModeActive
-
     val lazyListState = rememberLazyListState()
 
     // Professional animation states for smooth Metrolist-style transitions
@@ -588,10 +584,10 @@ fun OriginalLyrics(
         if (lineIndex < 0 || lines.isEmpty()) return null
 
         val safeLineIndex = lineIndex.coerceAtMost(lines.lastIndex)
-        val listIndex = if (isLyricsProviderShown) safeLineIndex + 1 else safeLineIndex
+        val listIndex = safeLineIndex
         val totalItems =
             lazyListState.layoutInfo.totalItemsCount.takeIf { it > 0 }
-                ?: (lines.size + if (isLyricsProviderShown) 1 else 0)
+                ?: lines.size
 
         if (totalItems <= 0) return null
         return listIndex.coerceIn(0, totalItems - 1)
@@ -847,22 +843,6 @@ fun OriginalLyrics(
                     } else {
                         if (isSeeking || isSelectionModeActive) deferredCurrentLineIndex else currentLineIndex
                     }
-
-                // Show lyrics provider at the top, scrolling with content
-                if (isLyricsProviderShown) {
-                    item {
-                        Text(
-                            text = "Lyrics from ${lyricsEntity?.provider}",
-                            fontSize = 12.sp,
-                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
-                            fontWeight = FontWeight.Medium,
-                            modifier =
-                                Modifier
-                                    .fillMaxWidth()
-                                    .padding(horizontal = 12.dp, vertical = 8.dp),
-                        )
-                    }
-                }
 
                 if (lyrics == null) {
                     item {

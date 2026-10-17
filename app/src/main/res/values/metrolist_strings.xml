@@ -994,7 +994,7 @@
     <string name="stream_source_web_creator_desc">Creator web client.</string>
     <string name="top_result">Top result</string>
     <string name="other">Other</string>
-    <string name="onyx_daily_selection">Recomendaciones</string>
+    <string name="onyx_daily_selection">Recommendations</string>
     <string name="onyx_home_headline">Find your\nsound.</string>
     <string name="onyx_find_your_sound">Something worth hearing</string>
     <string name="onyx_made_for_you">Your next favorite starts here</string>
@@ -1010,6 +1010,7 @@
     <string name="onyx_listening_space">YOUR LISTENING SPACE</string>
     <string name="onyx_home_intro">Made for your next favorite song.</string>
     <string name="onyx_quick_access">Close at hand</string>
+    <string name="onyx_search_online">Online</string>
     <string name="system_equalizer_unavailable">System equalizer is unavailable on this device.</string>
     <string name="onyx_random_selection">Discover something random</string>
     <string name="onyx_video">Video</string>

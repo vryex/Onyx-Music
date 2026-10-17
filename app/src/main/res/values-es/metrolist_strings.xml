@@ -875,4 +875,26 @@
     <string name="update_action">Actualizar</string>
     <string name="discord_integration">Integración con Discord</string>
     <string name="enable_discord_rpc">Activar Rich Presence</string>
+    <!-- Translations for Onyx UI strings: respect the selected app language. -->
+    <string name="onyx_daily_selection">Recomendaciones</string>
+    <string name="onyx_home_headline">Encuentra tu\nsonido.</string>
+    <string name="onyx_find_your_sound">Algo que vale la pena escuchar</string>
+    <string name="onyx_made_for_you">Tu próxima favorita empieza aquí</string>
+    <string name="onyx_library_subtitle">Tu música. Tu espacio.</string>
+    <string name="onyx_listen_subtitle">Una nueva forma de perderte en la música.</string>
+    <string name="onyx_now_playing">REPRODUCIENDO</string>
+    <string name="onyx_minimize_player">Minimizar reproductor</string>
+    <string name="onyx_previous_track">Canción anterior</string>
+    <string name="onyx_next_track">Canción siguiente</string>
+    <string name="onyx_your_collection">Tu colección</string>
+    <string name="onyx_fullscreen">Letras en pantalla completa</string>
+    <string name="onyx_lyrics_tools">Herramientas de letras</string>
+    <string name="onyx_listening_space">TU ESPACIO MUSICAL</string>
+    <string name="onyx_home_intro">Hecho para tu próxima canción favorita.</string>
+    <string name="onyx_quick_access">A mano</string>
+    <string name="onyx_search_online">En línea</string>
+    <string name="onyx_random_selection">Descubre algo al azar</string>
+    <string name="onyx_video">Video</string>
+    <string name="onyx_video_loading">Cargando video</string>
+    <string name="onyx_video_unavailable">Este video no está disponible aquí. Se mantiene la portada.</string>
 </resources>

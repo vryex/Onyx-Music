@@ -232,7 +232,7 @@ fun SearchScreen(
                     }
                 }
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    SearchScopeButton(stringResource(R.string.search_yt_music), R.drawable.language,
+                    SearchScopeButton(stringResource(R.string.onyx_search_online), R.drawable.language,
                         searchSource == SearchSource.ONLINE, { searchSource = SearchSource.ONLINE }, Modifier.weight(1f))
                     SearchScopeButton(stringResource(R.string.search_library), R.drawable.library_music,
                         searchSource == SearchSource.LOCAL, { searchSource = SearchSource.LOCAL }, Modifier.weight(1f))

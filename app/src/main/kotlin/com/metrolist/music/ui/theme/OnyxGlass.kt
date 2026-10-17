@@ -73,21 +73,6 @@ fun OnyxBrand(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(11.dp),
     ) {
-        Box(
-            Modifier
-                .size(32.dp)
-                .clip(RoundedCornerShape(50))
-                .background(MaterialTheme.colorScheme.surfaceContainerHigh)
-                .border(1.dp, GlassEdge, RoundedCornerShape(50)),
-            contentAlignment = Alignment.Center,
-        ) {
-            Icon(
-                painter = painterResource(R.drawable.onyx_mark),
-                contentDescription = null,
-                tint = FrostGlow,
-                modifier = Modifier.size(23.dp),
-            )
-        }
         Column {
             Text(
                 text = "Onyx Music",

@@ -29,6 +29,9 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import com.metrolist.music.ui.theme.rememberHomeArtistTint
+import com.metrolist.music.ui.theme.rememberArtworkColor
+import androidx.compose.ui.graphics.lerp
+import com.metrolist.music.ui.utils.resize
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
@@ -149,9 +152,18 @@ private fun HomeShortcut(title: String, icon: Int, onClick: () -> Unit, modifier
 fun OnyxHomeHero(title: String?, artist: String?, artwork: String?, onPlay: () -> Unit, onExplore: () -> Unit) {
     if (title == null || artwork.isNullOrBlank()) return
     var useOriginalArtwork by remember(artwork) { mutableStateOf(false) }
+    val artworkColor by rememberArtworkColor(artwork.resize(224, 224))
+    val heroGradient = remember(artworkColor) {
+        Brush.verticalGradient(
+            0.00f to lerp(Color.Black, artworkColor, .91f),
+            0.35f to lerp(Color.Black, artworkColor, .64f),
+            0.68f to lerp(Color.Black, artworkColor, .22f),
+            1.00f to Color.Black,
+        )
+    }
     val shape = RoundedCornerShape(28.dp)
     Column(Modifier.padding(horizontal = 20.dp, vertical = 20.dp).fillMaxWidth()
-        .clip(shape).background(MaterialTheme.colorScheme.surface)
+        .clip(shape).background(heroGradient)
         .border(1.dp, Brush.linearGradient(listOf(
             Color.White.copy(alpha = .12f), Color.White.copy(alpha = .04f), Color.White.copy(alpha = .08f),
         )), shape).padding(20.dp),
@@ -161,8 +173,6 @@ fun OnyxHomeHero(title: String?, artist: String?, artwork: String?, onPlay: () -
             horizontalArrangement = Arrangement.SpaceBetween) {
             Text(stringResource(R.string.onyx_daily_selection), style = MaterialTheme.typography.labelLarge,
                 color = MaterialTheme.colorScheme.primary)
-            Icon(painterResource(R.drawable.arrow_forward), null, Modifier.size(16.dp),
-                tint = MaterialTheme.colorScheme.onSurfaceVariant)
         }
         Box(Modifier.fillMaxWidth().height(220.dp), contentAlignment = Alignment.Center) {
             AsyncImage(if (useOriginalArtwork) artwork else artwork.recommendationArtworkUrl(), title,
