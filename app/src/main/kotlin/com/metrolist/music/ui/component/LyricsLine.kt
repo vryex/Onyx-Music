@@ -52,6 +52,7 @@ import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.PlatformTextStyle
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.Shadow
 import androidx.compose.ui.text.drawText
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -214,7 +215,8 @@ internal fun LyricsLine(
                 } else inactiveAlpha
                 
                 val animatedAlpha by animateFloatAsState(targetAlpha, tween(250), label = "lyricsLineAlpha")
-                val lineColor = expressiveAccent.copy(alpha = if (item.isBackground) focusedAlpha else animatedAlpha)
+                val lineColor = if (isActiveLine) expressiveAccent.copy(alpha = if (item.isBackground) 0.8f else animatedAlpha)
+                                else Color.White.copy(alpha = if (item.isBackground) 0.28f else animatedAlpha * 0.75f)
                 
                 val romanizedTextState by item.romanizedTextFlow.collectAsStateWithLifecycle()
                 val isRomanizedAvailable = romanizedTextState != null
@@ -231,6 +233,7 @@ internal fun LyricsLine(
                     letterSpacing = (-0.5).sp,
                     textAlign = agentTextAlign,
                     fontFamily = MaterialTheme.typography.bodyLarge.fontFamily,
+                    shadow = if (isActiveLine) Shadow(expressiveAccent.copy(alpha = 0.35f), Offset.Zero, blurRadius = 7f) else null,
                     platformStyle = PlatformTextStyle(includeFontPadding = false),
                     lineHeightStyle = LineHeightStyle(
                         alignment = LineHeightStyle.Alignment.Center,
@@ -285,7 +288,7 @@ internal fun LyricsLine(
                         Text(
                             text = it,
                             fontSize = 18.sp,
-                            color = expressiveAccent.copy(alpha = 0.6f),
+                            color = lineColor.copy(alpha = if (isActiveLine) 0.7f else 0.45f),
                             textAlign = agentTextAlign,
                             fontWeight = FontWeight.Normal,
                             modifier = Modifier.padding(top = 2.dp)
@@ -298,7 +301,7 @@ internal fun LyricsLine(
                     Text(
                         text = it,
                         fontSize = 16.sp,
-                        color = expressiveAccent.copy(alpha = 0.5f),
+                        color = lineColor.copy(alpha = if (isActiveLine) 0.6f else 0.4f),
                         textAlign = agentTextAlign,
                         fontWeight = FontWeight.Normal,
                         modifier = Modifier.padding(top = 4.dp)
