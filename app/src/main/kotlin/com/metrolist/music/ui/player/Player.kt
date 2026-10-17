@@ -318,6 +318,12 @@ fun BottomSheetPlayer(
 
     val playbackState by playerConnection.playbackState.collectAsStateWithLifecycle()
     val mediaMetadata by playerConnection.mediaMetadata.collectAsStateWithLifecycle()
+    val playerQueueTitle by playerConnection.queueTitle.collectAsStateWithLifecycle()
+    val playbackSource by playerConnection.playbackSource.collectAsStateWithLifecycle()
+    val displayedSource = (playbackSource ?: playerQueueTitle)?.trim()?.takeIf {
+        it.isNotEmpty() && !it.equals(mediaMetadata?.title, ignoreCase = true) &&
+            !it.equals("radio", ignoreCase = true)
+    }
     val artworkColor by rememberArtworkColor(mediaMetadata?.thumbnailUrl)
     var showVideo by rememberSaveable { mutableStateOf(false) }
     var videoUnavailable by remember(mediaMetadata?.id) { mutableStateOf(false) }
@@ -1276,6 +1282,7 @@ fun BottomSheetPlayer(
                         onVideo = if (canShowVideo) ({ showVideo = !showVideo }) else null,
                         videoSelected = showVideo && canShowVideo,
                         showCast = true,
+                        playbackSource = displayedSource,
                         modifier = Modifier.windowInsetsPadding(WindowInsets.systemBars.only(WindowInsetsSides.Top)),
                     )
                     Box(
