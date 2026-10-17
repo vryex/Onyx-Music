@@ -8,7 +8,10 @@ import androidx.compose.runtime.State
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.produceState
+import androidx.compose.runtime.remember
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.toArgb
+import androidx.core.graphics.ColorUtils
 import androidx.compose.ui.platform.LocalContext
 import androidx.palette.graphics.Palette
 import coil3.imageLoader
@@ -55,6 +58,34 @@ fun rememberArtworkTones(artwork: String?): State<ArtworkTones> {
             }
         }
     }
+}
+
+/**
+ * Use the alternate palette swatch for highlighted lyrics, without recoloring
+ * the player background. Brighten the swatch so it remains readable on dark art.
+ * When the two swatches are nearly identical, choose a contrasting hue.
+ */
+@Composable
+fun rememberLyricsAccent(artwork: String?): State<Color> {
+    val tones by rememberArtworkTones(artwork)
+    val vividAccent = remember(tones) {
+        val base = FloatArray(3)
+        val alternate = FloatArray(3)
+        ColorUtils.colorToHSL(tones.surface.toArgb(), base)
+        ColorUtils.colorToHSL(tones.accent.toArgb(), alternate)
+        val distance = kotlin.math.abs(base[0] - alternate[0])
+        if (alternate[1] < 0.14f || minOf(distance, 360f - distance) < 24f) {
+            alternate[0] = (base[0] + 110f) % 360f
+        }
+        alternate[1] = alternate[1].coerceIn(0.58f, 0.9f)
+        alternate[2] = alternate[2].coerceIn(0.64f, 0.74f)
+        Color(ColorUtils.HSLToColor(alternate))
+    }
+    return animateColorAsState(
+        targetValue = vividAccent,
+        animationSpec = tween(550, easing = FastOutSlowInEasing),
+        label = "sonetLyricsAccent",
+    )
 }
 
 /** Existing color behavior/transition retained for every original caller. */
