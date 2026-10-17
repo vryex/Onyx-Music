@@ -875,7 +875,9 @@
     <string name="update_action">Actualizar</string>
     <string name="discord_integration">Integración con Discord</string>
     <string name="enable_discord_rpc">Activar Rich Presence</string>
-    <!-- Translations for Onyx UI strings: respect the selected app language. -->
+    <!-- Search results and Onyx UI follow the selected app language. -->
+    <string name="top_result">Resultado destacado</string>
+    <string name="other">Otros</string>
     <string name="onyx_daily_selection">Recomendaciones</string>
     <string name="onyx_home_headline">Encuentra tu\nsonido.</string>
     <string name="onyx_find_your_sound">Algo que vale la pena escuchar</string>
