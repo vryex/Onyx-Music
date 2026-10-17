@@ -29,7 +29,7 @@ import androidx.compose.ui.unit.dp
 @Composable
 fun CollectionHeaderTint(
     artwork: String?,
-    scrollState: LazyListState,
+    scrollState: LazyListState? = null,
     height: Dp = 480.dp,
 ) {
     val color by rememberArtworkColor(artwork)
@@ -41,13 +41,14 @@ fun CollectionHeaderTint(
             1.00f to Color.Black,
         )
     }
-    // When the header has left the viewport, there is no reason to draw its color.
-    if (scrollState.firstVisibleItemIndex == 0) {
+    // Collection pages scroll their tint away; the queue keeps its short wash fixed
+    // because it automatically scrolls to the current song, often below item zero.
+    if (scrollState == null || scrollState.firstVisibleItemIndex == 0) {
         Box(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(height)
-                .offset { IntOffset(0, -scrollState.firstVisibleItemScrollOffset) }
+                .offset { IntOffset(0, -(scrollState?.firstVisibleItemScrollOffset ?: 0)) }
                 .background(gradient),
         )
     }

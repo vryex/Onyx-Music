@@ -101,6 +101,7 @@ import androidx.media3.common.Timeline
 import androidx.media3.exoplayer.source.ShuffleOrder.DefaultShuffleOrder
 import com.metrolist.music.LocalNavController
 import com.metrolist.music.LocalListenTogetherManager
+import com.metrolist.music.ui.theme.CollectionHeaderTint
 import com.metrolist.music.LocalPlayerConnection
 import com.metrolist.music.R
 import com.metrolist.music.constants.ListItemHeight
@@ -258,7 +259,16 @@ fun Queue(
         state = state,
         modifier = modifier,
         background = {
-            Box(Modifier.fillMaxSize().background(background))
+            Box(Modifier.fillMaxSize().background(background)) {
+                // Fixed, subtle color wash from the actual song playing in the queue.
+                // It remains at the top even when the queue auto-scrolls to item 20+.
+                if (state.isExpanded) {
+                    CollectionHeaderTint(
+                        artwork = mediaMetadata?.thumbnailUrl,
+                        height = 440.dp,
+                    )
+                }
+            }
         },
         collapsedContent = {
             if (useNewPlayerDesign) {
@@ -612,12 +622,7 @@ fun Queue(
             }
         }
 
-        Box(
-            modifier =
-                Modifier
-                    .fillMaxSize()
-                    .background(background),
-        ) {
+        Box(modifier = Modifier.fillMaxSize()) {
             LazyColumn(
                 state = lazyListState,
                 contentPadding =
