@@ -46,6 +46,7 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -197,6 +198,8 @@ fun Thumbnail(
     isPlayerExpanded: () -> Boolean = { true },
     isLandscape: Boolean = false,
     isListenTogetherGuest: Boolean = false,
+    immersive: Boolean = false,
+    onArtworkTap: () -> Unit = {},
 ) {
     val playerConnection = LocalPlayerConnection.current ?: return
     val context = LocalContext.current
@@ -331,11 +334,13 @@ fun Thumbnail(
                     }
                 ) {
                     // Calculate dimensions once per size change, considering landscape mode
-                    val dimensions = remember(maxWidth, maxHeight, isLandscape) {
+                    val artworkPadding = if (immersive) 8.dp else PlayerHorizontalPadding
+                    val dimensions = remember(maxWidth, maxHeight, isLandscape, immersive) {
                         calculateThumbnailDimensions(
                             containerWidth = maxWidth,
                             containerHeight = maxHeight,
-                            isLandscape = isLandscape
+                            isLandscape = isLandscape,
+                            horizontalPadding = artworkPadding
                         )
                     }
 
@@ -382,7 +387,10 @@ fun Thumbnail(
                                 isLandscape = isLandscape,
                                 isListenTogetherGuest = isListenTogetherGuest,
                                 currentMediaId = mediaMetadata?.id,
-                                currentMediaThumbnail = mediaMetadata?.thumbnailUrl
+                                currentMediaThumbnail = mediaMetadata?.thumbnailUrl,
+                                immersive = immersive,
+                                horizontalPadding = artworkPadding,
+                                onArtworkTap = onArtworkTap,
                             )
                         }
                     }
@@ -390,7 +398,7 @@ fun Thumbnail(
             }
         }
 
-        if (!isLandscape && !queueTitle.isNullOrBlank()) {
+        if (!isLandscape && !immersive && !queueTitle.isNullOrBlank()) {
             Text(
                 text = queueTitle.orEmpty(),
                 style = MaterialTheme.typography.labelSmall,
@@ -491,11 +499,15 @@ private fun ThumbnailItem(
     isListenTogetherGuest: Boolean = false,
     currentMediaId: String? = null,
     currentMediaThumbnail: String? = null,
+    immersive: Boolean = false,
+    horizontalPadding: Dp = PlayerHorizontalPadding,
+    onArtworkTap: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     val incrementalSeekSkipEnabled by rememberPreference(SeekExtraSeconds, defaultValue = false)
     var skipMultiplier by remember { mutableIntStateOf(1) }
     var lastTapTime by remember { mutableLongStateOf(0L) }
+    val latestArtworkTap by rememberUpdatedState(onArtworkTap)
 
     Box(
         modifier = modifier
@@ -508,9 +520,18 @@ private fun ThumbnailItem(
                         .fillMaxSize()
                 }
             )
-            .padding(horizontal = PlayerHorizontalPadding)
-            .pointerInput(Unit) {
+            .padding(horizontal = horizontalPadding)
+            .pointerInput(item.mediaId, currentMediaId, dimensions.thumbnailSize) {
                 detectTapGestures(
+                    onTap = { offset ->
+                        val artworkSize = dimensions.thumbnailSize.toPx()
+                        val left = (size.width - artworkSize) / 2f
+                        val top = (size.height - artworkSize) / 2f
+                        if (item.mediaId == currentMediaId &&
+                            offset.x in left..(left + artworkSize) &&
+                            offset.y in top..(top + artworkSize)
+                        ) latestArtworkTap()
+                    },
                     onDoubleTap = { offset ->
                         if (isListenTogetherGuest) return@detectTapGestures
 
@@ -562,7 +583,7 @@ private fun ThumbnailItem(
                 )
             }
             
-            CastButton(
+            if (!immersive) CastButton(
                 modifier = Modifier.align(Alignment.BottomStart).padding(12.dp)
                     .clip(RoundedCornerShape(24.dp)).background(Color(0xFF141414).copy(alpha = 0.9f)),
                 tintColor = Color(0xFFF5F5F7)
