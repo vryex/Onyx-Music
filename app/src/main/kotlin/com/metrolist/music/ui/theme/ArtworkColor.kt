@@ -61,28 +61,27 @@ fun rememberArtworkTones(artwork: String?): State<ArtworkTones> {
 }
 
 /**
- * Use the alternate palette swatch for highlighted lyrics, without recoloring
- * the player background. Brighten the swatch so it remains readable on dark art.
- * When the two swatches are nearly identical, choose a contrasting hue.
+ * Illuminate sung lyrics with an ACTUAL color from the cover palette.
+ * Only lightness is raised for accessibility: no artificial hue rotation.
+ * Neutral covers stay neutral rather than turning purple/pink.
  */
 @Composable
 fun rememberLyricsAccent(artwork: String?): State<Color> {
     val tones by rememberArtworkTones(artwork)
-    val vividAccent = remember(tones) {
-        val base = FloatArray(3)
-        val alternate = FloatArray(3)
-        ColorUtils.colorToHSL(tones.surface.toArgb(), base)
-        ColorUtils.colorToHSL(tones.accent.toArgb(), alternate)
-        val distance = kotlin.math.abs(base[0] - alternate[0])
-        if (alternate[1] < 0.14f || minOf(distance, 360f - distance) < 24f) {
-            alternate[0] = (base[0] + 110f) % 360f
+    val visibleAccent = remember(tones) {
+        val hsl = FloatArray(3)
+        ColorUtils.colorToHSL(tones.accent.toArgb(), hsl)
+        if (hsl[1] < 0.12f) {
+            // An almost monochrome artwork has no meaningful chromatic accent.
+            Color(0xFFE5E5E5)
+        } else {
+            // Preserve the source hue AND saturation. Increase brightness only.
+            hsl[2] = hsl[2].coerceAtLeast(0.72f)
+            Color(ColorUtils.HSLToColor(hsl))
         }
-        alternate[1] = alternate[1].coerceIn(0.58f, 0.9f)
-        alternate[2] = alternate[2].coerceIn(0.64f, 0.74f)
-        Color(ColorUtils.HSLToColor(alternate))
     }
     return animateColorAsState(
-        targetValue = vividAccent,
+        targetValue = visibleAccent,
         animationSpec = tween(550, easing = FastOutSlowInEasing),
         label = "sonetLyricsAccent",
     )
