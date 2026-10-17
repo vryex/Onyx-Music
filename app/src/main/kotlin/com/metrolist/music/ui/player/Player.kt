@@ -1278,12 +1278,8 @@ fun BottomSheetPlayer(
             Queue(
                 state = queueSheetState,
                 playerBottomSheetState = state,
-                background =
-                    if (useBlackBackground) {
-                        Color.Black
-                    } else {
-                        Color(0xFF141414)
-                    },
+                // Queue stays pure black; keep grey current-song/header controls intact.
+                background = Color.Black,
                 onBackgroundColor = onBackgroundColor,
                 TextBackgroundColor = TextBackgroundColor,
                 textButtonColor = textButtonColor,

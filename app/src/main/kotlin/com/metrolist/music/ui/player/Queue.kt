@@ -101,7 +101,6 @@ import androidx.media3.common.Timeline
 import androidx.media3.exoplayer.source.ShuffleOrder.DefaultShuffleOrder
 import com.metrolist.music.LocalNavController
 import com.metrolist.music.LocalListenTogetherManager
-import com.metrolist.music.ui.theme.CollectionHeaderTint
 import com.metrolist.music.LocalPlayerConnection
 import com.metrolist.music.R
 import com.metrolist.music.constants.ListItemHeight
@@ -614,16 +613,6 @@ fun Queue(
         }
 
         Box(modifier = Modifier.fillMaxSize()) {
-            // The queue may open at any track index. Keep one subdued artwork wash
-            // behind all queue rows, independent of the auto-scroll position.
-            // The related-song rows below have their own opaque black background.
-            if (mutableQueueWindows.isNotEmpty()) {
-                CollectionHeaderTint(
-                    artwork = mediaMetadata?.thumbnailUrl,
-                    height = 720.dp,
-                    queueStyle = true,
-                )
-            }
             LazyColumn(
                 state = lazyListState,
                 contentPadding =
