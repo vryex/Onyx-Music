@@ -99,6 +99,7 @@ fun OnlineSearchScreen(
     val playerConnection = LocalPlayerConnection.current ?: return
 
     val coroutineScope = rememberCoroutineScope()
+    val mixPlaybackSource = stringResource(R.string.sonet_playback_mix, query)
 
     val haptic = LocalHapticFeedback.current
     val isPlaying by playerConnection.isEffectivelyPlaying.collectAsStateWithLifecycle()
@@ -254,7 +255,8 @@ fun OnlineSearchScreen(
                                                             title = item.title,
                                                             items = listOf(item.toMediaItem())
                                                         )
-                                                    }
+                                                    },
+                                                    source = if (autoRadioQueue) mixPlaybackSource else null,
                                                 )
                                                 onDismiss()
                                             }
@@ -529,7 +531,8 @@ fun OnlineSearchScreen(
                                                         title = item.title,
                                                         items = listOf(item.toMediaItem())
                                                     )
-                                                }
+                                                },
+                                                source = if (autoRadioQueue) mixPlaybackSource else null,
                                             )
                                             onDismiss()
                                         }
