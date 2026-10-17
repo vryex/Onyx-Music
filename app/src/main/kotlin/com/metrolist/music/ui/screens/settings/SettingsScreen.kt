@@ -4,6 +4,9 @@
  */
 package com.metrolist.music.ui.screens.settings
 
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import android.widget.Toast
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.Spacer
@@ -26,9 +29,11 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -41,6 +46,8 @@ import com.metrolist.music.ui.component.Material3SettingsGroup
 import com.metrolist.music.ui.component.Material3SettingsItem
 import com.metrolist.music.ui.utils.backToMain
 import com.metrolist.music.utils.rememberPreference
+import com.metrolist.music.ui.theme.importLyricsFont
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -64,7 +71,29 @@ fun SettingsScreen(navController: NavController, latestVersionName: String) {
     val (video, setVideo) = rememberPreference(HideVideoSongsKey, false)
     val (shorts, setShorts) = rememberPreference(HideYoutubeShortsKey, false)
     val (sonetLyricsFont, setSonetLyricsFont) = rememberPreference(SonetLyricsFontKey, "Outfit")
+    val (customFontName, setCustomFontName) = rememberPreference(SonetLyricsFontLabelKey, "")
     var showFontPicker by rememberSaveable { mutableStateOf(false) }
+    val fontContext = LocalContext.current
+    val fontScope = rememberCoroutineScope()
+    val importFontLauncher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { pickedUri ->
+        if (pickedUri != null) {
+            fontScope.launch {
+                try {
+                    val imported = importLyricsFont(fontContext, pickedUri)
+                    setCustomFontName(imported.displayName)
+                    setSonetLyricsFont(imported.preferenceValue)
+                    showFontPicker = false
+                    Toast.makeText(fontContext, fontContext.getString(R.string.sonet_font_import_success), Toast.LENGTH_SHORT).show()
+                } catch (error: Exception) {
+                    Toast.makeText(
+                        fontContext,
+                        fontContext.getString(R.string.sonet_font_import_error),
+                        Toast.LENGTH_LONG,
+                    ).show()
+                }
+            }
+        }
+    }
 
     LaunchedEffect(
         description, subscribers, listeners,
@@ -131,11 +160,13 @@ fun SettingsScreen(navController: NavController, latestVersionName: String) {
                     title = { Text(stringResource(R.string.sonet_font_title)) },
                     description = { androidx.compose.foundation.layout.Column {
                         Text(stringResource(R.string.sonet_font_description), style = MaterialTheme.typography.bodySmall)
-                        Text(when (sonetLyricsFont) {
-                        "Sans" -> stringResource(R.string.sonet_font_sans)
-                        "Serif" -> stringResource(R.string.sonet_font_serif)
-                        "Mono" -> stringResource(R.string.sonet_font_mono)
-                        else -> "Outfit"
+                        Text(when {
+                            sonetLyricsFont.startsWith("Custom:") ->
+                                customFontName.ifBlank { stringResource(R.string.sonet_font_import) }
+                            sonetLyricsFont == "Sans" -> stringResource(R.string.sonet_font_sans)
+                            sonetLyricsFont == "Serif" -> stringResource(R.string.sonet_font_serif)
+                            sonetLyricsFont == "Mono" -> stringResource(R.string.sonet_font_mono)
+                            else -> "Outfit"
                         })
                     } },
                     onClick = { showFontPicker = true }
@@ -209,6 +240,22 @@ fun SettingsScreen(navController: NavController, latestVersionName: String) {
                             )
                         }
                     }
+                    TextButton(
+                        onClick = { importFontLauncher.launch(arrayOf("*/*")) },
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        Text(
+                            if (sonetLyricsFont.startsWith("Custom:"))
+                                "✓  " + customFontName.ifBlank { stringResource(R.string.sonet_font_import) }
+                            else stringResource(R.string.sonet_font_import),
+                            style = MaterialTheme.typography.titleMedium,
+                        )
+                    }
+                    Text(
+                        stringResource(R.string.sonet_font_import_hint),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
                 }
             },
             confirmButton = {
