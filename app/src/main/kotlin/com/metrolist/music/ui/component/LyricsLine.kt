@@ -131,6 +131,7 @@ internal fun LyricsLine(
     isSelectionModeActive: Boolean,
     currentPositionState: Long,
     lyricsOffset: Long,
+    nextLineTimeMs: Long?,
     playerConnection: PlayerConnection,
     lyricsTextSize: Float,
     lyricsLineSpacing: Float,
@@ -217,8 +218,7 @@ internal fun LyricsLine(
                 } else inactiveAlpha
                 
                 val animatedAlpha by animateFloatAsState(targetAlpha, tween(250), label = "lyricsLineAlpha")
-                val lineColor = if (isActiveLine) expressiveAccent.copy(alpha = if (item.isBackground) 0.8f else animatedAlpha)
-                                else Color.White.copy(alpha = if (item.isBackground) 0.28f else animatedAlpha * 0.75f)
+                val lineColor = Color.White.copy(alpha = if (item.isBackground) 0.35f else animatedAlpha * 0.75f)
                 
                 val romanizedTextState by item.romanizedTextFlow.collectAsStateWithLifecycle()
                 val isRomanizedAvailable = romanizedTextState != null
@@ -235,7 +235,7 @@ internal fun LyricsLine(
                     letterSpacing = (-0.5).sp,
                     textAlign = agentTextAlign,
                     fontFamily = lyricsFontFamily,
-                    shadow = if (isActiveLine) Shadow(expressiveAccent.copy(alpha = 0.35f), Offset.Zero, blurRadius = 7f) else null,
+                    shadow = null, // Do not color the whole line before its words are sung.
                     platformStyle = PlatformTextStyle(includeFontPadding = false),
                     lineHeightStyle = LineHeightStyle(
                         alignment = LineHeightStyle.Alignment.Center,
@@ -246,16 +246,18 @@ internal fun LyricsLine(
                 val effectiveWords = if (item.words?.isNotEmpty() == true) {
                     item.words
                 } else if (mainText != null) {
-                    remember(mainText, item.time) {
+                    remember(mainText, item.time, nextLineTimeMs) {
                         val words = mainText.split(Regex("\\s+")).filter { it.isNotBlank() }
-                        val wordDurationSec = 0.18
-                        val wordStaggerSec = 0.03
+                        // Line-timed tracks have no per-word timings. Approximate
+                        // a sweep across the line, rather than a 200ms color flash.
+                        val lineDurationMs = ((nextLineTimeMs ?: (item.time + 5000L)) - item.time)
+                            .coerceIn(1200L, 7500L)
                         val startTimeSec = item.time / 1000.0
                         words.mapIndexed { idx, wordText ->
                             WordTimestamp(
                                 text = wordText,
-                                startTime = startTimeSec + (idx * wordStaggerSec),
-                                endTime = startTimeSec + (idx * wordStaggerSec) + wordDurationSec,
+                                startTime = startTimeSec + lineDurationMs * idx / words.size / 1000.0,
+                                endTime = startTimeSec + lineDurationMs * (idx + 1) / words.size / 1000.0,
                                 hasTrailingSpace = idx < words.size - 1
                             )
                         }
@@ -269,6 +271,7 @@ internal fun LyricsLine(
                         isActiveLine = isActiveLine,
                         currentPositionState = currentPositionState,
                         lyricsOffset = lyricsOffset,
+                        nextLineTimeMs = nextLineTimeMs,
                         playerConnection = playerConnection,
                         lyricStyle = lyricStyle,
                         lineColor = lineColor,
@@ -335,6 +338,7 @@ private fun WordLevelLyrics(
     isActiveLine: Boolean,
     currentPositionState: Long,
     lyricsOffset: Long,
+    nextLineTimeMs: Long?,
     playerConnection: PlayerConnection,
     lyricStyle: TextStyle,
     lineColor: Color,
@@ -547,7 +551,7 @@ private fun WordLevelLyrics(
                         Triple(sungFactor, isWordSung, isWordActive)
                     }
 
-                    drawText(layoutResult, color = lineColor.copy(alpha = focusedAlpha))
+                    drawText(layoutResult, color = Color.White.copy(alpha = focusedAlpha))
 
                     effectiveWords.indices.forEach { wIdx ->
                         val (sungFactor, isWordSung, isWordActive) = wordFactors[wIdx]
@@ -571,13 +575,17 @@ private fun WordLevelLyrics(
                         }
 
                         if (found) {
-                            if (isWordSung) {
-                                clipRect(left = left, top = top, right = right, bottom = bottom) {
+                            val progress = if (isWordSung) 1f else sungFactor
+                            if (progress > 0f) {
+                                val revealWidth = (right - left) * progress
+                                val rtl = mainText.containsRtl()
+                                clipRect(
+                                    left = if (rtl) right - revealWidth else left,
+                                    top = top,
+                                    right = if (rtl) right else left + revealWidth,
+                                    bottom = bottom
+                                ) {
                                     drawText(layoutResult, color = expressiveAccent)
-                                }
-                            } else if (isWordActive && sungFactor > 0f) {
-                                clipRect(left = left, top = top, right = right, bottom = bottom) {
-                                    drawText(layoutResult, color = expressiveAccent.copy(alpha = focusedAlpha + (1f - focusedAlpha) * sungFactor))
                                 }
                             }
                         }
@@ -780,21 +788,12 @@ private fun WordLevelLyrics(
                                 }
                             }
                         }
-                        val baseAlpha = if (isWordSung || charLp > 0.99f) 1f else (focusedAlpha + (1f - focusedAlpha) * sungFactor)
-                        drawText(letterLayouts[i], color = expressiveAccent.copy(alpha = if (wordIdx == -1) focusedAlpha else baseAlpha))
-                        if (!isWordSung && charLp > 0f && charLp < 1f) {
-                            val fXL = charBounds.width * charLp
-                            val eW = (charBounds.width * 0.45f).coerceAtLeast(1f)
-                            val sWL = (fXL - eW).coerceAtLeast(0f)
-                            if (sWL > 0f) {
-                                clipRect(left = 0f, top = 0f, right = sWL, bottom = charBounds.height) { drawText(letterLayouts[i], color = expressiveAccent) }
-                            }
-                            for (j in 0 until 12) {
-                                val start = sWL + (j * eW / 12f)
-                                val end = (sWL + ((j + 1) * eW / 12f) + 0.5f).coerceAtMost(fXL)
-                                if (end > start) {
-                                    clipRect(left = start, top = 0f, right = end, bottom = charBounds.height) { drawText(letterLayouts[i], color = expressiveAccent.copy(alpha = 1f - (j + 0.5f) / 12f)) }
-                                }
+                        drawText(letterLayouts[i], color = Color.White.copy(alpha = focusedAlpha))
+                        // Reveal the cover color across each glyph according to its sung time.
+                        val fill = if (isWordSung) 1f else charLp.coerceIn(0f, 1f)
+                        if (wordIdx != -1 && fill > 0f) {
+                            clipRect(left = 0f, top = 0f, right = charBounds.width * fill, bottom = charBounds.height) {
+                                drawText(letterLayouts[i], color = expressiveAccent)
                             }
                         }
                     }
