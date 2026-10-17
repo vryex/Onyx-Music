@@ -18,7 +18,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 60
     env:
-      METROLIST_APP_NAME: Onyx Music
+      METROLIST_APP_NAME: Sonet
       METROLIST_APPLICATION_ID: com.onyx.music
       METROLIST_BUILD_COMMIT: ${{ github.sha }}
       LASTFM_API_KEY: ${{ secrets.LASTFM_API_KEY }}
