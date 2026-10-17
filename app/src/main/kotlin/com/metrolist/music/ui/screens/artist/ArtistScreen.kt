@@ -271,11 +271,11 @@ fun ArtistScreen(
                                 if (!showLocal && !isGuest) {
                                     artistPage?.artist?.radioEndpoint?.let { radioEndpoint ->
                                         LiquidIconButton(R.drawable.radio, stringResource(R.string.radio),
-                                            { playerConnection.playQueue(YouTubeQueue(radioEndpoint)) })
+                                            { playerConnection.playQueue(YouTubeQueue(radioEndpoint), source = displayArtistName) })
                                     }
                                     artistPage?.artist?.shuffleEndpoint?.let { shuffleEndpoint ->
                                         LiquidIconButton(R.drawable.shuffle, stringResource(R.string.shuffle),
-                                            { playerConnection.playQueue(YouTubeQueue(shuffleEndpoint)) }, emphasized = true)
+                                            { playerConnection.playQueue(YouTubeQueue(shuffleEndpoint), source = displayArtistName) }, emphasized = true)
                                     }
                                 }
                             }
