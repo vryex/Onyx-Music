@@ -7,9 +7,12 @@ package com.metrolist.music.ui.screens
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.Crossfade
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.gestures.snapping.rememberSnapFlingBehavior
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
@@ -32,8 +35,6 @@ import androidx.compose.foundation.layout.systemBars
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.pager.HorizontalPager
-import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyHorizontalGrid
 import androidx.compose.foundation.lazy.grid.items
@@ -64,6 +65,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -76,6 +78,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
@@ -172,6 +175,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.withContext
+import kotlin.math.abs
 import kotlin.math.min
 import kotlin.random.Random
 
@@ -656,6 +660,8 @@ fun HomeScreen(
     val menuState = LocalMenuState.current
     val bottomSheetPageState = LocalBottomSheetPageState.current
     val database = LocalDatabase.current
+    val recentlyHeard by remember(database) { database.recentlyHeardSongs(8) }
+        .collectAsStateWithLifecycle(initialValue = emptyList())
     val playerConnection = LocalPlayerConnection.current ?: return
     val haptic = LocalHapticFeedback.current
     val listenTogetherManager = LocalListenTogetherManager.current
@@ -1229,61 +1235,68 @@ fun HomeScreen(
                         },
                     )
                 }
-                if (selectedChip == null && dailySelection.isNotEmpty()) {
-                    item(key = "sonet_recommendations_carousel") {
-                        val sourceTitle = stringResource(R.string.onyx_daily_selection)
-                        val carouselSongs = remember(dailySelection) { dailySelection.take(8) }
-                        val pagerState = rememberPagerState(pageCount = { carouselSongs.size })
-                        // A single compact card changes itself every six seconds.
-                        // Users may also swipe the card manually in either direction.
-                        LaunchedEffect(carouselSongs) {
-                            while (isActive) {
-                                delay(6000)
-                                if (carouselSongs.size > 1 && !pagerState.isScrollInProgress) {
-                                    pagerState.animateScrollToPage(
-                                        (pagerState.currentPage + 1) % carouselSongs.size
-                                    )
-                                }
+                if (selectedChip == null && recentlyHeard.isNotEmpty()) {
+                    item(key = "sonet_recently_heard_crossfade") {
+                        val songs = remember(recentlyHeard) { recentlyHeard.take(8) }
+                        val sourceTitle = stringResource(R.string.sonet_recently_heard)
+                        var selectedIndex by remember(songs) { mutableIntStateOf(0) }
+
+                        // Reset the timer after each user swipe. Change in-place,
+                        // without scrolling cards or revealing neighboring covers.
+                        LaunchedEffect(songs, selectedIndex) {
+                            if (songs.size > 1) {
+                                delay(6500)
+                                selectedIndex = (selectedIndex + 1) % songs.size
                             }
                         }
+
                         Box(
-                            Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 10.dp)
+                            modifier = Modifier.fillMaxWidth()
+                                .padding(horizontal = 20.dp, vertical = 10.dp)
+                                .pointerInput(songs) {
+                                    var dragged = 0f
+                                    detectHorizontalDragGestures(
+                                        onHorizontalDrag = { change, distance ->
+                                            change.consume()
+                                            dragged += distance
+                                        },
+                                        onDragEnd = {
+                                            if (songs.size > 1 && abs(dragged) > size.width * .14f) {
+                                                selectedIndex = (selectedIndex +
+                                                    if (dragged < 0) 1 else songs.size - 1) % songs.size
+                                            }
+                                            dragged = 0f
+                                        },
+                                        onDragCancel = { dragged = 0f },
+                                    )
+                                },
                         ) {
-                            HorizontalPager(
-                                state = pagerState,
-                                modifier = Modifier.fillMaxWidth(),
-                                beyondViewportPageCount = 1,
+                            Crossfade(
+                                targetState = selectedIndex,
+                                animationSpec = tween(durationMillis = 850),
+                                label = "recentlyHeardArtworkCrossfade",
                             ) { index ->
-                                val song = carouselSongs[index]
-                                val playRecommendation = {
+                                val entry = songs[index]
+                                val playSong = {
                                     if (!isListenTogetherGuest) {
                                         playerConnection.playQueue(
                                             ListQueue(
                                                 title = sourceTitle,
-                                                items = dailySelection.map { it.toMediaMetadata().toMediaItem() },
+                                                items = songs.map { it.song.toMediaItem() },
                                                 startIndex = index,
-                                            )
+                                            ),
+                                            source = sourceTitle,
                                         )
                                     }
                                 }
                                 OnyxHomeHero(
-                                    title = song.title,
-                                    artist = song.artists.joinToString { it.name },
-                                    artwork = song.thumbnail,
-                                    onPlay = playRecommendation,
-                                    onExplore = playRecommendation,
+                                    title = entry.song.title,
+                                    artist = entry.song.orderedArtists.joinToString { it.name },
+                                    artwork = entry.song.thumbnailUrl,
+                                    label = sourceTitle,
+                                    onPlay = playSong,
+                                    onExplore = playSong,
                                     modifier = Modifier.fillMaxWidth(),
-                                )
-                            }
-                            if (carouselSongs.size > 1) {
-                                Text(
-                                    text = "${pagerState.currentPage + 1} / ${carouselSongs.size}",
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = Color.White.copy(alpha = 0.8f),
-                                    modifier = Modifier.align(Alignment.TopEnd)
-                                        .padding(top = 18.dp, end = 18.dp)
-                                        .background(Color.Black.copy(alpha = 0.3f), RoundedCornerShape(16.dp))
-                                        .padding(horizontal = 10.dp, vertical = 5.dp),
                                 )
                             }
                         }
