@@ -66,6 +66,8 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.testTagsAsResourceId
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Brush
+import com.metrolist.music.ui.theme.rememberArtworkColor
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -173,6 +175,19 @@ fun ArtistScreen(
         }
     }
 
+    // Sample a 224px version only once per artist using Onyx's existing LRU palette cache.
+    // No bitmap blur or per-frame color extraction is introduced.
+    val artistArtwork = artistPage?.artist?.thumbnail ?: libraryArtist?.artist?.thumbnailUrl
+    val artistColor by rememberArtworkColor(artistArtwork?.resize(224, 224))
+    val artistGradient = remember(artistColor) {
+        Brush.verticalGradient(
+            0f to artistColor,
+            0.37f to artistColor.copy(alpha = 0.52f),
+            0.78f to Color.Black,
+            1f to Color.Black,
+        )
+    }
+
     val distinctItemsBySection = remember(artistPage?.sections) {
         artistPage?.sections?.map { section ->
             section.items.distinctBy { it.id }
@@ -185,7 +200,8 @@ fun ArtistScreen(
     }
 
     Box(
-        modifier = Modifier.fillMaxSize().semantics { testTagsAsResourceId = true }.testTag("onyx_artist"),
+        modifier = Modifier.fillMaxSize().background(Color.Black).background(artistGradient)
+            .semantics { testTagsAsResourceId = true }.testTag("onyx_artist"),
     ) {
         LazyColumn(
             state = lazyListState,
@@ -223,7 +239,8 @@ fun ArtistScreen(
                             Modifier.fillMaxWidth(), style = MaterialTheme.typography.headlineLarge,
                             fontWeight = FontWeight.Medium, fontSize = 36.sp,
                             maxLines = 3, textAlign = TextAlign.Center, overflow = TextOverflow.Ellipsis)
-                        Column(Modifier.fillMaxWidth().onyxGlass(RoundedCornerShape(16.dp)).padding(12.dp),
+                        // Remove only the outlined glass frame; keep the exact padding and control positions.
+                        Column(Modifier.fillMaxWidth().padding(12.dp),
                             verticalArrangement = Arrangement.spacedBy(12.dp)) {
                             if (thumbnail != null) {
                                 AsyncImage(thumbnail.resize(960, 960), null, contentScale = ContentScale.Crop,

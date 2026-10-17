@@ -64,7 +64,9 @@ fun EmbeddedMusicVideo(
     var playing by remember(videoId) { mutableStateOf(false) }
     var hasRenderedVideo by remember(videoId) { mutableStateOf(false) }
     var failed by remember(videoId) { mutableStateOf(false) }
-    val origin = remember(context) { "https://${context.packageName}" }
+    // A valid, project-owned HTTPS origin supplies YouTube with an actual HTTP Referer.
+    // A synthetic package-name host can make embedded playback fail with error 153.
+    val origin = "https://xero-scripts-repo.github.io"
     val script = remember(context) { context.assets.open("onyx_video.js").bufferedReader().use { it.readText() } }
     val webView = remember(videoId, context) {
         require(videoId.matches(Regex("[A-Za-z0-9_-]{11}")))
@@ -101,6 +103,7 @@ fun EmbeddedMusicVideo(
                         message.message() == "ONYX_VIDEO_PLAYING" -> { playing = true; hasRenderedVideo = true }
                         message.message() == "ONYX_VIDEO_WAITING" -> playing = false
                         message.message().startsWith("ONYX_VIDEO_ERROR:") -> if (!failed) {
+                            android.util.Log.w("OnyxVideo", "Embedded video rejected: " + message.message())
                             failed = true
                             post { latestUnavailable() }
                         }
@@ -145,14 +148,26 @@ fun EmbeddedMusicVideo(
             }
         }
     }
+    // Retain the artwork even when a track has no embedded artwork metadata.
+    val coverUrl = artworkUrl?.takeUnless { it.isBlank() }
+        ?: "https://i.ytimg.com/vi/$videoId/hqdefault.jpg"
     Box(Modifier.fillMaxWidth().padding(24.dp), contentAlignment = Alignment.Center) {
         key(videoId) {
             val videoStatus = if (playing) "Video playing" else if (ready) "Video ready" else "Video loading"
-            Box(Modifier.fillMaxWidth().aspectRatio(1f).clip(RoundedCornerShape(24.dp)).background(Color.Black)) {
-                AndroidView(factory = { webView }, update = { it.contentDescription = videoStatus },
-                    modifier = Modifier.fillMaxSize().semantics { contentDescription = videoStatus })
-                // The iframe can be ready without a decoded frame when audio is paused.
-                if (!hasRenderedVideo) AsyncImage(artworkUrl, null, contentScale = ContentScale.Crop,
+            Box(Modifier.fillMaxWidth().aspectRatio(1f).clip(RoundedCornerShape(24.dp))
+                .background(Color(0xFF161616))) {
+                // Chromium video surfaces can paint above Compose siblings. Make the native
+                // view nearly transparent until the YouTube clock actually advances.
+                AndroidView(
+                    factory = { webView },
+                    update = {
+                        it.contentDescription = videoStatus
+                        it.alpha = if (hasRenderedVideo) 1f else 0.01f
+                    },
+                    modifier = Modifier.fillMaxSize().semantics { contentDescription = videoStatus },
+                )
+                // Never replace the album art on iframe READY/BUFFERING alone.
+                if (!hasRenderedVideo) AsyncImage(coverUrl, null, contentScale = ContentScale.Crop,
                     modifier = Modifier.fillMaxSize())
             }
         }

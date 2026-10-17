@@ -3,6 +3,7 @@ var onyxReady = false;
 var onyxFailed = false;
 var onyxLastProgressAt = 0;
 var onyxLastPosition = null;
+var onyxShown = false;
 function onyxFail(reason) {
   if (onyxFailed) return;
   onyxFailed = true;
@@ -15,7 +16,12 @@ function onYouTubeIframeAPIReady() {
     events: {
       onReady: function(e) { e.target.mute(); onyxReady = true; console.log('ONYX_VIDEO_READY'); },
       onError: function(e) { onyxFail(e.data); },
-      onStateChange: function(e) { console.log(e.data === 1 ? 'ONYX_VIDEO_PLAYING' : 'ONYX_VIDEO_WAITING'); }
+      onStateChange: function(e) {
+        if (e.data !== 1) {
+          onyxShown = false;
+          console.log('ONYX_VIDEO_WAITING');
+        }
+      }
     }
   });
 }
@@ -28,8 +34,15 @@ function onyxSync(position, playing, speed) {
   var state = onyxPlayer.getPlayerState();
   var current = onyxPlayer.getCurrentTime();
   var now = Date.now();
-  if (!playing || (state === 1 && onyxLastPosition !== null && current > onyxLastPosition + 0.05)) {
+  var progressed = state === 1 && onyxLastPosition !== null && current > onyxLastPosition + 0.12;
+  if (!playing) {
+    onyxLastProgressAt = 0;
+  } else if (progressed) {
     onyxLastProgressAt = now;
+    if (!onyxShown) {
+      onyxShown = true;
+      console.log('ONYX_VIDEO_PLAYING');
+    }
   } else if (onyxLastProgressAt === 0) {
     onyxLastProgressAt = now;
   } else if (now - onyxLastProgressAt > 20000) {
