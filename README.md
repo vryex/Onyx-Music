@@ -6,7 +6,7 @@
 
 Aplicación de música para Android, personalizada y desarrollada como una versión modificada de [Metrolist](https://github.com/MetrolistGroup/Metrolist).
 
-**Onyx Music — creado y mantenido por Brx**  
+**Onyx Music — creado y mantenido por Vriex**  
 [Instagram: @whois.brxn_](https://www.instagram.com/whois.brxn_/)
 
 [Características](#características-de-onyx-music) · [Cambios](ONYX_CHANGELOG.md) · [Créditos](CREDITS.md) · [Licencia](LICENSE)
@@ -17,7 +17,7 @@ Aplicación de música para Android, personalizada y desarrollada como una versi
 
 ## Onyx Music
 
-Onyx Music es una versión modificada del cliente Android de código abierto Metrolist. Su identidad visual, diseño de pantallas y las modificaciones específicas de esta versión se desarrollan bajo la dirección de **Brx**.
+Onyx Music es una versión modificada del cliente Android de código abierto Metrolist. Su identidad visual, diseño de pantallas y las modificaciones específicas de esta versión se desarrollan bajo la dirección de **Vriex**.
 
 Esta no es una publicación oficial de Metrolist ni está afiliada a sus desarrolladores. Las contribuciones anteriores, el código de base y los derechos de sus autores se reconocen por separado en [CREDITS.md](CREDITS.md).
 
@@ -49,13 +49,13 @@ No se debe asumir que todo cambio documentado ya dispone de una APK publicada: c
 
 ## Autoría, créditos y licencia
 
-**Brx** es el responsable de la identidad, el diseño personalizado y las modificaciones específicas de Onyx Music; sus nuevas contribuciones quedan identificadas en el historial de Git y en [ONYX_CHANGELOG.md](ONYX_CHANGELOG.md).
+**Vriex** es el responsable de la identidad, el diseño personalizado y las modificaciones específicas de Onyx Music; sus nuevas contribuciones quedan identificadas en el historial de Git y en [ONYX_CHANGELOG.md](ONYX_CHANGELOG.md).
 
 **Metrolist y sus colaboradores** son los autores de la base original y conservan sus avisos de copyright y atribución. Puedes consultar sus créditos en [CREDITS.md](CREDITS.md), la [documentación original](UPSTREAM_README.md) y el [proyecto de origen](https://github.com/MetrolistGroup/Metrolist).
 
 Onyx Music, en cuanto obra derivada del código cubierto, se distribuye bajo **GNU GPL-3.0**; se conserva una copia de la licencia en [LICENSE](LICENSE). La redistribución de la APK debe respetar los requisitos de la GPL, incluido el acceso al código fuente correspondiente y la preservación de los avisos legales existentes. Los archivos con licencias distintas mantienen los términos que les correspondan.
 
-**Identidad de producto:** Onyx Music — **Brx**  
+**Identidad de producto:** Onyx Music — **Vriex**  
 **Base de código:** Metrolist y sus respectivos colaboradores  
 **Modificaciones documentadas:** 2026-10-17
 

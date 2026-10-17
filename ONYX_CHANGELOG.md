@@ -1,6 +1,6 @@
 # Onyx Music — Registro de cambios
 
-**Autor y mantenimiento de esta versión:** Brx  
+**Autor y mantenimiento de esta versión:** Vriex  
 **Base de código:** [Metrolist](https://github.com/MetrolistGroup/Metrolist) (véase [CREDITS.md](CREDITS.md))  
 **Licencia del código derivado:** [GPL-3.0](LICENSE)
 
@@ -9,7 +9,7 @@ Este archivo documenta las modificaciones propias de Onyx Music; el historial de
 ## 2026-10-17 — Personalización Onyx Music (rama de desarrollo)
 
 ### Identidad y experiencia visual
-- Identidad de **Onyx Music** y perfil de **Brx** en la pantalla «Sobre».
+- Identidad de **Onyx Music** y perfil de **Vriex** en la pantalla «Sobre».
 - Rediseño oscuro y minimalista con controles redondeados, navegación y secciones reorganizadas.
 - Mejoras de presentación en inicio, biblioteca, resultados de búsqueda, álbumes, listas, artistas y pantalla de reproducción.
 - Eliminación de contornos y elementos decorativos innecesarios en distintos controles.

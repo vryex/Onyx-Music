@@ -123,16 +123,16 @@ fun AboutScreen(navController: NavController) {
                     color = MaterialTheme.colorScheme.surfaceContainerHighest,
                 ) {
                     Box(contentAlignment = Alignment.Center) {
-                        // Placeholder avatar until Brx supplies a portrait.
+                        // Placeholder avatar until Vriex supplies a portrait.
                         Text(
-                            "B",
+                            "V",
                             style = MaterialTheme.typography.displayLarge,
                             fontWeight = FontWeight.Medium,
                         )
                     }
                 }
                 Text(
-                    "Brx",
+                    "Vriex",
                     style = MaterialTheme.typography.headlineLarge,
                     fontWeight = FontWeight.SemiBold
                 )
