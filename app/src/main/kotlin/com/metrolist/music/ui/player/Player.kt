@@ -915,7 +915,7 @@ fun BottomSheetPlayer(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Box(Modifier.width(coverSlotWidth).height(48.dp)) {
-                AnimatedVisibility(
+                androidx.compose.animation.AnimatedVisibility(
                     visible = showInlineLyrics && !mediaMetadata.thumbnailUrl.isNullOrBlank(),
                     enter = fadeIn(tween(420)), exit = fadeOut(tween(420)),
                 ) {
