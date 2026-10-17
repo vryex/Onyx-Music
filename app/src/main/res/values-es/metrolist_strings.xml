@@ -909,4 +909,8 @@
     <string name="sonet_font_import_hint">Archivos .ttf y .otf de hasta 6 MB. Solo afecta las letras de las canciones.</string>
     <string name="sonet_font_import_success">Fuente importada para las letras</string>
     <string name="sonet_font_import_error">No se pudo cargar la fuente. Selecciona un .ttf u .otf válido (máx. 6 MB).</string>
+    <string name="sonet_playback_from">Desde %1$s</string>
+    <string name="sonet_playback_mix">Mix de %1$s</string>
+    <string name="sonet_playback_library">Biblioteca</string>
+    <string name="sonet_now_playing">REPRODUCIENDO</string>
 </resources>
