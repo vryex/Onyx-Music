@@ -1369,10 +1369,12 @@ fun BottomSheetPlayer(
             }
         }
 
+        // Queue owns a full-screen sheet; animate its alpha instead of
+        // collapsing/re-measuring it while the lyrics are resizing.
         AnimatedVisibility(
             visible = !isFullScreen,
-            enter = fadeIn(tween(320)) + expandVertically(tween(320)),
-            exit = fadeOut(tween(240)) + shrinkVertically(tween(320)),
+            enter = fadeIn(tween(320)),
+            exit = fadeOut(tween(280)),
         ) {
             Queue(
                 state = queueSheetState,
