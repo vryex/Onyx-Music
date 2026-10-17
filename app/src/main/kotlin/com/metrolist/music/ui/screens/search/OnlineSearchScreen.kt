@@ -512,6 +512,7 @@ fun OnlineSearchScreen(
                 },
                 modifier =
                     Modifier
+                        .artistSearchTint(item)
                         .combinedClickable(
                             onClick = {
                                 when (item) {

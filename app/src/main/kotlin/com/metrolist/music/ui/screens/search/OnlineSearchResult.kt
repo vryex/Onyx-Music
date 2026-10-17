@@ -303,6 +303,7 @@ fun OnlineSearchResult(
             },
             modifier =
                 Modifier
+                    .artistSearchTint(item)
                     .combinedClickable(
                         onClick = {
                             when (item) {
