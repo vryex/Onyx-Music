@@ -123,7 +123,7 @@ fun AboutScreen(navController: NavController) {
                     color = MaterialTheme.colorScheme.surfaceContainerHighest,
                 ) {
                     Box(contentAlignment = Alignment.Center) {
-                        // Placeholder avatar until Vriex supplies a portrait.
+                        // Placeholder avatar until Vryex supplies a portrait.
                         Text(
                             "V",
                             style = MaterialTheme.typography.displayLarge,
@@ -132,7 +132,7 @@ fun AboutScreen(navController: NavController) {
                     }
                 }
                 Text(
-                    "Vriex",
+                    "Vryex",
                     style = MaterialTheme.typography.headlineLarge,
                     fontWeight = FontWeight.SemiBold
                 )
