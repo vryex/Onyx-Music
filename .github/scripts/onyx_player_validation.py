@@ -74,7 +74,11 @@ adb('shell', 'am', 'start', '-W', '-n', activity)
 time.sleep(3)
 home = snapshot('07-seeded-home')
 for attempt in range(8):
-    if any('recomendaciones' in n.get('text', '').lower() for n in home.iter('node')):
+    if any(
+        label in n.get('text', '').lower()
+        for n in home.iter('node')
+        for label in ('recomendaciones', 'recommendations')
+    ):
         break
     time.sleep(1)
     home = snapshot('07-daily-selection-' + str(attempt))
