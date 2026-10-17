@@ -64,7 +64,7 @@ jobs:
 
       - name: Compilar Onyx Music
         env:
-          METROLIST_APP_NAME: Onyx Music
+          METROLIST_APP_NAME: Sonet
           METROLIST_APPLICATION_ID: com.onyx.music
         run: |
           bash ./gradlew :app:assembleIzzyDebug --stacktrace
