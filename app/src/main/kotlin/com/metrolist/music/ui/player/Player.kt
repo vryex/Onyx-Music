@@ -152,6 +152,7 @@ import androidx.navigation.NavController
 import androidx.palette.graphics.Palette
 import com.metrolist.music.LocalNavController
 import coil3.compose.AsyncImage
+import coil3.compose.rememberAsyncImagePainter
 import coil3.imageLoader
 import coil3.request.ImageRequest
 import coil3.request.allowHardware
@@ -326,6 +327,12 @@ fun BottomSheetPlayer(
             !it.equals("radio", ignoreCase = true)
     }
     val artworkColor by rememberArtworkColor(mediaMetadata?.thumbnailUrl)
+    // Keep the small cover painter alive even when the player is collapsed.
+    // This exact URL is already used by the mini player and can be drawn on the
+    // first expanded frame while its sharper request finishes.
+    val instantArtworkPainter = rememberAsyncImagePainter(
+        model = mediaMetadata?.thumbnailUrl?.resize(120, 120),
+    )
     var showVideo by rememberSaveable { mutableStateOf(false) }
     var videoUnavailable by remember(mediaMetadata?.id) { mutableStateOf(false) }
     val currentSong by playerConnection.currentSong.collectAsStateWithLifecycle(initialValue = null)
@@ -826,9 +833,10 @@ fun BottomSheetPlayer(
                             .fillMaxWidth()
                             .aspectRatio(0.82f),
                     ) {
-                        // Show already cached small artwork until the sharp preloaded copy arrives.
-                        AsyncImage(
-                            model = mediaMetadata?.thumbnailUrl?.resize(120, 120),
+                        // The thumbnail painter was started before the sheet opened:
+                        // no cold Compose/Coil request when opening the player.
+                        Image(
+                            painter = instantArtworkPainter,
                             contentDescription = null,
                             contentScale = ContentScale.Crop,
                             modifier = Modifier.fillMaxSize(),
