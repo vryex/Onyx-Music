@@ -1,15 +1,9 @@
 /**
- * Metrolist Project (C) 2026
- * Licensed under GPL-3.0 | See git history for contributors
+ * Onyx Music customization of the open-source Metrolist project.
+ * Original copyright and GPL notices remain with the repository.
  */
-
 package com.metrolist.music.ui.screens.settings
 
-import android.content.ActivityNotFoundException
-import android.content.Intent
-import android.os.Build
-import android.provider.Settings
-import android.widget.Toast
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsetsSides
@@ -19,64 +13,89 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.*
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import androidx.core.net.toUri
 import androidx.navigation.NavController
-import com.metrolist.music.BuildConfig
 import com.metrolist.music.LocalPlayerAwareWindowInsets
 import com.metrolist.music.R
+import com.metrolist.music.constants.*
 import com.metrolist.music.ui.component.IconButton
 import com.metrolist.music.ui.component.Material3SettingsGroup
 import com.metrolist.music.ui.component.Material3SettingsItem
-import com.metrolist.music.ui.component.ReleaseNotesCard
 import com.metrolist.music.ui.utils.backToMain
-import com.metrolist.music.utils.Updater
-import androidx.compose.runtime.remember
+import com.metrolist.music.utils.rememberPreference
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SettingsScreen(
-    navController: NavController,
-    latestVersionName: String,
-) {
-    val uriHandler = LocalUriHandler.current
-    val context = LocalContext.current
-    val isAndroid12OrLater = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
-    val hasAndroidAuto = remember {
-        try {
-            context.packageManager.getPackageInfo(
-                "com.google.android.projection.gearhead", 0
-            )
-            true
-        } catch (e: Exception) {
-            false
-        }
+fun SettingsScreen(navController: NavController, latestVersionName: String) {
+    // Preserve previously configured miscellaneous/appearance settings.
+    // Always-on content features are restored even for upgraded installations
+    // that had disabled them before those toggles were removed.
+    val (description, setDescription) = rememberPreference(ShowArtistDescriptionKey, true)
+    val (subscribers, setSubscribers) = rememberPreference(ShowArtistSubscriberCountKey, true)
+    val (listeners, setListeners) = rememberPreference(ShowMonthlyListenersKey, true)
+    val (lrc, setLrc) = rememberPreference(EnableLrcLibKey, true)
+    val (kugou, setKugou) = rememberPreference(EnableKugouKey, true)
+    val (better, setBetter) = rememberPreference(EnableBetterLyricsKey, true)
+    val (paxsenix, setPaxsenix) = rememberPreference(EnablePaxsenixKey, true)
+    val (plus, setPlus) = rememberPreference(EnableLyricsPlus, true)
+    val (zemer, setZemer) = rememberPreference(EnableZemerKey, true)
+    val (popular, setPopular) = rememberPreference(ShowMostStatsPlaylistsKey, true)
+    val (wrapped, setWrapped) = rememberPreference(ShowWrappedCardKey, false)
+    val (proxy, setProxy) = rememberPreference(ProxyEnabledKey, false)
+    val (explicit, setExplicit) = rememberPreference(HideExplicitKey, false)
+    val (video, setVideo) = rememberPreference(HideVideoSongsKey, false)
+    val (shorts, setShorts) = rememberPreference(HideYoutubeShortsKey, false)
+
+    LaunchedEffect(
+        description, subscribers, listeners,
+        lrc, kugou, better, paxsenix, plus, zemer,
+        popular, wrapped, proxy, explicit, video, shorts
+    ) {
+        if (!description) setDescription(true)
+        if (!subscribers) setSubscribers(true)
+        if (!listeners) setListeners(true)
+        if (!lrc) setLrc(true)
+        if (!kugou) setKugou(true)
+        if (!better) setBetter(true)
+        if (!paxsenix) setPaxsenix(true)
+        if (!plus) setPlus(true)
+        if (!zemer) setZemer(true)
+        if (!popular) setPopular(true)
+        if (wrapped) setWrapped(false)
+        if (proxy) setProxy(false)
+        if (explicit) setExplicit(false)
+        if (video) setVideo(false)
+        if (shorts) setShorts(false)
     }
 
     Column(
         Modifier
-            .windowInsetsPadding(LocalPlayerAwareWindowInsets.current.only(WindowInsetsSides.Horizontal + WindowInsetsSides.Bottom))
+            .windowInsetsPadding(
+                LocalPlayerAwareWindowInsets.current.only(
+                    WindowInsetsSides.Horizontal + WindowInsetsSides.Bottom
+                )
+            )
             .verticalScroll(rememberScrollState())
             .padding(horizontal = 16.dp)
     ) {
         Spacer(
             Modifier.windowInsetsPadding(
-                LocalPlayerAwareWindowInsets.current.only(
-                    WindowInsetsSides.Top
-                )
+                LocalPlayerAwareWindowInsets.current.only(WindowInsetsSides.Top)
             )
         )
-
-        com.metrolist.music.ui.theme.OnyxPageHeader(stringResource(R.string.settings), subtitle = "Onyx Music")
-
-        // Player & Content Section (moved up and combined with content)
+        com.metrolist.music.ui.theme.OnyxPageHeader(
+            stringResource(R.string.settings), subtitle = "Onyx Music"
+        )
+        Spacer(Modifier.height(16.dp))
         Material3SettingsGroup(
             title = stringResource(R.string.settings_section_player_content),
             items = listOf(
@@ -89,48 +108,10 @@ fun SettingsScreen(
                     icon = painterResource(R.drawable.language),
                     title = { Text(stringResource(R.string.content)) },
                     onClick = { navController.navigate("settings/content") }
-                ),
-                Material3SettingsItem(
-                    icon = painterResource(R.drawable.translate),
-                    title = { Text(stringResource(R.string.ai_lyrics_translation)) },
-                    onClick = { navController.navigate("settings/ai") }
                 )
             )
         )
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        // User Interface Section
-        Material3SettingsGroup(
-            title = stringResource(R.string.settings_section_ui),
-            items = listOf(
-                Material3SettingsItem(
-                    icon = painterResource(R.drawable.palette),
-                    title = { Text(stringResource(R.string.appearance)) },
-                    onClick = { navController.navigate("settings/appearance") }
-                )
-            )
-        )
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        // Android Auto Section — only shown if Android Auto is installed
-        if (hasAndroidAuto) {
-            Material3SettingsGroup(
-                title = "Android Auto",
-                items = listOf(
-                    Material3SettingsItem(
-                        icon = painterResource(R.drawable.ic_android_auto),
-                        title = { Text(stringResource(R.string.android_auto)) },
-                        onClick = { navController.navigate("settings/android_auto") }
-                    )
-                )
-            )
-
-            Spacer(modifier = Modifier.height(16.dp))
-        }
-        
-        // Privacy & Security Section
+        Spacer(Modifier.height(20.dp))
         Material3SettingsGroup(
             title = stringResource(R.string.settings_section_privacy),
             items = listOf(
@@ -141,10 +122,7 @@ fun SettingsScreen(
                 )
             )
         )
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        // Storage & Data Section
+        Spacer(Modifier.height(20.dp))
         Material3SettingsGroup(
             title = stringResource(R.string.settings_section_storage),
             items = listOf(
@@ -160,117 +138,19 @@ fun SettingsScreen(
                 )
             )
         )
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        // System & About Section
+        Spacer(Modifier.height(20.dp))
         Material3SettingsGroup(
             title = stringResource(R.string.settings_section_system),
-            items = buildList {
-                if (isAndroid12OrLater) {
-                    add(
-                        Material3SettingsItem(
-                            icon = painterResource(R.drawable.link),
-                            title = { Text(stringResource(R.string.default_links)) },
-                            onClick = {
-                                try {
-                                    val intent = Intent(
-                                        Settings.ACTION_APP_OPEN_BY_DEFAULT_SETTINGS,
-                                        "package:${context.packageName}".toUri()
-                                    )
-                                    intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                                    context.startActivity(intent)
-                                } catch (e: Exception) {
-                                    when (e) {
-                                        is ActivityNotFoundException -> {
-                                            Toast.makeText(
-                                                context,
-                                                R.string.open_app_settings_error,
-                                                Toast.LENGTH_LONG
-                                            ).show()
-                                        }
-
-                                        is SecurityException -> {
-                                            Toast.makeText(
-                                                context,
-                                                R.string.open_app_settings_error,
-                                                Toast.LENGTH_LONG
-                                            ).show()
-                                        }
-
-                                        else -> {
-                                            Toast.makeText(
-                                                context,
-                                                R.string.open_app_settings_error,
-                                                Toast.LENGTH_LONG
-                                            ).show()
-                                        }
-                                    }
-                                }
-                            }
-                        )
-                    )
-                }
-                if (BuildConfig.UPDATER_AVAILABLE) {
-                    add(
-                        Material3SettingsItem(
-                            icon = painterResource(R.drawable.update),
-                            title = { Text(stringResource(R.string.updater)) },
-                            onClick = { navController.navigate("settings/updater") }
-                        )
-                    )
-                }
-                val showChangelog = com.metrolist.music.LocalChangelogState.current
-                add(
-                    Material3SettingsItem(
-                        icon = painterResource(R.drawable.newspaper),
-                        title = { Text(stringResource(R.string.changelog)) },
-                        onClick = { showChangelog.value = true }
-                    )
+            items = listOf(
+                Material3SettingsItem(
+                    icon = painterResource(R.drawable.info),
+                    title = { Text(stringResource(R.string.about)) },
+                    onClick = { navController.navigate("settings/about") }
                 )
-                add(
-                    Material3SettingsItem(
-                        icon = painterResource(R.drawable.info),
-                        title = { Text(stringResource(R.string.about)) },
-                        onClick = { navController.navigate("settings/about") }
-                    )
-                )
-                if (BuildConfig.UPDATER_AVAILABLE && latestVersionName != BuildConfig.BASE_VERSION_NAME) {
-                    val releaseInfo = Updater.getCachedLatestRelease()
-                    val downloadUrl = releaseInfo?.let { Updater.getDownloadUrlForCurrentVariant(it) }
-
-                    if (downloadUrl != null) {
-                        add(
-                            Material3SettingsItem(
-                                icon = painterResource(R.drawable.update),
-                                title = { 
-                                    Text(
-                                        text = stringResource(R.string.new_version_available),
-                                    )
-                                },
-                                description = {
-                                    Text(
-                                        text = latestVersionName,
-                                        style = MaterialTheme.typography.bodyMedium,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
-                                },
-                                showBadge = true,
-                                onClick = { uriHandler.openUri(downloadUrl) }
-                            )
-                        )
-                    }
-                }
-            }
+            )
         )
-    if (BuildConfig.UPDATER_AVAILABLE && latestVersionName != BuildConfig.BASE_VERSION_NAME) {
-            Spacer(modifier = Modifier.height(16.dp))
-            ReleaseNotesCard()
-        }
-
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(Modifier.height(24.dp))
     }
-
     TopAppBar(
         title = { Text(stringResource(R.string.settings)) },
         navigationIcon = {
@@ -278,10 +158,7 @@ fun SettingsScreen(
                 onClick = navController::navigateUp,
                 onLongClick = navController::backToMain
             ) {
-                Icon(
-                    painterResource(R.drawable.arrow_back),
-                    contentDescription = null
-                )
+                Icon(painterResource(R.drawable.arrow_back), contentDescription = null)
             }
         }
     )
