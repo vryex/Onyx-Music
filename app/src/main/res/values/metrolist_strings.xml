@@ -1026,4 +1026,8 @@
     <string name="sonet_font_import_hint">Only .ttf and .otf files, up to 6 MB. Applies only to song lyrics.</string>
     <string name="sonet_font_import_success">Font imported for lyrics</string>
     <string name="sonet_font_import_error">Cannot open this font. Choose a valid .ttf or .otf file (max 6 MB).</string>
+    <string name="sonet_playback_from">From %1$s</string>
+    <string name="sonet_playback_mix">Mix of %1$s</string>
+    <string name="sonet_playback_library">Your library</string>
+    <string name="sonet_now_playing">NOW PLAYING</string>
 </resources>
