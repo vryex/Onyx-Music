@@ -19,14 +19,16 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
-private val artworkColors = LruCache<String, Color>(24)
-private val artworkFallback = Color(0xFF252529)
+data class ArtworkTones(val surface: Color, val accent: Color)
 
-/** A tiny cached sample keeps palette work off the UI thread and playback frames. */
+private val artworkColors = LruCache<String, ArtworkTones>(24)
+private val artworkFallback = ArtworkTones(Color(0xFF252529), Color(0xFF353539))
+
+/** Reuse one tiny cached bitmap sample to obtain both the dominant and alternate colors. */
 @Composable
-fun rememberArtworkColor(artwork: String?): State<Color> {
+fun rememberArtworkTones(artwork: String?): State<ArtworkTones> {
     val context = LocalContext.current
-    val color by produceState(artworkFallback, artwork, context) {
+    return produceState(artworkFallback, artwork, context) {
         if (artwork.isNullOrBlank()) {
             value = artworkFallback
             return@produceState
@@ -37,10 +39,15 @@ fun rememberArtworkColor(artwork: String?): State<Color> {
                     ImageRequest.Builder(context).data(artwork).size(96)
                         .allowHardware(false).build(),
                 ).image ?: return@withContext artworkFallback
-                val palette = Palette.from(image.toBitmap()).maximumColorCount(16).generate()
-                val swatches = palette.swatches
-                val source = ArtworkPalette.select(swatches.map { it.rgb }.toIntArray(), swatches.map { it.population }.toIntArray())
-                Color(ArtworkPalette.surface(source)).also { artworkColors.put(artwork, it) }
+                val swatches = Palette.from(image.toBitmap()).maximumColorCount(16).generate().swatches
+                val colors = swatches.map { it.rgb }.toIntArray()
+                val populations = swatches.map { it.population }.toIntArray()
+                val main = ArtworkPalette.select(colors, populations)
+                val secondary = ArtworkPalette.accent(colors, populations, main)
+                ArtworkTones(
+                    Color(ArtworkPalette.surface(main)),
+                    Color(ArtworkPalette.surface(secondary)),
+                ).also { artworkColors.put(artwork, it) }
             } catch (cancelled: CancellationException) {
                 throw cancelled
             } catch (_: Exception) {
@@ -48,5 +55,11 @@ fun rememberArtworkColor(artwork: String?): State<Color> {
             }
         }
     }
-    return animateColorAsState(color, tween(650, easing = FastOutSlowInEasing), label = "artworkColor")
+}
+
+/** Existing color behavior/transition retained for every original caller. */
+@Composable
+fun rememberArtworkColor(artwork: String?): State<Color> {
+    val tones by rememberArtworkTones(artwork)
+    return animateColorAsState(tones.surface, tween(650, easing = FastOutSlowInEasing), label = "artworkColor")
 }

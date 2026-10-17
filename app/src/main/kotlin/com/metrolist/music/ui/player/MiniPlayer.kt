@@ -7,7 +7,15 @@
 
 package com.metrolist.music.ui.player
 
-import com.metrolist.music.ui.theme.rememberArtworkColor
+import com.metrolist.music.ui.theme.rememberArtworkTones
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.Canvas
 import androidx.compose.ui.draw.drawBehind
 import com.metrolist.music.ui.theme.onyxGlass
 import android.content.res.Configuration
@@ -108,6 +116,7 @@ import com.metrolist.music.utils.rememberEnumPreference
 import com.metrolist.music.utils.rememberPreference
 import kotlinx.coroutines.launch
 import kotlin.math.absoluteValue
+import kotlin.math.sin
 import kotlin.math.roundToInt
 import com.metrolist.music.ui.component.Icon as MIcon
 import androidx.compose.ui.draw.blur
@@ -219,7 +228,10 @@ private fun NewMiniPlayer(
         }
 
 
-    val artworkColor by rememberArtworkColor(mediaMetadata?.thumbnailUrl)
+    val artworkTones by rememberArtworkTones(mediaMetadata?.thumbnailUrl)
+    val artworkColor by animateColorAsState(artworkTones.surface, tween(650), label = "miniArtwork")
+    val playButtonColor by animateColorAsState(artworkTones.accent, tween(650), label = "miniAccent")
+    val isEffectivelyPlaying by playerConnection.isEffectivelyPlaying.collectAsStateWithLifecycle()
     val primaryColor = MaterialTheme.colorScheme.primary
     val outlineColor = MaterialTheme.colorScheme.outline
     val errorColor = MaterialTheme.colorScheme.primary
@@ -328,7 +340,7 @@ private fun NewMiniPlayer(
             ) {
                 Box(
                     modifier = Modifier.size(44.dp).clip(RoundedCornerShape(24.dp))
-                        .background(Color(0xFF242424)),
+                        .background(playButtonColor),
                     contentAlignment = Alignment.Center,
                 ) {
                     LegacyPlayPauseButton(
@@ -357,14 +369,56 @@ private fun NewMiniPlayer(
                     Icon(painterResource(R.drawable.skip_next), stringResource(R.string.onyx_next_track),
                         tint = Color(0xFFA1A1A6))
                 }
-                AsyncImage(
-                    model = mediaMetadata?.thumbnailUrl?.resize(120, 120),
-                    contentDescription = null,
-                    contentScale = ContentScale.Crop,
-                    modifier = Modifier.size(36.dp).clip(RoundedCornerShape(24.dp)),
-                )
+                Box(Modifier.size(36.dp).clip(RoundedCornerShape(24.dp))) {
+                    AsyncImage(
+                        model = mediaMetadata?.thumbnailUrl?.resize(120, 120),
+                        contentDescription = null,
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier.fillMaxSize(),
+                    )
+                    // Cheap playing indicator layered on the existing thumbnail;
+                    // it uses no extra row width and disappears when playback pauses.
+                    if (isEffectivelyPlaying) {
+                        Box(
+                            Modifier.align(Alignment.BottomEnd).size(19.dp)
+                                .background(Color.Black.copy(alpha = 0.68f), RoundedCornerShape(7.dp)),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            MiniPlayingEqualizer(Modifier.size(12.dp))
+                        }
+                    }
+                }
                 Spacer(Modifier.width(6.dp))
             }
+        }
+    }
+}
+
+/** Mini audio equalizer, drawn only during playback (no parent recomposition). */
+@Composable
+private fun MiniPlayingEqualizer(modifier: Modifier = Modifier) {
+    val transition = rememberInfiniteTransition(label = "miniEqualizer")
+    val phase = transition.animateFloat(
+        initialValue = 0f,
+        targetValue = 6.2831855f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(1050, easing = LinearEasing),
+            repeatMode = RepeatMode.Restart,
+        ),
+        label = "equalizerPhase",
+    )
+    Canvas(modifier) {
+        for (index in 0..2) {
+            val amplitude = (sin(phase.value + index * 1.9f) + 1f) * 0.5f
+            val barHeight = size.height * (0.29f + amplitude * 0.62f)
+            val x = size.width * (index + 1) / 4f
+            drawLine(
+                color = Color.White,
+                start = Offset(x, size.height - barHeight),
+                end = Offset(x, size.height),
+                strokeWidth = 1.6.dp.toPx(),
+                cap = StrokeCap.Round,
+            )
         }
     }
 }

@@ -426,6 +426,7 @@ fun OnlineSearchScreen(
         items(viewState.items, key = { "item_${it.id}" }) { item ->
             YouTubeListItem(
                 item = item,
+                showDivider = item !is ArtistItem,
                 isActive =
                     when (item) {
                         is SongItem -> mediaMetadata?.id == item.id

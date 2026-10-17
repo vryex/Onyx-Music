@@ -23,6 +23,38 @@ public final class ArtworkPalette {
         return colors[best] | 0xff000000;
     }
 
+    /** Secondary palette hue, unlike the primary whenever the cover permits it. */
+    public static int accent(int[] colors, int[] populations, int primary) {
+        if (colors.length == 0 || colors.length != populations.length) return primary;
+        int maxPopulation = 1;
+        for (int p : populations) maxPopulation = Math.max(maxPopulation, p);
+        double mainHue = hue(primary), bestScore = -1;
+        int best = primary;
+        for (int i = 0; i < colors.length; i++) {
+            if (populations[i] < maxPopulation * .025) continue;
+            int color = colors[i];
+            double r = ((color >> 16) & 255) / 255.0;
+            double g = ((color >> 8) & 255) / 255.0;
+            double b = (color & 255) / 255.0;
+            double max = Math.max(r, Math.max(g, b));
+            double min = Math.min(r, Math.min(g, b));
+            double saturation = max == 0 ? 0 : (max - min) / max;
+            double difference = Math.abs(hue(color) - mainHue);
+            difference = Math.min(difference, 360 - difference);
+            if (saturation < .25 || max < .20 || difference < 33) continue;
+            double score = Math.min(difference / 145, 1) * .54
+                + saturation * .29 + Math.sqrt(populations[i] / (double) maxPopulation) * .17;
+            if (score > bestScore) { bestScore = score; best = color; }
+        }
+        return best | 0xff000000;
+    }
+
+    private static double hue(int color) {
+        double red = (color >> 16) & 255, green = (color >> 8) & 255, blue = color & 255;
+        double degrees = Math.toDegrees(Math.atan2(Math.sqrt(3) * (green - blue), 2 * red - green - blue));
+        return degrees < 0 ? degrees + 360 : degrees;
+    }
+
     /** Keep the hue/chroma while guaranteeing contrast for white player labels. */
     public static int surface(int argb) {
         double low = 0, high = 1;

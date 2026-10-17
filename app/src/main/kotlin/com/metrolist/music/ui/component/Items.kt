@@ -260,6 +260,7 @@ inline fun ListItem(
     isSelected: Boolean? = false,
     isActive: Boolean = false,
     isAvailable: Boolean = true,
+    showDivider: Boolean = true,
 ) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
@@ -273,12 +274,14 @@ inline fun ListItem(
             )
             .drawWithContent {
                 drawContent()
-                drawLine(
-                    color = Color(0xFFA1A1A6).copy(alpha = 0.12f),
-                    start = Offset(72.dp.toPx(), size.height - 1.dp.toPx()),
-                    end = Offset(size.width - 8.dp.toPx(), size.height - 1.dp.toPx()),
-                    strokeWidth = 1.dp.toPx(),
-                )
+                if (showDivider) {
+                    drawLine(
+                        color = Color(0xFFA1A1A6).copy(alpha = 0.12f),
+                        start = Offset(72.dp.toPx(), size.height - 1.dp.toPx()),
+                        end = Offset(size.width - 8.dp.toPx(), size.height - 1.dp.toPx()),
+                        strokeWidth = 1.dp.toPx(),
+                    )
+                }
                 if (isActive || isSelected == true) {
                     drawLine(
                         color = Color(0xFFF5F5F7),
@@ -1134,6 +1137,7 @@ fun YouTubeListItem(
     isActive: Boolean = false,
     isPlaying: Boolean = false,
     isSwipeable: Boolean = true,
+    showDivider: Boolean = true,
     trailingContent: @Composable RowScope.() -> Unit = {},
     badges: @Composable RowScope.() -> Unit = {
         val database = LocalDatabase.current
@@ -1221,7 +1225,8 @@ fun YouTubeListItem(
             },
             trailingContent = trailingContent,
             modifier = modifier,
-            isActive = isActive
+            isActive = isActive,
+            showDivider = showDivider,
         )
     }
 

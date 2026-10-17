@@ -283,6 +283,7 @@ fun OnlineSearchResult(
         }
         YouTubeListItem(
             item = item,
+            showDivider = item !is ArtistItem,
             isActive =
                 when (item) {
                     is SongItem -> mediaMetadata?.id == item.id
