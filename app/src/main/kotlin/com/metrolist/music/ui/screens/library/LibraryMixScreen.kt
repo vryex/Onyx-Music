@@ -404,6 +404,7 @@ fun LibraryMixScreen(
                         MixSortType.NAME -> R.string.sort_by_name
                     }
                 },
+                modifier = Modifier.padding(start = 12.dp),
             )
 
             Spacer(Modifier.weight(1f))

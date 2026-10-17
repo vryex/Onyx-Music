@@ -506,8 +506,14 @@ fun AutoPlaylistScreen(
                 ),
     ) {
         CollectionHeaderTint(
-            artwork = (if (isPlaying) mediaMetadata?.thumbnailUrl else null)
-                ?: songs?.firstOrNull()?.song?.thumbnailUrl,
+            // Liked playlist always derives its header tint from the first
+            // saved track, rather than an unrelated currently playing song.
+            artwork = if (playlistType == PlaylistType.LIKE) {
+                songs?.firstOrNull()?.song?.thumbnailUrl
+            } else {
+                (if (isPlaying) mediaMetadata?.thumbnailUrl else null)
+                    ?: songs?.firstOrNull()?.song?.thumbnailUrl
+            },
             scrollState = state,
         )
         LazyColumn(
@@ -967,7 +973,6 @@ private fun AutoPlaylistHeader(
                     )
                 },
                 color = MaterialTheme.colorScheme.surfaceContainerHigh,
-                border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.45f)),
                 shape = RoundedCornerShape(24.dp),
                 modifier = Modifier.weight(1f).height(52.dp),
             ) {

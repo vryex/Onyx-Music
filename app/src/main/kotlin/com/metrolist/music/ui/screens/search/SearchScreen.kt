@@ -325,7 +325,6 @@ fun SearchScreen(
 private fun SearchScopeButton(title: String, icon: Int, selected: Boolean, onClick: () -> Unit, modifier: Modifier) {
     Row(modifier.clip(RoundedCornerShape(32.dp))
         .background(if (selected) MaterialTheme.colorScheme.surfaceContainerHigh else MaterialTheme.colorScheme.surface)
-        .border(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = if (selected) .5f else .15f), RoundedCornerShape(32.dp))
         .selectable(selected = selected, role = Role.RadioButton, onClick = onClick)
         .heightIn(min = 48.dp).padding(horizontal = 12.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {

@@ -58,8 +58,7 @@ fun LibrarySearchHeader(
         verticalAlignment = Alignment.CenterVertically,
         modifier = modifier.fillMaxWidth()
             .padding(end = 16.dp, top = 4.dp, bottom = 12.dp)
-            .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(24.dp))
-            .border(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f), RoundedCornerShape(24.dp)),
+            .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(24.dp)),
     ) {
         if (isSearchActive) {
             TextField(

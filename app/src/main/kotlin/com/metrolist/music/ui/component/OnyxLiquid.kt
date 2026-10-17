@@ -139,7 +139,6 @@ fun OnyxHomeShortcuts(onHistory: () -> Unit, onExplore: () -> Unit) {
 private fun HomeShortcut(title: String, icon: Int, onClick: () -> Unit, modifier: Modifier) {
     Row(modifier.clip(RoundedCornerShape(24.dp))
         .background(MaterialTheme.colorScheme.surface)
-        .border(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = .2f), RoundedCornerShape(24.dp))
         .clickable(role = Role.Button, onClick = onClick)
         .heightIn(min = 48.dp).padding(horizontal = 12.dp, vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -190,7 +189,6 @@ fun OnyxHomeHero(title: String?, artist: String?, artwork: String?, onPlay: () -
         }
         Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(24.dp))
             .background(MaterialTheme.colorScheme.surfaceContainerHigh)
-            .border(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = .45f), RoundedCornerShape(24.dp))
             .clickable(role = Role.Button, onClick = onPlay).heightIn(min = 48.dp).padding(12.dp),
             verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.Center) {
             Icon(painterResource(R.drawable.play), null, Modifier.size(20.dp), tint = MaterialTheme.colorScheme.onSurface)
