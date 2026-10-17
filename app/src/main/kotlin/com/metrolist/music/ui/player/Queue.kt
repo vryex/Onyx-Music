@@ -900,14 +900,8 @@ fun Queue(
                         indication = null,
                         interactionSource = remember { MutableInteractionSource() },
                     ) { }
-                    .background(
-                        if (pureBlack) {
-                            Color.Black
-                        } else {
-                            // Fully opaque so moving song rows do not bleed through.
-                            MaterialTheme.colorScheme.secondaryContainer
-                        },
-                    ).windowInsetsPadding(
+                    // Opaque black queue header: title, lock, song count and duration.
+                    .background(Color.Black).windowInsetsPadding(
                         WindowInsets.systemBars
                             .only(WindowInsetsSides.Top + WindowInsetsSides.Horizontal),
                     ),
@@ -1045,15 +1039,8 @@ fun Queue(
         Box(
             modifier =
                 Modifier
-                    .background(
-                        if (pureBlack) {
-                            Color.Black
-                        } else {
-                            MaterialTheme.colorScheme
-                                .secondaryContainer
-                                .copy(alpha = 0.90f)
-                        },
-                    ).fillMaxWidth()
+                    // Match the queue background without recoloring shuffle/repeat icons.
+                    .background(Color.Black).fillMaxWidth()
                     .height(
                         ListItemHeight +
                             WindowInsets.systemBars
