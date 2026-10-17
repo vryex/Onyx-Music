@@ -899,4 +899,9 @@
     <string name="onyx_video">Video</string>
     <string name="onyx_video_loading">Cargando video</string>
     <string name="onyx_video_unavailable">Este video no está disponible aquí. Se mantiene la portada.</string>
+    <string name="sonet_appearance">Apariencia</string>
+    <string name="sonet_font_title">Fuente de la app</string>
+    <string name="sonet_font_sans">Sans del sistema</string>
+    <string name="sonet_font_serif">Serif</string>
+    <string name="sonet_font_mono">Monoespaciada</string>
 </resources>
