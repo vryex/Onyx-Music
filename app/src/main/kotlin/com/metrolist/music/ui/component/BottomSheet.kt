@@ -64,6 +64,7 @@ fun BottomSheet(
     onDismiss: (() -> Unit)? = null,
     collapsedContent: @Composable BoxScope.() -> Unit,
     isExpandable: Boolean = true,
+    backgroundFollowsContent: Boolean = false,
     content: @Composable BoxScope.() -> Unit,
 ) {
     val density = LocalDensity.current
@@ -71,6 +72,9 @@ fun BottomSheet(
     Box(
         modifier = modifier
             .graphicsLayer {
+                if (backgroundFollowsContent) {
+                    translationY = (state.expandedBound - state.value).toPx().coerceAtLeast(0f)
+                }
                 // background fades during about 10%-61% progress
                 alpha = (1.4f * (state.progress.coerceAtLeast(0.1f) - 0.1f).pow(0.5f)).coerceIn(0f, 1f)
             }

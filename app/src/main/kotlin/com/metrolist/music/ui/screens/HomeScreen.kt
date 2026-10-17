@@ -142,6 +142,7 @@ import com.metrolist.music.ui.component.ChipsRow
 import com.metrolist.music.ui.component.HideOnScrollFAB
 import com.metrolist.music.ui.component.LocalBottomSheetPageState
 import com.metrolist.music.ui.component.LocalMenuState
+import com.metrolist.music.utils.recentlyHeardSongs
 import com.metrolist.music.ui.component.OnyxHomeHero
 import com.metrolist.music.ui.component.OnyxHomeObservatory
 import com.metrolist.music.ui.component.OnyxHomeShortcuts
@@ -660,7 +661,8 @@ fun HomeScreen(
     val menuState = LocalMenuState.current
     val bottomSheetPageState = LocalBottomSheetPageState.current
     val database = LocalDatabase.current
-    val recentlyHeard by remember(database) { database.recentlyHeardSongs(8) }
+    val recentContext = LocalContext.current
+    val recentlyHeard by remember(database, recentContext) { recentContext.recentlyHeardSongs(database) }
         .collectAsStateWithLifecycle(initialValue = emptyList())
     val playerConnection = LocalPlayerConnection.current ?: return
     val haptic = LocalHapticFeedback.current
@@ -1237,9 +1239,9 @@ fun HomeScreen(
                 }
                 if (selectedChip == null && recentlyHeard.isNotEmpty()) {
                     item(key = "sonet_recently_heard_crossfade") {
-                        val songs = remember(recentlyHeard) { recentlyHeard.take(8) }
+                        val songs = remember(recentlyHeard) { recentlyHeard }
                         val sourceTitle = stringResource(R.string.sonet_recently_heard)
-                        var selectedIndex by remember(songs) { mutableIntStateOf(0) }
+                        var selectedIndex by remember(songs.map { it.id }) { mutableIntStateOf(0) }
 
                         // Reset the timer after each user swipe. Change in-place,
                         // without scrolling cards or revealing neighboring covers.
@@ -1272,17 +1274,17 @@ fun HomeScreen(
                                 },
                         ) {
                             Crossfade(
-                                targetState = selectedIndex,
+                                targetState = songs[selectedIndex.coerceIn(0, songs.lastIndex)],
                                 animationSpec = tween(durationMillis = 850),
                                 label = "recentlyHeardArtworkCrossfade",
-                            ) { index ->
-                                val entry = songs[index]
+                            ) { entry ->
+                                val index = songs.indexOfFirst { it.id == entry.id }.coerceAtLeast(0)
                                 val playSong = {
                                     if (!isListenTogetherGuest) {
                                         playerConnection.playQueue(
                                             ListQueue(
                                                 title = sourceTitle,
-                                                items = songs.map { it.song.toMediaItem() },
+                                                items = songs.map { it.toMediaItem() },
                                                 startIndex = index,
                                             ),
                                             source = sourceTitle,
@@ -1290,9 +1292,9 @@ fun HomeScreen(
                                     }
                                 }
                                 OnyxHomeHero(
-                                    title = entry.song.title,
-                                    artist = entry.song.orderedArtists.joinToString { it.name },
-                                    artwork = entry.song.thumbnailUrl,
+                                    title = entry.title,
+                                    artist = entry.orderedArtists.joinToString { it.name },
+                                    artwork = entry.thumbnailUrl,
                                     label = sourceTitle,
                                     onPlay = playSong,
                                     onExplore = playSong,

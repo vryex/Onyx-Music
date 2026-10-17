@@ -146,7 +146,7 @@ fun LibraryPlaylistsScreen(
     val likedPlaylist =
         Playlist(
             playlist = PlaylistEntity(
-                id = UUID.randomUUID().toString(),
+                id = "sonet_liked",
                 name = stringResource(R.string.liked)
             ),
             songCount = 0,
@@ -156,7 +156,7 @@ fun LibraryPlaylistsScreen(
     val downloadPlaylist =
         Playlist(
             playlist = PlaylistEntity(
-                id = UUID.randomUUID().toString(),
+                id = "sonet_downloaded",
                 name = stringResource(R.string.offline)
             ),
             songCount = 0,
@@ -166,7 +166,7 @@ fun LibraryPlaylistsScreen(
     val topPlaylist =
         Playlist(
             playlist = PlaylistEntity(
-                id = UUID.randomUUID().toString(),
+                id = "sonet_top",
                 name = stringResource(R.string.my_top) + " $topSize"
             ),
             songCount = 0,
@@ -177,7 +177,7 @@ fun LibraryPlaylistsScreen(
     val uploadedPlaylist =
         Playlist(
             playlist = PlaylistEntity(
-                id = UUID.randomUUID().toString(),
+                id = "sonet_uploaded",
                 name = stringResource(R.string.uploaded_playlist)
             ),
             songCount = 0,
@@ -187,7 +187,7 @@ fun LibraryPlaylistsScreen(
     val cachedPlaylist =
         Playlist(
             playlist = PlaylistEntity(
-                id = UUID.randomUUID().toString(),
+                id = "sonet_cached",
                 name = stringResource(R.string.cached_playlist)
             ),
             songCount = 0,

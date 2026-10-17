@@ -48,7 +48,7 @@ import com.metrolist.music.ui.component.Material3SettingsGroup
 import com.metrolist.music.ui.component.Material3SettingsItem
 import com.metrolist.music.ui.utils.backToMain
 
-/** Sonet-specific credits. Portrait will be provided later. */
+/** Sonet-specific credits. Created by Vryex. */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AboutScreen(navController: NavController) {
@@ -85,13 +85,8 @@ fun AboutScreen(navController: NavController) {
                     color = MaterialTheme.colorScheme.surfaceContainerHighest,
                     modifier = Modifier.size(72.dp)
                 ) {
-                    Box(contentAlignment = Alignment.Center) {
-                        Text(
-                            "S",
-                            style = MaterialTheme.typography.headlineLarge,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
+                    Icon(painterResource(R.drawable.sonet_mark), null,
+                        tint = androidx.compose.ui.graphics.Color.White, modifier = Modifier.padding(16.dp))
                 }
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text(
@@ -122,14 +117,11 @@ fun AboutScreen(navController: NavController) {
                     shape = CircleShape,
                     color = MaterialTheme.colorScheme.surfaceContainerHighest,
                 ) {
-                    Box(contentAlignment = Alignment.Center) {
-                        // Placeholder avatar until Vryex supplies a portrait.
-                        Text(
-                            "V",
-                            style = MaterialTheme.typography.displayLarge,
-                            fontWeight = FontWeight.Medium,
-                        )
-                    }
+                    androidx.compose.foundation.Image(
+                        painterResource(R.drawable.vryex_profile), null,
+                        contentScale = androidx.compose.ui.layout.ContentScale.Crop,
+                        modifier = Modifier.fillMaxSize(),
+                    )
                 }
                 Text(
                     "Vryex",
@@ -145,7 +137,7 @@ fun AboutScreen(navController: NavController) {
                     modifier = Modifier
                         .fillMaxWidth()
                         .clickable {
-                            links.openUri("https://www.instagram.com/whois.brxn_/")
+                            links.openUri("https://www.instagram.com/vryex_/")
                         },
                     shape = RoundedCornerShape(24.dp),
                     color = MaterialTheme.colorScheme.surfaceContainerHigh
@@ -157,7 +149,7 @@ fun AboutScreen(navController: NavController) {
                     ) {
                         Icon(painterResource(R.drawable.instagram), contentDescription = null)
                         Spacer(Modifier.size(12.dp))
-                        Text("@whois.brxn_", style = MaterialTheme.typography.titleMedium)
+                        Text("@vryex_", style = MaterialTheme.typography.titleMedium)
                     }
                 }
             }

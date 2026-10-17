@@ -74,6 +74,7 @@ fun OnyxBrand(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(11.dp),
     ) {
+        Icon(painterResource(R.drawable.sonet_mark), null, modifier = Modifier.size(24.dp), tint = Color.White)
         Column {
             Text(
                 text = stringResource(R.string.app_name),

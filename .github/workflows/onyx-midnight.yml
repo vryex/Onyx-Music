@@ -1,4 +1,4 @@
-name: Onyx Midnight Release
+name: Sonet Release
 on:
   push:
     branches: [feat/onyx-authkit-20261015, feat/onyx-liquid-v2]
@@ -77,26 +77,26 @@ jobs:
           test -n "$apk_file"
           tools_dir="$ANDROID_HOME/build-tools/36.0.0"
           "$tools_dir/zipalign" -p -f 4 "$apk_file" "$RUNNER_TEMP/onyx-aligned.apk"
-          "$tools_dir/apksigner" sign --ks "$signing_file" --ks-key-alias "$RELEASE_ALIAS" --ks-pass env:RELEASE_STORE_PASSWORD --key-pass env:RELEASE_KEY_PASSWORD --out dist/Onyx-Music.apk "$RUNNER_TEMP/onyx-aligned.apk"
-          "$tools_dir/apksigner" verify --verbose --print-certs dist/Onyx-Music.apk > dist/signature.txt
-          "$tools_dir/aapt" dump badging dist/Onyx-Music.apk > dist/package.txt
+          "$tools_dir/apksigner" sign --ks "$signing_file" --ks-key-alias "$RELEASE_ALIAS" --ks-pass env:RELEASE_STORE_PASSWORD --key-pass env:RELEASE_KEY_PASSWORD --out dist/Sonet.apk "$RUNNER_TEMP/onyx-aligned.apk"
+          "$tools_dir/apksigner" verify --verbose --print-certs dist/Sonet.apk > dist/signature.txt
+          "$tools_dir/aapt" dump badging dist/Sonet.apk > dist/package.txt
           grep -q "package: name='com.onyx.music'" dist/package.txt
           if grep -q '^application-debuggable' dist/package.txt; then exit 1; fi
-          sha256sum dist/Onyx-Music.apk > dist/SHA256SUMS.txt
-          cp "$apk_file" dist/Onyx-Music-unsigned.apk
+          sha256sum dist/Sonet.apk > dist/SHA256SUMS.txt
+          cp "$apk_file" dist/Sonet-unsigned.apk
           cp "$tools_dir/lib/apksigner.jar" dist/apksigner.jar
           cat dist/signature.txt
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: Onyx-Music-signed-release
+          name: Sonet-signed-release
           path: dist/*
           if-no-files-found: error
       - name: Upload test reports
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: Onyx-test-reports
+          name: Sonet-test-reports
           path: |
             app/build/reports/tests/
             app/build/test-results/
@@ -111,7 +111,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/download-artifact@v4
         with:
-          name: Onyx-Music-signed-release
+          name: Sonet-signed-release
           path: dist
       - name: Enable emulator acceleration
         run: |
@@ -133,7 +133,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: Onyx-release-smoke
+          name: Sonet-release-smoke
           path: smoke/
           if-no-files-found: ignore
 

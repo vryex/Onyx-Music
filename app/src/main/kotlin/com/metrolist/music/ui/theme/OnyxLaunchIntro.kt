@@ -57,7 +57,7 @@ fun OnyxLaunchIntro() {
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(24.dp),
         ) {
-            Icon(painterResource(R.drawable.onyx_mark), null, Modifier.size(64.dp), tint = FrostGlow)
+            Icon(painterResource(R.drawable.sonet_mark), null, Modifier.size(64.dp), tint = FrostGlow)
             Text(
                 stringResource(R.string.app_name),
                 style = MaterialTheme.typography.displayLarge.merge(TextStyle(

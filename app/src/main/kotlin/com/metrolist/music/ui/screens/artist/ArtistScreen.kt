@@ -210,16 +210,9 @@ fun ArtistScreen(
         modifier = Modifier.fillMaxSize().background(Color.Black)
             .semantics { testTagsAsResourceId = true }.testTag("onyx_artist"),
     ) {
-        // A fixed-size header wash, scrolling away WITH the header. All song, album,
-        // recommendation and biography rows stay on the original black canvas.
-        if (lazyListState.firstVisibleItemIndex == 0) {
-            Box(Modifier.fillMaxWidth().height(520.dp)
-                .offset { IntOffset(0, -lazyListState.firstVisibleItemScrollOffset) }
-                .background(artistGradient))
-        }
         LazyColumn(
             state = lazyListState,
-            contentPadding = LocalPlayerAwareWindowInsets.current.asPaddingValues(),
+            contentPadding = LocalPlayerAwareWindowInsets.current.only(WindowInsetsSides.Horizontal + WindowInsetsSides.Bottom).asPaddingValues(),
         ) {
             if (artistPage == null && !showLocal) {
                 item(key = "shimmer") {
@@ -241,7 +234,20 @@ fun ArtistScreen(
             } else {
                 item(key = "header") {
                     val thumbnail = artistPage?.artist?.thumbnail ?: libraryArtist?.artist?.thumbnailUrl
-                    Column(Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 20.dp),
+                    Box(Modifier.fillMaxWidth()) {
+                        Box(Modifier.fillMaxWidth().height(460.dp).background(artistGradient)) {
+                            if (thumbnail != null) AsyncImage(
+                                thumbnail.resize(1080, 1080), null, contentScale = ContentScale.Crop,
+                                modifier = Modifier.fillMaxSize(),
+                            )
+                            Box(Modifier.matchParentSize().background(Brush.verticalGradient(
+                                0f to Color.Black.copy(alpha = .2f), .3f to Color.Transparent,
+                                .64f to artistColor.copy(alpha = .35f), 1f to Color.Black,
+                            )))
+                        }
+                    Column(Modifier.fillMaxWidth().windowInsetsPadding(
+                        LocalPlayerAwareWindowInsets.current.only(WindowInsetsSides.Top))
+                        .padding(start = 20.dp, end = 20.dp, top = 240.dp, bottom = 20.dp),
                         horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.spacedBy(20.dp)) {
                         Text(stringResource(R.string.artists),
@@ -256,10 +262,6 @@ fun ArtistScreen(
                         // Remove only the outlined glass frame; keep the exact padding and control positions.
                         Column(Modifier.fillMaxWidth().padding(12.dp),
                             verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                            if (thumbnail != null) {
-                                AsyncImage(thumbnail.resize(960, 960), null, contentScale = ContentScale.Crop,
-                                    modifier = Modifier.fillMaxWidth().height(220.dp).clip(RoundedCornerShape(12.dp)))
-                            }
                             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp),
                                 verticalAlignment = Alignment.CenterVertically) {
                                 OutlinedButton(
@@ -286,6 +288,7 @@ fun ArtistScreen(
                                 }
                             }
                         }
+                    }
                     }
                 }
 

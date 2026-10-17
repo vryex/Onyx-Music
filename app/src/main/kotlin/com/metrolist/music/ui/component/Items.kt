@@ -24,6 +24,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.gestures.draggable
 import androidx.compose.foundation.gestures.rememberDraggableState
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -736,7 +737,7 @@ fun ArtistGridItem(
     },
     fillMaxWidth = fillMaxWidth,
     titleMaxLines = if (tintInHome) 2 else 1,
-    artistCardTint = if (tintInHome) rememberHomeArtistTint(artist.artist.thumbnailUrl) else null,
+    artistCardTint = rememberHomeArtistTint(artist.artist.thumbnailUrl),
     modifier = modifier
 )
 
@@ -960,7 +961,8 @@ fun PlaylistListItem(
     badges = badges,
     thumbnailContent = {
         PlaylistThumbnail(
-            thumbnails = playlist.thumbnails,
+            thumbnails = listOfNotNull(rememberPlaylistCover(playlist.playlist.name, playlist.id, autoPlaylist)
+                ?: playlist.thumbnails.firstOrNull()),
             size = ListThumbnailSize,
             placeHolder = {
                 val painter = when (playlist.playlist.name) {
@@ -1020,77 +1022,41 @@ fun PlaylistGridItem(
     },
     fillMaxWidth: Boolean = false,
 ) {
-    GridItem(
-    title = {
-        Text(
-            text = playlist.playlist.name,
-            style = MaterialTheme.typography.bodyLarge,
-            fontWeight = FontWeight.Medium,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.fillMaxWidth()
+    val artwork = rememberPlaylistCover(playlist.playlist.name, playlist.id, autoPlaylist)
+        ?: playlist.thumbnails.firstOrNull()
+    Box(
+        modifier = modifier.padding(8.dp)
+            .then(if (fillMaxWidth) Modifier.fillMaxWidth() else Modifier.width(currentGridThumbnailHeight()))
+            .aspectRatio(0.88f).clip(RoundedCornerShape(20.dp))
+            .background(MaterialTheme.colorScheme.surfaceContainer),
+    ) {
+        if (artwork != null) AsyncImage(
+            model = artwork.resize(720, 720), contentDescription = null,
+            contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize(),
         )
-    },
-    subtitle = {
-        val subtitle = if (autoPlaylist) {
-            ""
-        } else {
-            if (playlist.songCount == 0 && playlist.playlist.remoteSongCount != null) {
-                pluralStringResource(
-                    R.plurals.n_song,
-                    playlist.playlist.remoteSongCount,
-                    playlist.playlist.remoteSongCount
-                )
-            } else {
-                pluralStringResource(
-                    R.plurals.n_song,
-                    playlist.songCount,
-                    playlist.songCount
-                )
-            }
-        }
-        Text(
-            text = subtitle,
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.secondary,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis
-        )
-    },
-    badges = badges,
-    thumbnailContent = {
-        val width = maxWidth
-        PlaylistThumbnail(
-            thumbnails = playlist.thumbnails,
-            size = width,
-            placeHolder = {
-                val painter = when (playlist.playlist.name) {
-                    stringResource(R.string.liked) -> R.drawable.favorite_border
+        Box(Modifier.matchParentSize().background(Brush.verticalGradient(
+            0f to Color.Transparent, 0.35f to Color.Transparent, 1f to Color.Black.copy(alpha = .95f),
+        )))
+        Column(Modifier.align(Alignment.BottomStart).fillMaxWidth().padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            if (autoPlaylist) Icon(
+                painterResource(when (playlist.playlist.name) {
+                    stringResource(R.string.liked) -> R.drawable.favorite
                     stringResource(R.string.offline) -> R.drawable.offline
                     stringResource(R.string.cached_playlist) -> R.drawable.cached
-                    // R.drawable.backup as placeholder
-                    stringResource(R.string.uploaded_playlist) -> R.drawable.backup
-                    else -> if (autoPlaylist) R.drawable.trending_up else R.drawable.queue_music
-                }
-                Box(
-                    contentAlignment = Alignment.Center,
-                    modifier = Modifier.fillMaxSize()
-                ) {
-                    Icon(
-                        painter = painterResource(painter),
-                        contentDescription = null,
-                        tint = LocalContentColor.current.copy(alpha = 0.8f),
-                        modifier = Modifier.size(width / 2)
-                    )
-                }
-            },
-            shape = RoundedCornerShape(ThumbnailCornerRadius)
-        )
-    },
-    fillMaxWidth = fillMaxWidth,
-    modifier = modifier
-)
-
+                    stringResource(R.string.uploaded_playlist) -> R.drawable.upload
+                    else -> R.drawable.trending_up
+                }), null, tint = Color.White, modifier = Modifier.size(24.dp),
+            )
+            Text(playlist.playlist.name, style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Medium, color = Color.White, maxLines = 2, overflow = TextOverflow.Ellipsis)
+            if (!autoPlaylist) Row(verticalAlignment = Alignment.CenterVertically) {
+                badges()
+                Text(pluralStringResource(R.plurals.n_song, playlist.songCount, playlist.songCount),
+                    style = MaterialTheme.typography.bodySmall, color = Color.White.copy(alpha = .75f))
+            }
+        }
+    }
 }
 
 @Composable
@@ -1434,13 +1400,14 @@ fun LocalArtistsGrid(
         )
     },
     badges = badges,
+    artistCardTint = rememberHomeArtistTint(thumbnailUrl),
     thumbnailContent = {
         LocalThumbnail(
             thumbnailUrl = thumbnailUrl,
             isActive = false,
             isPlaying = false,
             shape = CircleShape,
-            modifier = if (fillMaxWidth) Modifier.fillMaxWidth() else Modifier,
+            modifier = Modifier.fillMaxSize(),
             showCenterPlay = false,
             playButtonVisible = false
         )
@@ -1478,7 +1445,7 @@ fun LocalAlbumsGrid(
             isActive = isActive,
             isPlaying = isPlaying,
             shape = RoundedCornerShape(ThumbnailCornerRadius),
-            modifier = if (fillMaxWidth) Modifier.fillMaxWidth() else Modifier,
+            modifier = Modifier.fillMaxSize(),
             showCenterPlay = false,
             playButtonVisible = true
         )

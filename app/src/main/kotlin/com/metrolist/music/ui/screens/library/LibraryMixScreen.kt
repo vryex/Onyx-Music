@@ -5,6 +5,9 @@
 
 package com.metrolist.music.ui.screens.library
 
+import androidx.compose.foundation.background
+import androidx.compose.ui.draw.clip
+
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.height
@@ -173,7 +176,7 @@ fun LibraryMixScreen(
         Playlist(
             playlist =
                 PlaylistEntity(
-                    id = UUID.randomUUID().toString(),
+                    id = "sonet_liked",
                     name = stringResource(R.string.liked),
                 ),
             songCount = 0,
@@ -184,7 +187,7 @@ fun LibraryMixScreen(
         Playlist(
             playlist =
                 PlaylistEntity(
-                    id = UUID.randomUUID().toString(),
+                    id = "sonet_downloaded",
                     name = stringResource(R.string.offline),
                 ),
             songCount = 0,
@@ -195,7 +198,7 @@ fun LibraryMixScreen(
         Playlist(
             playlist =
                 PlaylistEntity(
-                    id = UUID.randomUUID().toString(),
+                    id = "sonet_top",
                     name = stringResource(R.string.my_top) + " $topSize",
                 ),
             songCount = 0,
@@ -206,7 +209,7 @@ fun LibraryMixScreen(
         Playlist(
             playlist =
                 PlaylistEntity(
-                    id = UUID.randomUUID().toString(),
+                    id = "sonet_cached",
                     name = stringResource(R.string.cached_playlist),
                 ),
             songCount = 0,
@@ -217,7 +220,7 @@ fun LibraryMixScreen(
         Playlist(
             playlist =
                 PlaylistEntity(
-                    id = UUID.randomUUID().toString(),
+                    id = "sonet_uploaded",
                     name = stringResource(R.string.uploaded_playlist),
                 ),
             songCount = 0,
@@ -474,6 +477,7 @@ fun LibraryMixScreen(
                         title = likedPlaylist.playlist.name,
                         icon = R.drawable.favorite_border,
                         prominent = true,
+                        artwork = com.metrolist.music.ui.component.rememberCollectionCover("liked"),
                         modifier = Modifier.weight(1f),
                         onClick = { navController.navigate("auto_playlist/liked") },
                     )
@@ -972,17 +976,28 @@ private fun LibraryCollectionFeature(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     prominent: Boolean = false,
+    artwork: String? = null,
 ) {
     val shape = RoundedCornerShape(16.dp)
     if (prominent) {
-        Column(
-            modifier = modifier.height(208.dp).onyxGlass(shape, emphasized = true)
-                .clickable(onClick = onClick).padding(20.dp),
-            verticalArrangement = Arrangement.SpaceBetween,
+        Box(
+            modifier = modifier.height(208.dp).clip(shape)
+                .background(MaterialTheme.colorScheme.surfaceContainer)
+                .clickable(onClick = onClick),
         ) {
-            Icon(painterResource(icon), null, Modifier.size(36.dp), tint = MaterialTheme.colorScheme.primary)
-            Text(title, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Medium, maxLines = 2)
-            Icon(painterResource(R.drawable.arrow_forward), null, Modifier.size(18.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
+            if (artwork != null) coil3.compose.AsyncImage(
+                artwork, null, contentScale = androidx.compose.ui.layout.ContentScale.Crop,
+                modifier = Modifier.fillMaxSize(),
+            )
+            Box(Modifier.matchParentSize().background(androidx.compose.ui.graphics.Brush.verticalGradient(
+                listOf(androidx.compose.ui.graphics.Color.Transparent, androidx.compose.ui.graphics.Color.Black.copy(alpha = .9f)),
+            )))
+            Column(Modifier.fillMaxSize().padding(20.dp), verticalArrangement = Arrangement.SpaceBetween) {
+                Icon(painterResource(icon), null, Modifier.size(32.dp), tint = androidx.compose.ui.graphics.Color.White)
+                Text(title, style = MaterialTheme.typography.headlineSmall,
+                    fontWeight = FontWeight.Medium, maxLines = 2, color = androidx.compose.ui.graphics.Color.White)
+                Icon(painterResource(R.drawable.arrow_forward), null, Modifier.size(18.dp), tint = androidx.compose.ui.graphics.Color.White)
+            }
         }
         return
     }

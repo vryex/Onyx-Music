@@ -62,7 +62,7 @@ def scroll_to_label(root, label, name='find-control', max_swipes=6):
     raise AssertionError('Missing control after scrolling: ' + label)
 
 
-adb('install', '-r', 'dist/Onyx-Music.apk')
+adb('install', '-r', 'dist/Sonet.apk')
 adb('shell', 'pm', 'grant', PACKAGE, 'android.permission.POST_NOTIFICATIONS', check=False)
 adb('logcat', '-c')
 adb('shell', 'am', 'start', '-W', '-n', ACTIVITY)

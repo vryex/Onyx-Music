@@ -28,6 +28,14 @@ import android.content.Intent
 import android.content.res.Configuration
 import android.view.WindowManager
 import android.widget.Toast
+import androidx.compose.animation.SharedTransitionLayout
+import androidx.compose.animation.ExperimentalSharedTransitionApi
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.Spring
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import com.metrolist.music.ui.component.SonetLoadingIndicator
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
@@ -220,7 +228,7 @@ import kotlin.math.roundToInt
 import com.metrolist.music.ui.component.Icon as MIcon
 
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalSharedTransitionApi::class)
 @Composable
 fun BottomSheetPlayer(
     state: BottomSheetState,
@@ -800,8 +808,10 @@ fun BottomSheetPlayer(
 
 
 
+    SharedTransitionLayout {
     BottomSheet(
         state = state,
+        backgroundFollowsContent = true,
         modifier = modifier,
         background = {
             // One seamless background for the ENTIRE expanded sheet. Painting
@@ -821,7 +831,7 @@ fun BottomSheetPlayer(
                     )
                 )
             ) {
-                if (state.isExpanded && showInlineLyrics) {
+                if (state.progress > 0f && showInlineLyrics) {
                     // Multiple REAL cover colors slowly blend only on the lyrics page.
                     // Playback artwork, buttons and word-by-word coloring are unchanged.
                     SonetLyricsBackdrop(
@@ -830,35 +840,29 @@ fun BottomSheetPlayer(
                     )
                 }
                 if (
-                    !showInlineLyrics &&
                     !showVideo &&
                     !hidePlayerThumbnail &&
                     !mediaMetadata?.thumbnailUrl.isNullOrBlank() &&
                     LocalConfiguration.current.orientation != Configuration.ORIENTATION_LANDSCAPE
                 ) {
-                    Box(
-                        modifier = Modifier
-                            .align(Alignment.TopCenter)
-                            .fillMaxWidth()
-                            .aspectRatio(0.82f),
+                    AnimatedVisibility(
+                        visible = !showInlineLyrics,
+                        enter = fadeIn(tween(420)), exit = fadeOut(tween(420)),
                     ) {
-                        // The thumbnail painter was started before the sheet opened:
-                        // no cold Compose/Coil request when opening the player.
-                        Image(
-                            painter = instantArtworkPainter,
-                            contentDescription = null,
-                            contentScale = ContentScale.Crop,
-                            modifier = Modifier.fillMaxSize(),
-                        )
-                        val artworkRequest = remember(context, mediaMetadata?.thumbnailUrl) {
-                            ImageRequest.Builder(context).data(mediaMetadata?.thumbnailUrl)
-                                .size(960).allowHardware(false).build()
-                        }
+                    Box(
+                        modifier = Modifier.fillMaxWidth().aspectRatio(0.82f),
+                    ) {
                         AsyncImage(
-                            model = artworkRequest,
+                            model = mediaMetadata?.thumbnailUrl?.resize(960, 960),
+                            placeholder = instantArtworkPainter,
                             contentDescription = null,
                             contentScale = ContentScale.Crop,
-                            modifier = Modifier.fillMaxSize(),
+                            modifier = Modifier.fillMaxSize().sharedElement(
+                                rememberSharedContentState("sonet_cover"),
+                                animatedVisibilityScope = this@AnimatedVisibility,
+                                boundsTransform = { _, _ -> tween(420) },
+                                renderInOverlayDuringTransition = false,
+                            ),
                         )
                         // A light veil under the status icons and one continuous
                         // lower fade. Last stop equals the color UNDER the image.
@@ -874,6 +878,7 @@ fun BottomSheetPlayer(
                                 )
                             )
                         )
+                    }
                     }
                 }
             }
@@ -902,13 +907,19 @@ fun BottomSheetPlayer(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
             ) {
-                if (showInlineLyrics && !mediaMetadata.thumbnailUrl.isNullOrBlank()) {
-                    // Artwork + title share a single compact row in lyrics mode.
-                    // All transport and lyrics tools keep their existing positions.
+                AnimatedVisibility(
+                    visible = showInlineLyrics && !mediaMetadata.thumbnailUrl.isNullOrBlank(),
+                    enter = fadeIn(tween(420)), exit = fadeOut(tween(420)),
+                ) {
                     AsyncImage(
-                        model = mediaMetadata.thumbnailUrl,
+                        model = mediaMetadata.thumbnailUrl?.resize(960, 960),
                         contentDescription = null,
-                        modifier = Modifier.size(48.dp).clip(RoundedCornerShape(12.dp)),
+                        modifier = Modifier.size(48.dp).sharedElement(
+                            rememberSharedContentState("sonet_cover"),
+                            animatedVisibilityScope = this@AnimatedVisibility,
+                            boundsTransform = { _, _ -> tween(420) },
+                            renderInOverlayDuringTransition = false,
+                        ).clip(RoundedCornerShape(12.dp)),
                         contentScale = ContentScale.Crop,
                     )
                 }
@@ -956,12 +967,31 @@ fun BottomSheetPlayer(
                     }
                 }
                 val favorite = if (currentSong?.song?.isEpisode == true) currentSong?.song?.inLibrary != null else currentSong?.song?.liked == true
-                val favoriteScale by animateFloatAsState(if (favorite && !showInlineLyrics) 1.12f else 1f, tween(180), label = "favoritePulse")
+                val favoritePulse = remember { Animatable(1f) }
+                val favoriteRotation = remember { Animatable(0f) }
+                val feedback = LocalHapticFeedback.current
+                val favoriteScope = rememberCoroutineScope()
+                val toggleFavorite = {
+                    playerConnection.toggleLike()
+                    feedback.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                    favoriteScope.launch {
+                        favoritePulse.snapTo(0.82f)
+                        favoritePulse.animateTo(1f, spring(dampingRatio = .38f, stiffness = Spring.StiffnessMedium))
+                    }
+                    favoriteScope.launch {
+                        favoriteRotation.snapTo(-12f)
+                        favoriteRotation.animateTo(0f, spring(dampingRatio = .35f))
+                    }
+                    Unit
+                }
                 PlayerIconButton(
                     if (showInlineLyrics) R.drawable.fullscreen else if (favorite) R.drawable.favorite else R.drawable.favorite_border,
                     if (showInlineLyrics) stringResource(R.string.onyx_fullscreen) else stringResource(R.string.liked),
-                    onClick = { if (showInlineLyrics) isFullScreen = !isFullScreen else playerConnection.toggleLike() },
-                    modifier = Modifier.scale(favoriteScale).semantics { selected = favorite },
+                    onClick = { if (showInlineLyrics) isFullScreen = !isFullScreen else toggleFavorite() },
+                    modifier = Modifier.graphicsLayer {
+                        scaleX = favoritePulse.value; scaleY = favoritePulse.value
+                        rotationZ = favoriteRotation.value
+                    }.semantics { selected = favorite },
                     contentColor = Color.White,
                 )
                 if (showInlineLyrics) {
@@ -1250,7 +1280,7 @@ fun BottomSheetPlayer(
                         AnimatedContent(
                             targetState = showInlineLyrics,
                             label = "Lyrics",
-                            transitionSpec = { fadeIn() togetherWith fadeOut() },
+                            transitionSpec = { fadeIn(tween(420)) togetherWith fadeOut(tween(280)) },
                         ) { showLyrics ->
                             if (showLyrics) {
                                 InlineLyricsView(
@@ -1298,7 +1328,9 @@ fun BottomSheetPlayer(
 
             else -> {
                 val bottomPadding by animateDpAsState(
-                    targetValue = if (isFullScreen) 0.dp else queueSheetState.collapsedBound,
+                    targetValue = if (isFullScreen)
+                        WindowInsets.systemBars.asPaddingValues().calculateBottomPadding() + 16.dp
+                        else queueSheetState.collapsedBound,
                     animationSpec = tween(320),
                     label = "bottomPadding",
                 )
@@ -1330,7 +1362,7 @@ fun BottomSheetPlayer(
                         AnimatedContent(
                             targetState = showInlineLyrics,
                             label = "Lyrics",
-                            transitionSpec = { fadeIn() togetherWith fadeOut() },
+                            transitionSpec = { fadeIn(tween(420)) togetherWith fadeOut(tween(280)) },
                         ) { showLyrics ->
                             if (showLyrics) {
                                 InlineLyricsView(
@@ -1371,11 +1403,11 @@ fun BottomSheetPlayer(
 
         // Queue owns a full-screen sheet; animate its alpha instead of
         // collapsing/re-measuring it while the lyrics are resizing.
-        AnimatedVisibility(
-            visible = !isFullScreen,
-            enter = fadeIn(tween(320)),
-            exit = fadeOut(tween(280)),
-        ) {
+        val queueReveal by animateFloatAsState(if (isFullScreen) 0f else 1f, tween(320), label = "queueReveal")
+        Box(Modifier.fillMaxSize().graphicsLayer {
+            alpha = queueReveal
+            translationY = (1f - queueReveal) * state.expandedBound.toPx()
+        }) {
             Queue(
                 state = queueSheetState,
                 playerBottomSheetState = state,
@@ -1398,6 +1430,7 @@ fun BottomSheetPlayer(
                 },
             )
         }
+    }
     }
 }
 
@@ -1510,7 +1543,7 @@ fun InlineLyricsView(
     ) {
         when {
             lyrics == null -> {
-                ContainedLoadingIndicator()
+                SonetLoadingIndicator()
             }
 
             lyrics == LyricsEntity.LYRICS_NOT_FOUND -> {

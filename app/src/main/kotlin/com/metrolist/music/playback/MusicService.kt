@@ -178,6 +178,7 @@ import com.metrolist.music.di.PlayerCache
 import com.metrolist.music.extensions.SilentHandler
 import com.metrolist.music.extensions.collect
 import com.metrolist.music.extensions.collectLatest
+import com.metrolist.music.utils.recordRecentlyHeard
 import com.metrolist.music.extensions.currentMetadata
 import com.metrolist.music.extensions.findNextMediaItemById
 import com.metrolist.music.extensions.mediaItems
@@ -2736,6 +2737,16 @@ class MusicService :
                 }
             } else if (player.playbackState == Player.STATE_IDLE) {
                 closeAudioEffectSession()
+            }
+        }
+        if (player.isPlaying && events.containsAny(
+                Player.EVENT_MEDIA_ITEM_TRANSITION, Player.EVENT_IS_PLAYING_CHANGED,
+            ) && !dataStore.get(PauseListenHistoryKey, false)
+        ) {
+            player.currentMetadata?.let { metadata ->
+                scope.launch(Dispatchers.IO) {
+                    applicationContext.recordRecentlyHeard(metadata, database)
+                }
             }
         }
         if (events.containsAny(EVENT_TIMELINE_CHANGED, EVENT_POSITION_DISCONTINUITY)) {
