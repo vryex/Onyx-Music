@@ -873,4 +873,8 @@
     <string name="sonet_font_sans">Sans del sistema</string>
     <string name="sonet_font_serif">Serif</string>
     <string name="sonet_font_mono">Monoespaciada</string>
+    <string name="sonet_font_import">Importar fuente desde archivos</string>
+    <string name="sonet_font_import_hint">Archivos .ttf y .otf de hasta 6 MB. Solo afecta las letras de las canciones.</string>
+    <string name="sonet_font_import_success">Fuente importada para las letras</string>
+    <string name="sonet_font_import_error">No se pudo cargar la fuente. Selecciona un .ttf u .otf válido (máx. 6 MB).</string>
 </resources>
