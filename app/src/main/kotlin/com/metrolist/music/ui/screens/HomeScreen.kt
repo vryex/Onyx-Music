@@ -32,6 +32,8 @@ import androidx.compose.foundation.layout.systemBars
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyHorizontalGrid
 import androidx.compose.foundation.lazy.grid.items
@@ -167,6 +169,8 @@ import com.metrolist.music.viewmodels.HomeViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.withContext
 import kotlin.math.min
 import kotlin.random.Random
@@ -1229,14 +1233,26 @@ fun HomeScreen(
                     item(key = "sonet_recommendations_carousel") {
                         val sourceTitle = stringResource(R.string.onyx_daily_selection)
                         val carouselSongs = remember(dailySelection) { dailySelection.take(8) }
-                        val carouselWidth = (maxWidth * 0.86f).coerceAtMost(440.dp)
-                        LazyRow(
-                            contentPadding = PaddingValues(horizontal = 18.dp, vertical = 12.dp),
-                            horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        val pagerState = rememberPagerState(pageCount = { carouselSongs.size })
+                        // A single compact card changes itself every six seconds.
+                        // Users may also swipe the card manually in either direction.
+                        LaunchedEffect(carouselSongs) {
+                            while (isActive) {
+                                delay(6000)
+                                if (carouselSongs.size > 1 && !pagerState.isScrollInProgress) {
+                                    pagerState.animateScrollToPage(
+                                        (pagerState.currentPage + 1) % carouselSongs.size
+                                    )
+                                }
+                            }
+                        }
+                        Box(
+                            Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 10.dp)
                         ) {
-                            items(
-                                count = carouselSongs.size,
-                                key = { index -> "sonet_reco_${carouselSongs[index].id}" }
+                            HorizontalPager(
+                                state = pagerState,
+                                modifier = Modifier.fillMaxWidth(),
+                                beyondViewportPageCount = 1,
                             ) { index ->
                                 val song = carouselSongs[index]
                                 val playRecommendation = {
@@ -1246,7 +1262,7 @@ fun HomeScreen(
                                                 title = sourceTitle,
                                                 items = dailySelection.map { it.toMediaMetadata().toMediaItem() },
                                                 startIndex = index,
-                                            ),
+                                            )
                                         )
                                     }
                                 }
@@ -1256,7 +1272,18 @@ fun HomeScreen(
                                     artwork = song.thumbnail,
                                     onPlay = playRecommendation,
                                     onExplore = playRecommendation,
-                                    modifier = Modifier.width(carouselWidth),
+                                    modifier = Modifier.fillMaxWidth(),
+                                )
+                            }
+                            if (carouselSongs.size > 1) {
+                                Text(
+                                    text = "${pagerState.currentPage + 1} / ${carouselSongs.size}",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = Color.White.copy(alpha = 0.8f),
+                                    modifier = Modifier.align(Alignment.TopEnd)
+                                        .padding(top = 18.dp, end = 18.dp)
+                                        .background(Color.Black.copy(alpha = 0.3f), RoundedCornerShape(16.dp))
+                                        .padding(horizontal = 10.dp, vertical = 5.dp),
                                 )
                             }
                         }
