@@ -6,6 +6,9 @@
 package com.metrolist.music.ui.theme
 
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.font.FontFamily
+import com.metrolist.music.constants.SonetFontKey
+import com.metrolist.music.utils.rememberPreference
 import android.graphics.Bitmap
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.ColorScheme
@@ -13,6 +16,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.saveable.Saver
 import androidx.compose.runtime.saveable.SaverScope
 import androidx.compose.ui.unit.dp
@@ -95,6 +99,38 @@ private val MidnightTypography = androidx.compose.material3.Typography().let { t
     )
 }
 
+/**
+ * All selectable families are available offline. Outfit is bundled; the other
+ * choices use Android's installed system fonts, without network dependencies.
+ */
+private fun sonetTypography(option: String): androidx.compose.material3.Typography {
+    val family = when (option) {
+        "Sans" -> FontFamily.SansSerif
+        "Serif" -> FontFamily.Serif
+        "Mono" -> FontFamily.Monospace
+        else -> return MidnightTypography
+    }
+    return MidnightTypography.let { t ->
+        t.copy(
+            displayLarge = t.displayLarge.copy(fontFamily = family),
+            displayMedium = t.displayMedium.copy(fontFamily = family),
+            displaySmall = t.displaySmall.copy(fontFamily = family),
+            headlineLarge = t.headlineLarge.copy(fontFamily = family),
+            headlineMedium = t.headlineMedium.copy(fontFamily = family),
+            headlineSmall = t.headlineSmall.copy(fontFamily = family),
+            titleLarge = t.titleLarge.copy(fontFamily = family),
+            titleMedium = t.titleMedium.copy(fontFamily = family),
+            titleSmall = t.titleSmall.copy(fontFamily = family),
+            bodyLarge = t.bodyLarge.copy(fontFamily = family),
+            bodyMedium = t.bodyMedium.copy(fontFamily = family),
+            bodySmall = t.bodySmall.copy(fontFamily = family),
+            labelLarge = t.labelLarge.copy(fontFamily = family),
+            labelMedium = t.labelMedium.copy(fontFamily = family),
+            labelSmall = t.labelSmall.copy(fontFamily = family),
+        )
+    }
+}
+
 @Suppress("UNUSED_PARAMETER")
 @Composable
 fun MetrolistTheme(
@@ -103,10 +139,12 @@ fun MetrolistTheme(
     themeColor: Color = DefaultThemeColor,
     content: @Composable () -> Unit,
 ) {
+    val fontName by rememberPreference(SonetFontKey, "Outfit")
+    val typography = remember(fontName) { sonetTypography(fontName) }
     MaterialTheme(
         colorScheme = MidnightColors,
         shapes = MidnightShapes,
-        typography = MidnightTypography,
+        typography = typography,
         content = content,
     )
 }
