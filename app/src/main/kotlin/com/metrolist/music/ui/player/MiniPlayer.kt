@@ -178,6 +178,23 @@ private fun NewMiniPlayer(
     // Player states - only collect what's needed at this level
     val playbackState by playerConnection.playbackState.collectAsStateWithLifecycle()
     val mediaMetadata by playerConnection.mediaMetadata.collectAsStateWithLifecycle()
+    val prefetchContext = LocalContext.current
+    // Warm the full-resolution cover while playback remains in the mini player.
+    LaunchedEffect(mediaMetadata?.thumbnailUrl) {
+        val url = mediaMetadata?.thumbnailUrl ?: return@LaunchedEffect
+        try {
+            withContext(Dispatchers.IO) {
+                prefetchContext.imageLoader.execute(
+                    ImageRequest.Builder(prefetchContext).data(url).size(960)
+                        .allowHardware(false).build()
+                )
+            }
+        } catch (cancelled: kotlinx.coroutines.CancellationException) {
+            throw cancelled
+        } catch (_: Exception) {
+            // Cover loading must never affect playback.
+        }
+    }
     val canSkipNext by playerConnection.canSkipNext.collectAsStateWithLifecycle()
     val canSkipPrevious by playerConnection.canSkipPrevious.collectAsStateWithLifecycle()
 
