@@ -22,7 +22,14 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
-data class ArtworkTones(val surface: Color, val accent: Color)
+// Secondary/tertiary swatches are drawn from the same bitmap palette, never
+// synthesized with arbitrary hue rotations.
+data class ArtworkTones(
+    val surface: Color,
+    val accent: Color,
+    val tertiary: Color = accent,
+    val quaternary: Color = surface,
+)
 
 private val artworkColors = LruCache<String, ArtworkTones>(24)
 private val artworkFallback = ArtworkTones(Color(0xFF252529), Color(0xFF353539))
@@ -47,9 +54,28 @@ fun rememberArtworkTones(artwork: String?): State<ArtworkTones> {
                 val populations = swatches.map { it.population }.toIntArray()
                 val main = ArtworkPalette.select(colors, populations)
                 val secondary = ArtworkPalette.accent(colors, populations, main)
+                // Additional prominent, visually distinct swatches are only
+                // used by the animated lyrics background. All are real colors
+                // from the SAME decoded album cover (no extra artwork loads).
+                val selected = mutableListOf(main, secondary)
+                val maxPopulation = swatches.maxOfOrNull { it.population } ?: 0
+                swatches.sortedByDescending { it.population }.forEach { swatch ->
+                    if (selected.size >= 4) return@forEach
+                    if (swatch.population < maxPopulation * 0.05f) return@forEach
+                    val candidate = swatch.rgb
+                    val sufficientlyDifferent = selected.all { existing ->
+                        val red = ((candidate shr 16) and 255) - ((existing shr 16) and 255)
+                        val green = ((candidate shr 8) and 255) - ((existing shr 8) and 255)
+                        val blue = (candidate and 255) - (existing and 255)
+                        red * red + green * green + blue * blue >= 45 * 45
+                    }
+                    if (sufficientlyDifferent) selected.add(candidate)
+                }
                 ArtworkTones(
-                    Color(ArtworkPalette.surface(main)),
-                    Color(ArtworkPalette.surface(secondary)),
+                    surface = Color(ArtworkPalette.surface(main)),
+                    accent = Color(ArtworkPalette.surface(secondary)),
+                    tertiary = Color(ArtworkPalette.surface(selected.getOrElse(2) { secondary })),
+                    quaternary = Color(ArtworkPalette.surface(selected.getOrElse(3) { main })),
                 ).also { artworkColors.put(artwork, it) }
             } catch (cancelled: CancellationException) {
                 throw cancelled
