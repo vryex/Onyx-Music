@@ -8,6 +8,7 @@ package com.metrolist.music.ui.player
 import com.metrolist.music.ui.component.LiquidIconButton
 import com.metrolist.music.ui.component.OnyxPlayerHeader
 import com.metrolist.music.ui.theme.rememberArtworkColor
+import com.metrolist.music.ui.utils.resize
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.draw.drawWithCache
@@ -825,8 +826,19 @@ fun BottomSheetPlayer(
                             .fillMaxWidth()
                             .aspectRatio(0.82f),
                     ) {
+                        // Show already cached small artwork until the sharp preloaded copy arrives.
                         AsyncImage(
-                            model = mediaMetadata?.thumbnailUrl,
+                            model = mediaMetadata?.thumbnailUrl?.resize(120, 120),
+                            contentDescription = null,
+                            contentScale = ContentScale.Crop,
+                            modifier = Modifier.fillMaxSize(),
+                        )
+                        val artworkRequest = remember(context, mediaMetadata?.thumbnailUrl) {
+                            ImageRequest.Builder(context).data(mediaMetadata?.thumbnailUrl)
+                                .size(960).allowHardware(false).build()
+                        }
+                        AsyncImage(
+                            model = artworkRequest,
                             contentDescription = null,
                             contentScale = ContentScale.Crop,
                             modifier = Modifier.fillMaxSize(),
