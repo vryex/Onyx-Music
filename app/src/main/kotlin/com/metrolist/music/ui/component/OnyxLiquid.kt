@@ -148,52 +148,71 @@ private fun HomeShortcut(title: String, icon: Int, onClick: () -> Unit, modifier
 }
 
 @Composable
-fun OnyxHomeHero(title: String?, artist: String?, artwork: String?, onPlay: () -> Unit, onExplore: () -> Unit) {
-    if (title == null || artwork.isNullOrBlank()) return
+fun OnyxHomeHero(
+    title: String?,
+    artist: String?,
+    artwork: String?,
+    onPlay: () -> Unit,
+    onExplore: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    if (title.isNullOrBlank() || artwork.isNullOrBlank()) return
     var useOriginalArtwork by remember(artwork) { mutableStateOf(false) }
-    val artworkColor by rememberArtworkColor(artwork.resize(224, 224))
-    val heroGradient = remember(artworkColor) {
-        Brush.verticalGradient(
-            0.00f to lerp(Color.Black, artworkColor, .91f),
-            0.35f to lerp(Color.Black, artworkColor, .64f),
-            0.68f to lerp(Color.Black, artworkColor, .22f),
-            1.00f to Color.Black,
+    val artTone by rememberArtworkColor(artwork.resize(224, 224))
+
+    // One full-bleed image per carousel page; no separate framed cover/card.
+    // The fade is INSIDE this item's bounds, never across neighboring pages.
+    Box(
+        modifier = modifier.height(465.dp).clip(RoundedCornerShape(20.dp)).background(Color.Black),
+    ) {
+        AsyncImage(
+            model = if (useOriginalArtwork) artwork else artwork.recommendationArtworkUrl(),
+            contentDescription = title,
+            onError = { useOriginalArtwork = true },
+            contentScale = ContentScale.Crop,
+            modifier = Modifier.fillMaxSize().clickable(role = Role.Button, onClick = onExplore),
         )
-    }
-    val shape = RoundedCornerShape(28.dp)
-    Column(Modifier.padding(horizontal = 20.dp, vertical = 20.dp).fillMaxWidth()
-        .clip(shape).background(heroGradient)
-        .border(1.dp, Brush.linearGradient(listOf(
-            Color.White.copy(alpha = .12f), Color.White.copy(alpha = .04f), Color.White.copy(alpha = .08f),
-        )), shape).padding(20.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(16.dp)) {
-        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween) {
-            Text(stringResource(R.string.onyx_daily_selection), style = MaterialTheme.typography.labelLarge,
-                color = MaterialTheme.colorScheme.primary)
+        val overlay = remember(artTone) {
+            Brush.verticalGradient(
+                0.00f to Color.Black.copy(alpha = 0.06f),
+                0.30f to Color.Transparent,
+                0.50f to artTone.copy(alpha = 0.14f),
+                0.73f to Color.Black.copy(alpha = 0.72f),
+                1.00f to Color.Black,
+            )
         }
-        Box(Modifier.fillMaxWidth().height(220.dp), contentAlignment = Alignment.Center) {
-            AsyncImage(if (useOriginalArtwork) artwork else artwork.recommendationArtworkUrl(), title,
-                onError = { useOriginalArtwork = true }, contentScale = ContentScale.Crop,
-                modifier = Modifier.fillMaxWidth().height(220.dp).clip(RoundedCornerShape(20.dp))
-                    .clickable(role = Role.Button, onClick = onExplore))
-        }
-        Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Text(title, style = MaterialTheme.typography.headlineSmall, maxLines = 2,
-                textAlign = TextAlign.Center, overflow = TextOverflow.Ellipsis)
+        Box(Modifier.fillMaxSize().background(overlay))
+        Text(
+            stringResource(R.string.onyx_daily_selection),
+            color = Color.White.copy(alpha = 0.95f),
+            style = MaterialTheme.typography.labelLarge,
+            modifier = Modifier.align(Alignment.TopStart).padding(20.dp),
+        )
+        Column(
+            Modifier.align(Alignment.BottomCenter).fillMaxWidth().padding(18.dp),
+            verticalArrangement = Arrangement.spacedBy(9.dp),
+        ) {
+            Text(title, style = MaterialTheme.typography.headlineMedium,
+                color = Color.White, fontWeight = FontWeight.SemiBold,
+                maxLines = 2, overflow = TextOverflow.Ellipsis)
             Text(artist.orEmpty(), style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 2,
-                textAlign = TextAlign.Center, overflow = TextOverflow.Ellipsis)
-        }
-        Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(24.dp))
-            .background(MaterialTheme.colorScheme.surfaceContainerHigh)
-            .clickable(role = Role.Button, onClick = onPlay).heightIn(min = 48.dp).padding(12.dp),
-            verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.Center) {
-            Icon(painterResource(R.drawable.play), null, Modifier.size(20.dp), tint = MaterialTheme.colorScheme.onSurface)
-            Spacer(Modifier.width(8.dp))
-            Text(stringResource(R.string.play), style = MaterialTheme.typography.labelLarge)
+                color = Color.White.copy(alpha = 0.75f),
+                maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Spacer(Modifier.height(5.dp))
+            Row(
+                Modifier.fillMaxWidth().clip(RoundedCornerShape(22.dp))
+                    .background(Color.White.copy(alpha = 0.16f))
+                    .clickable(role = Role.Button, onClick = onPlay)
+                    .heightIn(min = 48.dp).padding(horizontal = 14.dp, vertical = 10.dp),
+                horizontalArrangement = Arrangement.Center,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Icon(painterResource(R.drawable.play), contentDescription = null,
+                    modifier = Modifier.size(20.dp), tint = Color.White)
+                Spacer(Modifier.width(8.dp))
+                Text(stringResource(R.string.play), style = MaterialTheme.typography.labelLarge,
+                    color = Color.White)
+            }
         }
     }
 }
