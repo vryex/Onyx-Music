@@ -239,12 +239,19 @@ fun OnyxCollectionCard(title: String, subtitle: String, icon: Int, onClick: (() 
 }
 
 @Composable
-fun OnyxPlayerHeader(onCollapse: () -> Unit, onEqualizer: () -> Unit, modifier: Modifier = Modifier, onVideo: (() -> Unit)? = null, videoSelected: Boolean = false, showCast: Boolean = false) {
+fun OnyxPlayerHeader(onCollapse: () -> Unit, onEqualizer: () -> Unit, modifier: Modifier = Modifier, onVideo: (() -> Unit)? = null, videoSelected: Boolean = false, showCast: Boolean = false, playbackSource: String? = null) {
     Row(modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
         LiquidIconButton(R.drawable.expand_more, stringResource(R.string.onyx_minimize_player), onCollapse, plain = true)
-        Text(stringResource(R.string.onyx_now_playing), style = MaterialTheme.typography.labelMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant, letterSpacing = 2.sp)
+        Column(Modifier.weight(1f).padding(horizontal = 4.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+            Text(stringResource(R.string.sonet_now_playing), style = MaterialTheme.typography.labelMedium,
+                color = Color.White, letterSpacing = 2.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            if (!playbackSource.isNullOrBlank()) {
+                Text(stringResource(R.string.sonet_playback_from, playbackSource),
+                    style = MaterialTheme.typography.labelSmall, color = Color.White.copy(alpha = 0.84f),
+                    maxLines = 1, overflow = TextOverflow.Ellipsis, textAlign = TextAlign.Center)
+            }
+        }
         Row(verticalAlignment = Alignment.CenterVertically) {
             if (showCast) CastButton(tintColor = Color.White)
             if (onVideo != null) LiquidIconButton(R.drawable.slow_motion_video, stringResource(R.string.onyx_video), onVideo,
