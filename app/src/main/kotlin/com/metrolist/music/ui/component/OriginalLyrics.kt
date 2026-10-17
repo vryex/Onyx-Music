@@ -172,6 +172,7 @@ import com.metrolist.music.ui.screens.settings.defaultList
 import com.metrolist.music.ui.utils.fadingEdge
 import com.metrolist.music.utils.ComposeToImage
 import com.metrolist.music.utils.rememberEnumPreference
+import com.metrolist.music.ui.theme.rememberLyricsAccent
 import com.metrolist.music.utils.rememberPreference
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -418,18 +419,8 @@ fun OriginalLyrics(
         }
     }
 
-    // Use Material 3 expressive accents and keep glow/text colors unified
-    val expressiveAccent =
-        when (playerBackground) {
-            PlayerBackgroundStyle.DEFAULT -> {
-                MaterialTheme.colorScheme.primary
-            }
-
-            PlayerBackgroundStyle.BLUR, PlayerBackgroundStyle.GRADIENT -> {
-                // For blur/gradient backgrounds, always use light colors regardless of theme
-                Color.White
-            }
-        }
+    // Keep both lyrics renderers consistent without changing the background palette.
+    val expressiveAccent by rememberLyricsAccent(mediaMetadata?.thumbnailUrl)
 
     var currentLineIndex by remember {
         mutableIntStateOf(-1)
