@@ -259,16 +259,7 @@ fun Queue(
         state = state,
         modifier = modifier,
         background = {
-            Box(Modifier.fillMaxSize().background(background)) {
-                // Fixed, subtle color wash from the actual song playing in the queue.
-                // It remains at the top even when the queue auto-scrolls to item 20+.
-                if (state.isExpanded) {
-                    CollectionHeaderTint(
-                        artwork = mediaMetadata?.thumbnailUrl,
-                        height = 440.dp,
-                    )
-                }
-            }
+            Box(Modifier.fillMaxSize().background(background))
         },
         collapsedContent = {
             if (useNewPlayerDesign) {
@@ -623,6 +614,16 @@ fun Queue(
         }
 
         Box(modifier = Modifier.fillMaxSize()) {
+            // The queue auto-scrolls to the playing track. Render the color behind
+            // the song rows instead of beneath opaque item cards.
+            if (mutableQueueWindows.isNotEmpty() &&
+                lazyListState.firstVisibleItemIndex <= mutableQueueWindows.size
+            ) {
+                CollectionHeaderTint(
+                    artwork = mediaMetadata?.thumbnailUrl,
+                    height = 440.dp,
+                )
+            }
             LazyColumn(
                 state = lazyListState,
                 contentPadding =
@@ -761,7 +762,6 @@ fun Queue(
                                     modifier =
                                         Modifier
                                             .fillMaxWidth()
-                                            .background(background)
                                             .combinedClickable(
                                                 onClick = {
                                                     if (inSelectMode) {
@@ -820,17 +820,19 @@ fun Queue(
 
                 if (automix.isNotEmpty()) {
                     item(key = "automix_divider") {
-                        HorizontalDivider(
-                            modifier =
-                                Modifier
-                                    .padding(vertical = 8.dp, horizontal = 4.dp)
-                                    .animateItem(),
-                        )
+                        Column(Modifier.fillMaxWidth().background(background)) {
+                            HorizontalDivider(
+                                modifier =
+                                    Modifier
+                                        .padding(vertical = 8.dp, horizontal = 4.dp)
+                                        .animateItem(),
+                            )
 
-                        Text(
-                            text = stringResource(R.string.similar_content),
-                            modifier = Modifier.padding(start = 16.dp),
-                        )
+                            Text(
+                                text = stringResource(R.string.similar_content),
+                                modifier = Modifier.padding(start = 16.dp),
+                            )
+                        }
                     }
 
                     itemsIndexed(
@@ -839,6 +841,7 @@ fun Queue(
                     ) { index, item ->
                         Row(
                             horizontalArrangement = Arrangement.Center,
+                            modifier = Modifier.fillMaxWidth().background(background),
                         ) {
                             MediaMetadataListItem(
                                 mediaMetadata = item.metadata!!,
@@ -912,9 +915,8 @@ fun Queue(
                         if (pureBlack) {
                             Color.Black
                         } else {
-                            MaterialTheme.colorScheme
-                                .secondaryContainer
-                                .copy(alpha = 0.90f)
+                            // Fully opaque so moving song rows do not bleed through.
+                            MaterialTheme.colorScheme.secondaryContainer
                         },
                     ).windowInsetsPadding(
                         WindowInsets.systemBars

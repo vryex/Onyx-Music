@@ -190,8 +190,8 @@ fun AlbumScreen(
     val albumListState = rememberLazyListState()
     Box(modifier = Modifier.fillMaxSize()) {
         CollectionHeaderTint(
-            artwork = (if (isPlaying) mediaMetadata?.thumbnailUrl else null)
-                ?: albumWithSongs?.album?.thumbnailUrl,
+            // The album's artwork, never another song's artwork, sets this tint.
+            artwork = albumWithSongs?.album?.thumbnailUrl,
             scrollState = albumListState,
             height = 580.dp,
         )
