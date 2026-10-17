@@ -867,4 +867,9 @@
     <string name="error_no_internet_connection">Sin conexión a internet</string>
     <string name="error_offline_playback">No tienes conexión. Conéctate a internet o reproduce una canción descargada para uso sin conexión.</string>
     <string name="error_explicit_login_recommended">La reproducción explícita funciona mejor si inicias sesión.</string>
+    <string name="sonet_appearance">Apariencia</string>
+    <string name="sonet_font_title">Fuente de la app</string>
+    <string name="sonet_font_sans">Sans del sistema</string>
+    <string name="sonet_font_serif">Serif</string>
+    <string name="sonet_font_mono">Monoespaciada</string>
 </resources>
