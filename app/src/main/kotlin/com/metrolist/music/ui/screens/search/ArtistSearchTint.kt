@@ -4,14 +4,14 @@
  */
 package com.metrolist.music.ui.screens.search
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.lerp
@@ -38,8 +38,16 @@ internal fun Modifier.artistSearchTint(item: YTItem): Modifier {
             1.00f to Color.Black,
         )
     }
-    return this
-        .padding(horizontal = 8.dp, vertical = 2.dp)
-        .clip(RoundedCornerShape(22.dp))
-        .background(gradient)
+    // Draw-only highlight: unlike layout padding/clipping, this moves neither the
+    // avatar nor the title, menus, dividers or scroll positions.
+    return this.drawBehind {
+        val inset = 8.dp.toPx()
+        val corner = 22.dp.toPx()
+        drawRoundRect(
+            brush = gradient,
+            topLeft = Offset(inset, 0f),
+            size = Size((size.width - inset * 2).coerceAtLeast(0f), size.height),
+            cornerRadius = CornerRadius(corner, corner),
+        )
+    }
 }
