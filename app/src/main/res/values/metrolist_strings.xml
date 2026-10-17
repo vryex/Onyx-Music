@@ -1022,4 +1022,8 @@
     <string name="sonet_font_sans">System Sans</string>
     <string name="sonet_font_serif">Serif</string>
     <string name="sonet_font_mono">Monospace</string>
+    <string name="sonet_font_import">Import font from files</string>
+    <string name="sonet_font_import_hint">Only .ttf and .otf files, up to 6 MB. Applies only to song lyrics.</string>
+    <string name="sonet_font_import_success">Font imported for lyrics</string>
+    <string name="sonet_font_import_error">Cannot open this font. Choose a valid .ttf or .otf file (max 6 MB).</string>
 </resources>
