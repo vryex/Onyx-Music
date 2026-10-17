@@ -153,6 +153,7 @@ fun ExperimentalLyrics(
     sliderPositionProvider: () -> Long?,
     modifier: Modifier = Modifier,
     showLyrics: Boolean,
+    playbackActive: Boolean = true,
     lyricsViewModel: LyricsViewModel = hiltViewModel()
 ) {
     val playerConnection = LocalPlayerConnection.current ?: return
@@ -317,7 +318,7 @@ fun ExperimentalLyrics(
     var showMaxSelectionToast by remember { mutableStateOf(false) }
     var isAutoScrollEnabled by rememberSaveable { mutableStateOf(true) }
 
-    BackHandler(enabled = isSelectionModeActive) {
+    BackHandler(enabled = isSelectionModeActive && playbackActive) {
         isSelectionModeActive = false
         selectedIndices.clear()
     }
@@ -334,7 +335,8 @@ fun ExperimentalLyrics(
     var smoothPositionForSync by remember { mutableLongStateOf(0L) }
 
     val lyricsLifecycleOwner = LocalLifecycleOwner.current
-    LaunchedEffect(lyrics, lines, lyricsLifecycleOwner) {
+    LaunchedEffect(lyrics, lines, lyricsLifecycleOwner, playbackActive) {
+        if (!playbackActive) return@LaunchedEffect
         if (lyrics.isNullOrEmpty() || lines.isEmpty()) {
             activeLineIndices = emptySet()
             return@LaunchedEffect
@@ -492,9 +494,9 @@ fun ExperimentalLyrics(
     }
 
     val lifecycleOwner = LocalLifecycleOwner.current
-    DisposableEffect(showLyrics) {
+    DisposableEffect(showLyrics, playbackActive) {
         val activity = context as? Activity
-        if (showLyrics) activity?.window?.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        if (showLyrics && playbackActive) activity?.window?.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
         onDispose { activity?.window?.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON) }
     }
 

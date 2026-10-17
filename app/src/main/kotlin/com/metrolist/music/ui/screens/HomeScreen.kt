@@ -142,6 +142,10 @@ import com.metrolist.music.ui.component.ChipsRow
 import com.metrolist.music.ui.component.HideOnScrollFAB
 import com.metrolist.music.ui.component.LocalBottomSheetPageState
 import com.metrolist.music.ui.component.LocalMenuState
+import com.metrolist.music.utils.RecentCarouselFadeMillis
+import com.metrolist.music.utils.recentCarouselIndices
+import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.channels.Channel
 import com.metrolist.music.utils.recentlyHeardSongs
 import com.metrolist.music.ui.component.OnyxHomeHero
 import com.metrolist.music.ui.component.OnyxHomeObservatory
@@ -1241,15 +1245,11 @@ fun HomeScreen(
                     item(key = "sonet_recently_heard_crossfade") {
                         val songs = remember(recentlyHeard) { recentlyHeard }
                         val sourceTitle = stringResource(R.string.sonet_recently_heard)
-                        var selectedIndex by remember(songs.map { it.id }) { mutableIntStateOf(0) }
-
-                        // Reset the timer after each user swipe. Change in-place,
-                        // without scrolling cards or revealing neighboring covers.
-                        LaunchedEffect(songs, selectedIndex) {
-                            if (songs.size > 1) {
-                                delay(6500)
-                                selectedIndex = (selectedIndex + 1) % songs.size
-                            }
+                        val songIds = remember(songs) { songs.map { it.id } }
+                        var selectedIndex by remember(songIds) { mutableIntStateOf(0) }
+                        val swipeRequests = remember(songIds) { Channel<Int>(Channel.CONFLATED) }
+                        LaunchedEffect(swipeRequests) {
+                            recentCarouselIndices(songs.size, swipeRequests).collect { selectedIndex = it }
                         }
 
                         Box(
@@ -1264,8 +1264,7 @@ fun HomeScreen(
                                         },
                                         onDragEnd = {
                                             if (songs.size > 1 && abs(dragged) > size.width * .14f) {
-                                                selectedIndex = (selectedIndex +
-                                                    if (dragged < 0) 1 else songs.size - 1) % songs.size
+                                                swipeRequests.trySend(if (dragged < 0) 1 else -1)
                                             }
                                             dragged = 0f
                                         },
@@ -1275,7 +1274,7 @@ fun HomeScreen(
                         ) {
                             Crossfade(
                                 targetState = songs[selectedIndex.coerceIn(0, songs.lastIndex)],
-                                animationSpec = tween(durationMillis = 850),
+                                animationSpec = tween(durationMillis = RecentCarouselFadeMillis),
                                 label = "recentlyHeardArtworkCrossfade",
                             ) { entry ->
                                 val index = songs.indexOfFirst { it.id == entry.id }.coerceAtLeast(0)

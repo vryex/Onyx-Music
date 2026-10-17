@@ -1,10 +1,9 @@
 package com.metrolist.music.ui.theme
 
+import androidx.compose.animation.core.Animatable
+import androidx.compose.runtime.LaunchedEffect
+import kotlinx.coroutines.isActive
 import androidx.compose.animation.core.LinearEasing
-import androidx.compose.animation.core.RepeatMode
-import androidx.compose.animation.core.animateFloat
-import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.runtime.Composable
@@ -27,25 +26,23 @@ import kotlin.math.sin
  * lyrics are never remeasured at animation frame rate.
  */
 @Composable
-fun SonetLyricsBackdrop(artwork: String?, modifier: Modifier = Modifier) {
+fun SonetLyricsBackdrop(artwork: String?, modifier: Modifier = Modifier, active: Boolean = true) {
     val tones by rememberArtworkTones(artwork)
     val colors = remember(tones) {
         listOf(tones.surface, tones.accent, tones.tertiary, tones.quaternary)
     }
-    val infinite = rememberInfiniteTransition(label = "organicArtworkPalette")
-    val progress by infinite.animateFloat(
-        initialValue = 0f,
-        targetValue = 6.2831855f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = 35000, easing = LinearEasing),
-            repeatMode = RepeatMode.Restart,
-        ),
-        label = "freeFloatingColors",
-    )
+    val phaseState = remember { Animatable(0f) }
+    LaunchedEffect(active) {
+        if (!active) return@LaunchedEffect
+        while (isActive) {
+            phaseState.animateTo(phaseState.value + 6.2831855f,
+                tween(durationMillis = 35000, easing = LinearEasing))
+        }
+    }
 
     Canvas(modifier) {
         drawRect(Color(0xFF020305))
-        val phase = progress
+        val phase = phaseState.value
         val radius = max(size.width, size.height) * 0.77f
         colors.forEachIndexed { index, color ->
             val indexF = index.toFloat()

@@ -78,6 +78,7 @@ import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.systemBars
+import androidx.compose.foundation.layout.requiredSize
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.shape.CircleShape
@@ -808,10 +809,15 @@ fun BottomSheetPlayer(
 
 
 
+    val lyricsMix = animateFloatAsState(if (showInlineLyrics) 1f else 0f, tween(420), label = "lyricsPaletteBlend")
+    val lyricsBackdropActive by remember(state, showInlineLyrics) {
+        derivedStateOf { state.progress > 0f && (showInlineLyrics || lyricsMix.value > 0f) }
+    }
     SharedTransitionLayout {
     BottomSheet(
         state = state,
         backgroundFollowsContent = true,
+        retainExpandedContent = showInlineLyrics,
         modifier = modifier,
         background = {
             // One seamless background for the ENTIRE expanded sheet. Painting
@@ -831,14 +837,11 @@ fun BottomSheetPlayer(
                     )
                 )
             ) {
-                if (state.progress > 0f && showInlineLyrics) {
-                    // Multiple REAL cover colors slowly blend only on the lyrics page.
-                    // Playback artwork, buttons and word-by-word coloring are unchanged.
-                    SonetLyricsBackdrop(
-                        artwork = mediaMetadata?.thumbnailUrl,
-                        modifier = Modifier.matchParentSize(),
-                    )
-                }
+                SonetLyricsBackdrop(
+                    artwork = mediaMetadata?.thumbnailUrl,
+                    active = lyricsBackdropActive,
+                    modifier = Modifier.matchParentSize().graphicsLayer { alpha = lyricsMix.value },
+                )
                 if (
                     !showVideo &&
                     !hidePlayerThumbnail &&
@@ -872,8 +875,9 @@ fun BottomSheetPlayer(
                                     0f to Color.Black.copy(alpha = 0.26f),
                                     0.19f to Color.Transparent,
                                     0.43f to Color.Transparent,
-                                    0.64f to darkTone.copy(alpha = 0.24f),
-                                    0.82f to darkTone.copy(alpha = 0.82f),
+                                    0.56f to darkTone.copy(alpha = 0.30f),
+                                    0.74f to darkTone.copy(alpha = 0.86f),
+                                    0.92f to darkTone,
                                     1f to darkTone,
                                 )
                             )
@@ -902,11 +906,15 @@ fun BottomSheetPlayer(
         },
     ) {
         val metadataContent: @Composable (MediaMetadata) -> Unit = { mediaMetadata ->
+            val coverSlotWidth by animateDpAsState(
+                if (showInlineLyrics && !mediaMetadata.thumbnailUrl.isNullOrBlank()) 60.dp else 0.dp,
+                tween(420), label = "compactCoverSlot",
+            )
             Row(
                 Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 8.dp),
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
             ) {
+                Box(Modifier.width(coverSlotWidth).height(48.dp)) {
                 AnimatedVisibility(
                     visible = showInlineLyrics && !mediaMetadata.thumbnailUrl.isNullOrBlank(),
                     enter = fadeIn(tween(420)), exit = fadeOut(tween(420)),
@@ -914,7 +922,7 @@ fun BottomSheetPlayer(
                     AsyncImage(
                         model = mediaMetadata.thumbnailUrl?.resize(960, 960),
                         contentDescription = null,
-                        modifier = Modifier.size(48.dp).sharedElement(
+                        modifier = Modifier.requiredSize(48.dp).sharedElement(
                             rememberSharedContentState("sonet_cover"),
                             animatedVisibilityScope = this@AnimatedVisibility,
                             boundsTransform = { _, _ -> tween(420) },
@@ -923,7 +931,8 @@ fun BottomSheetPlayer(
                         contentScale = ContentScale.Crop,
                     )
                 }
-                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                }
+                Column(Modifier.weight(1f).padding(end = 12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                     Text(
                         mediaMetadata.title,
                         style = MaterialTheme.typography.headlineMedium,
@@ -994,6 +1003,7 @@ fun BottomSheetPlayer(
                     }.semantics { selected = favorite },
                     contentColor = Color.White,
                 )
+                Spacer(Modifier.width(12.dp))
                 if (showInlineLyrics) {
                     val lyrics by playerConnection.currentLyrics.collectAsStateWithLifecycle(initialValue = null)
                     PlayerIconButton(R.drawable.more_horiz, stringResource(R.string.onyx_lyrics_tools), onClick = {
@@ -1286,6 +1296,7 @@ fun BottomSheetPlayer(
                                 InlineLyricsView(
                                     mediaMetadata = mediaMetadata,
                                     showLyrics = showLyrics,
+                                    playbackActive = !state.isCollapsed && !state.isDismissed,
                                     positionProvider = { effectivePosition },
                                 )
                             } else if (showVideo && canShowVideo && state.isExpanded) {
@@ -1368,6 +1379,7 @@ fun BottomSheetPlayer(
                                 InlineLyricsView(
                                     mediaMetadata = mediaMetadata,
                                     showLyrics = showLyrics,
+                                    playbackActive = !state.isCollapsed && !state.isDismissed,
                                     positionProvider = { effectivePosition },
                                 )
                             } else if (showVideo && canShowVideo && state.isExpanded) {
@@ -1439,6 +1451,7 @@ fun BottomSheetPlayer(
 fun InlineLyricsView(
     mediaMetadata: MediaMetadata?,
     showLyrics: Boolean,
+    playbackActive: Boolean = true,
     positionProvider: () -> Long,
 ) {
     val playerConnection = LocalPlayerConnection.current ?: return
@@ -1448,7 +1461,6 @@ fun InlineLyricsView(
     val lyrics = remember(currentLyrics) { currentLyrics?.lyrics?.trim() }
     val context = LocalContext.current
     val database = LocalDatabase.current
-    val coroutineScope = rememberCoroutineScope()
 
     var appInForeground by remember {
         mutableStateOf(
@@ -1474,10 +1486,10 @@ fun InlineLyricsView(
             }
         }
 
-    LaunchedEffect(mediaMetadata?.id, currentLyrics) {
-        if (mediaMetadata != null && currentLyrics == null) {
+    LaunchedEffect(mediaMetadata?.id, currentLyrics, playbackActive) {
+        if (playbackActive && mediaMetadata != null && currentLyrics == null) {
             delay(500)
-            coroutineScope.launch(Dispatchers.IO) {
+            withContext(Dispatchers.IO) {
                 try {
                     val entryPoint =
                         EntryPointAccessors.fromApplication(
@@ -1490,7 +1502,7 @@ fun InlineLyricsView(
                         upsert(LyricsEntity(mediaMetadata.id, fetchedLyricsWithProvider.lyrics, fetchedLyricsWithProvider.provider))
                     }
                 } catch (e: Exception) {
-                    // Handle error
+                    if (e is kotlinx.coroutines.CancellationException) throw e
                 }
             }
         }
@@ -1502,11 +1514,12 @@ fun InlineLyricsView(
     LaunchedEffect(
         nextMetadata?.id,
         showLyrics,
+        playbackActive,
         appInForeground,
         mediaMetadata?.id,
         currentLyrics,
     ) {
-        if (!showLyrics || !appInForeground || nextMetadata == null) return@LaunchedEffect
+        if (!showLyrics || !playbackActive || !appInForeground || nextMetadata == null) return@LaunchedEffect
         val loadedForCurrent =
             currentLyrics?.let { lyrics ->
                 mediaMetadata == null || lyrics.id == mediaMetadata.id
@@ -1561,6 +1574,7 @@ fun InlineLyricsView(
                         sliderPositionProvider = positionProvider,
                         modifier = Modifier.padding(horizontal = 24.dp),
                         showLyrics = showLyrics,
+                        playbackActive = playbackActive,
                     )
                 }
                 ProvideTextStyle(

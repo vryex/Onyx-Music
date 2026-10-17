@@ -27,6 +27,9 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Stable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -65,9 +68,14 @@ fun BottomSheet(
     collapsedContent: @Composable BoxScope.() -> Unit,
     isExpandable: Boolean = true,
     backgroundFollowsContent: Boolean = false,
+    retainExpandedContent: Boolean = false,
     content: @Composable BoxScope.() -> Unit,
 ) {
     val density = LocalDensity.current
+    var hasExpandedContent by remember { mutableStateOf(false) }
+    LaunchedEffect(state.isCollapsed, state.isDismissed) {
+        if (!state.isCollapsed && !state.isDismissed) hasExpandedContent = true
+    }
     
     Box(
         modifier = modifier
@@ -135,10 +143,11 @@ fun BottomSheet(
         }
 
         // main content
-        if (!state.isCollapsed) {
+        if (!state.isCollapsed || (retainExpandedContent && hasExpandedContent)) {
             BoxWithConstraints(
                 modifier = Modifier
                     .fillMaxSize()
+                    .then(if (state.isCollapsed || state.isDismissed) Modifier.clearAndSetSemantics { } else Modifier)
                     .graphicsLayer {
                         alpha = ((state.progress - 0.15f) * 4).coerceIn(0f, 1f)
                     },

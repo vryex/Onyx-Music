@@ -197,6 +197,7 @@ fun OriginalLyrics(
     sliderPositionProvider: () -> Long?,
     modifier: Modifier = Modifier,
     showLyrics: Boolean,
+    playbackActive: Boolean = true,
 ) {
     val playerConnection = LocalPlayerConnection.current ?: return
     val database = LocalDatabase.current
@@ -480,7 +481,7 @@ fun OriginalLyrics(
     var isAutoScrollEnabled by rememberSaveable { mutableStateOf(true) }
 
     // Handle back button press - close selection mode instead of exiting screen
-    BackHandler(enabled = isSelectionModeActive) {
+    BackHandler(enabled = isSelectionModeActive && playbackActive) {
         isSelectionModeActive = false
         selectedIndices.clear()
     }
@@ -505,9 +506,9 @@ fun OriginalLyrics(
     val lifecycleOwner = LocalLifecycleOwner.current
 
     // Keep screen on while lyrics are visible
-    DisposableEffect(showLyrics) {
+    DisposableEffect(showLyrics, playbackActive) {
         val activity = context as? Activity
-        if (showLyrics) {
+        if (showLyrics && playbackActive) {
             activity?.window?.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
         }
         onDispose {
@@ -541,7 +542,8 @@ fun OriginalLyrics(
         selectedIndices.clear()
     }
 
-    LaunchedEffect(lyrics, lifecycleOwner) {
+    LaunchedEffect(lyrics, lifecycleOwner, playbackActive) {
+        if (!playbackActive) return@LaunchedEffect
         if (lyrics.isNullOrEmpty() || !lyrics.startsWith("[")) {
             currentLineIndex = -1
             return@LaunchedEffect
@@ -1561,7 +1563,8 @@ fun OriginalLyrics(
                                 }
 
                                 // Continuous slow pulsing animation
-                                LaunchedEffect(Unit) {
+                                LaunchedEffect(playbackActive) {
+                                    if (!playbackActive) return@LaunchedEffect
                                     while (true) {
                                         pulseProgress.animateTo(
                                             targetValue = 1f,

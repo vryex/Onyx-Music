@@ -18,6 +18,7 @@ fun Lyrics(
     sliderPositionProvider: () -> Long?,
     modifier: Modifier = Modifier,
     showLyrics: Boolean,
+    playbackActive: Boolean = true,
     lyricsViewModel: LyricsViewModel = hiltViewModel()
 ) {
     val (experimentalLyrics, _) = rememberPreference(key = ExperimentalLyricsKey, defaultValue = true)
@@ -27,13 +28,15 @@ fun Lyrics(
             sliderPositionProvider = sliderPositionProvider,
             modifier = modifier,
             showLyrics = showLyrics,
+            playbackActive = playbackActive,
             lyricsViewModel = lyricsViewModel
         )
     } else {
         OriginalLyrics(
             sliderPositionProvider = sliderPositionProvider,
             modifier = modifier,
-            showLyrics = showLyrics
+            showLyrics = showLyrics,
+            playbackActive = playbackActive,
         )
     }
 }

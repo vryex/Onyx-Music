@@ -242,7 +242,9 @@ fun ArtistScreen(
                             )
                             Box(Modifier.matchParentSize().background(Brush.verticalGradient(
                                 0f to Color.Black.copy(alpha = .2f), .3f to Color.Transparent,
-                                .64f to artistColor.copy(alpha = .35f), 1f to Color.Black,
+                                .48f to Color.Black.copy(alpha = .25f),
+                                .68f to Color.Black.copy(alpha = .68f),
+                                .88f to Color.Black, 1f to Color.Black,
                             )))
                         }
                     Column(Modifier.fillMaxWidth().windowInsetsPadding(
