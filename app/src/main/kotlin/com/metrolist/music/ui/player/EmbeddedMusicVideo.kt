@@ -62,7 +62,6 @@ fun EmbeddedMusicVideo(
     val latestUnavailable by rememberUpdatedState(onUnavailable)
     var ready by remember(videoId) { mutableStateOf(false) }
     var playing by remember(videoId) { mutableStateOf(false) }
-    var hasRenderedVideo by remember(videoId) { mutableStateOf(false) }
     var failed by remember(videoId) { mutableStateOf(false) }
     // A valid, project-owned HTTPS origin supplies YouTube with an actual HTTP Referer.
     // A synthetic package-name host can make embedded playback fail with error 153.
@@ -103,7 +102,7 @@ fun EmbeddedMusicVideo(
                     if (!message.sourceId().startsWith(origin)) return false
                     when {
                         message.message() == "ONYX_VIDEO_READY" -> ready = true
-                        message.message() == "ONYX_VIDEO_PLAYING" -> { playing = true; hasRenderedVideo = true }
+                        message.message() == "ONYX_VIDEO_PLAYING" -> playing = true
                         message.message() == "ONYX_VIDEO_WAITING" -> playing = false
                         message.message().startsWith("ONYX_VIDEO_ERROR:") -> if (!failed) {
                             android.util.Log.w("OnyxVideo", "Embedded video rejected: " + message.message())
