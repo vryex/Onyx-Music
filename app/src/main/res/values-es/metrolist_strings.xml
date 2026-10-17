@@ -913,4 +913,5 @@
     <string name="sonet_playback_mix">Mix de %1$s</string>
     <string name="sonet_playback_library">Biblioteca</string>
     <string name="sonet_now_playing">REPRODUCIENDO</string>
+    <string name="sonet_recently_heard">Escuchado recientemente</string>
 </resources>
