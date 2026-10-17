@@ -384,6 +384,7 @@ fun ListItem(
     trailingContent: @Composable RowScope.() -> Unit = {},
     isSelected: Boolean? = false,
     isActive: Boolean = false,
+    showDivider: Boolean = true,
 ) = ListItem(
     title = title,
     subtitle = {
@@ -403,7 +404,8 @@ fun ListItem(
     trailingContent = trailingContent,
     modifier = modifier,
     isSelected = isSelected,
-    isActive = isActive
+    isActive = isActive,
+    showDivider = showDivider,
 )
 
 @Composable
