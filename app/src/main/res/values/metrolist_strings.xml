@@ -1016,8 +1016,9 @@
     <string name="onyx_video">Video</string>
     <string name="onyx_video_unavailable">Este video no está disponible aquí. Se mantiene la portada.</string>
     <string name="onyx_video_loading">Cargando video</string>
+    <string name="sonet_font_description">Changes song lyrics only. Does not change the app interface.</string>
     <string name="sonet_appearance">Appearance</string>
-    <string name="sonet_font_title">App font</string>
+    <string name="sonet_font_title">Lyrics font</string>
     <string name="sonet_font_sans">System Sans</string>
     <string name="sonet_font_serif">Serif</string>
     <string name="sonet_font_mono">Monospace</string>
