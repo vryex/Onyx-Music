@@ -67,6 +67,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.testTagsAsResourceId
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.unit.IntOffset
 import com.metrolist.music.ui.theme.rememberArtworkColor
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.layout.ContentScale
@@ -182,7 +183,7 @@ fun ArtistScreen(
     val artistGradient = remember(artistColor) {
         Brush.verticalGradient(
             0f to artistColor,
-            0.37f to artistColor.copy(alpha = 0.52f),
+            0.36f to artistColor.copy(alpha = 0.65f),
             0.78f to Color.Black,
             1f to Color.Black,
         )
@@ -200,9 +201,16 @@ fun ArtistScreen(
     }
 
     Box(
-        modifier = Modifier.fillMaxSize().background(Color.Black).background(artistGradient)
+        modifier = Modifier.fillMaxSize().background(Color.Black)
             .semantics { testTagsAsResourceId = true }.testTag("onyx_artist"),
     ) {
+        // A fixed-size header wash, scrolling away WITH the header. All song, album,
+        // recommendation and biography rows stay on the original black canvas.
+        if (lazyListState.firstVisibleItemIndex == 0) {
+            Box(Modifier.fillMaxWidth().height(520.dp)
+                .offset { IntOffset(0, -lazyListState.firstVisibleItemScrollOffset) }
+                .background(artistGradient))
+        }
         LazyColumn(
             state = lazyListState,
             contentPadding = LocalPlayerAwareWindowInsets.current.asPaddingValues(),

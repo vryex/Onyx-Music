@@ -546,7 +546,6 @@ private fun ThumbnailItem(
             modifier = Modifier
                 .size(dimensions.thumbnailSize)
                 .clip(RoundedCornerShape(dimensions.cornerRadius))
-                .border(1.dp, Color(0xFFF5F5F7).copy(alpha = 0.25f), RoundedCornerShape(dimensions.cornerRadius))
         ) {
             if (hidePlayerThumbnail) {
                 HiddenThumbnailPlaceholder(textBackgroundColor = textBackgroundColor)

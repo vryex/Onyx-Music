@@ -67,11 +67,14 @@ fun EmbeddedMusicVideo(
     // A valid, project-owned HTTPS origin supplies YouTube with an actual HTTP Referer.
     // A synthetic package-name host can make embedded playback fail with error 153.
     val origin = "https://xero-scripts-repo.github.io"
+    val coverUrl = artworkUrl?.takeUnless { it.isBlank() }
+        ?: "https://i.ytimg.com/vi/$videoId/hqdefault.jpg"
     val script = remember(context) { context.assets.open("onyx_video.js").bufferedReader().use { it.readText() } }
-    val webView = remember(videoId, context) {
+    val webView = remember(videoId, coverUrl, context) {
         require(videoId.matches(Regex("[A-Za-z0-9_-]{11}")))
         WebView(context).apply {
-            setBackgroundColor(android.graphics.Color.BLACK)
+            // Keep the Compose artwork visible until the in-WebView poster is ready.
+            setBackgroundColor(android.graphics.Color.TRANSPARENT)
             settings.javaScriptEnabled = true
             settings.domStorageEnabled = true
             settings.mediaPlaybackRequiresUserGesture = false
@@ -111,7 +114,11 @@ fun EmbeddedMusicVideo(
                     return true
                 }
             }
-            val html = """<!doctype html><html><head><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="referrer" content="strict-origin-when-cross-origin"><style>html,body,#player{width:100%;height:100%;margin:0;background:#000;overflow:hidden}</style></head><body><div id="player"></div><script>var ONYX_VIDEO_ID='$videoId';var ONYX_ORIGIN='$origin';$script</script></body></html>"""
+            // Place the poster IN the WebView: YouTube's hardware-backed iframe can paint
+            // above Compose siblings on certain Android/WebView versions.
+            val poster = android.text.TextUtils.htmlEncode(coverUrl)
+            val fallback = "https://i.ytimg.com/vi/$videoId/hqdefault.jpg"
+            val html = """<!doctype html><html><head><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="referrer" content="origin-when-cross-origin"><style>html,body{width:100%;height:100%;margin:0;overflow:hidden;background:transparent}#player{width:100%;height:100%;background:#161616}#onyx-poster{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:99;pointer-events:none;background:#161616}</style></head><body><div id="player"></div><img id="onyx-poster" src="$poster" onerror="this.onerror=null;this.src='$fallback'"><script>var ONYX_VIDEO_ID='$videoId';var ONYX_ORIGIN='$origin';$script</script></body></html>"""
             loadDataWithBaseURL("$origin/", html, "text/html", "UTF-8", null)
         }
     }
@@ -148,27 +155,21 @@ fun EmbeddedMusicVideo(
             }
         }
     }
-    // Retain the artwork even when a track has no embedded artwork metadata.
-    val coverUrl = artworkUrl?.takeUnless { it.isBlank() }
-        ?: "https://i.ytimg.com/vi/$videoId/hqdefault.jpg"
     Box(Modifier.fillMaxWidth().padding(24.dp), contentAlignment = Alignment.Center) {
         key(videoId) {
             val videoStatus = if (playing) "Video playing" else if (ready) "Video ready" else "Video loading"
             Box(Modifier.fillMaxWidth().aspectRatio(1f).clip(RoundedCornerShape(24.dp))
                 .background(Color(0xFF161616))) {
-                // Chromium video surfaces can paint above Compose siblings. Make the native
-                // view nearly transparent until the YouTube clock actually advances.
+                // Compose fallback covers the brief initial page-load period.
+                AsyncImage(coverUrl, null, contentScale = ContentScale.Crop,
+                    modifier = Modifier.fillMaxSize())
+                // The native HTML poster sits ABOVE the iframe until real playback advances,
+                // preventing a black YouTube surface from hiding the cover art.
                 AndroidView(
                     factory = { webView },
-                    update = {
-                        it.contentDescription = videoStatus
-                        it.alpha = if (hasRenderedVideo) 1f else 0.01f
-                    },
+                    update = { it.contentDescription = videoStatus },
                     modifier = Modifier.fillMaxSize().semantics { contentDescription = videoStatus },
                 )
-                // Never replace the album art on iframe READY/BUFFERING alone.
-                if (!hasRenderedVideo) AsyncImage(coverUrl, null, contentScale = ContentScale.Crop,
-                    modifier = Modifier.fillMaxSize())
             }
         }
     }

@@ -106,10 +106,11 @@ private fun DrawScope.drawTrack(
     if (accentColor != null && activeRangeEnd > 0f) {
         drawLine(accentColor.copy(alpha = .2f), sliderValueStart, sliderValueEnd,
             trackStrokeWidth + 4.dp.toPx(), StrokeCap.Round)
-        drawLine(Brush.horizontalGradient(listOf(Color.White, lerp(accentColor, Color.White, .7f))),
-            sliderValueStart, sliderValueEnd, trackStrokeWidth, StrokeCap.Round)
-        drawLine(Color.White.copy(alpha = .35f), sliderValueStart - Offset(0f, 1.dp.toPx()),
-            sliderValueEnd - Offset(0f, 1.dp.toPx()), 1.dp.toPx(), StrokeCap.Round)
+        // Actually paint the playback progress in the cover's dominant hue, not white.
+        // The modest tint keeps dark album colors legible without recoloring controls.
+        drawLine(Brush.horizontalGradient(listOf(
+            lerp(accentColor, Color.White, .42f), lerp(accentColor, Color.White, .23f)
+        )), sliderValueStart, sliderValueEnd, trackStrokeWidth, StrokeCap.Round)
     } else {
         drawLine(activeTrackColor, sliderValueStart, sliderValueEnd, trackStrokeWidth, StrokeCap.Round)
     }
