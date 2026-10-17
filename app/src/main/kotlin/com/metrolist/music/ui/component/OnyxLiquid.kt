@@ -163,7 +163,7 @@ fun OnyxHomeHero(
     // One full-bleed image per carousel page; no separate framed cover/card.
     // The fade is INSIDE this item's bounds, never across neighboring pages.
     Box(
-        modifier = modifier.height(465.dp).clip(RoundedCornerShape(20.dp)).background(Color.Black),
+        modifier = modifier.height(352.dp).clip(RoundedCornerShape(22.dp)).background(Color.Black),
     ) {
         AsyncImage(
             model = if (useOriginalArtwork) artwork else artwork.recommendationArtworkUrl(),
@@ -192,7 +192,7 @@ fun OnyxHomeHero(
             Modifier.align(Alignment.BottomCenter).fillMaxWidth().padding(18.dp),
             verticalArrangement = Arrangement.spacedBy(9.dp),
         ) {
-            Text(title, style = MaterialTheme.typography.headlineMedium,
+            Text(title, style = MaterialTheme.typography.headlineSmall,
                 color = Color.White, fontWeight = FontWeight.SemiBold,
                 maxLines = 2, overflow = TextOverflow.Ellipsis)
             Text(artist.orEmpty(), style = MaterialTheme.typography.bodyMedium,
