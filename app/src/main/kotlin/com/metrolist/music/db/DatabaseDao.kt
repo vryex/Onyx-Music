@@ -1500,6 +1500,20 @@ interface DatabaseDao {
         lastMondayStart: LocalDateTime,
     ): Flow<List<EventWithSong>>
 
+    /** Recently heard unique songs, newest first, with reactive Room updates. */
+    @Transaction
+    @Query(
+        """
+        SELECT event.* FROM event
+        INNER JOIN (
+            SELECT MAX(id) AS lastId FROM event GROUP BY songId
+        ) AS recent ON recent.lastId = event.id
+        ORDER BY event.id DESC
+        LIMIT :limit
+        """,
+    )
+    fun recentlyHeardSongs(limit: Int = 8): Flow<List<EventWithSong>>
+
     @Transaction
     @Query("SELECT * FROM event ORDER BY rowId ASC LIMIT 1")
     fun firstEvent(): Flow<EventWithSong?>
