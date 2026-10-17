@@ -760,6 +760,10 @@ fun ExperimentalLyrics(
                                         bgVisible = bgVisible, isSelected = selectedIndices.contains(index),
                                         isSelectionModeActive = isSelectionModeActive, currentPositionState = currentPositionState,
                                         lyricsOffset = (currentSong?.song?.lyricsOffset ?: 0).toLong(),
+                                        nextLineTimeMs = remember(lines, index) {
+                                            lines.asSequence().drop(index + 1)
+                                                .firstOrNull { !it.isBackground && it.time > item.time }?.time
+                                        },
                                         playerConnection = playerConnection, lyricsTextSize = 36f, lyricsLineSpacing = 1.3f,
                                         expressiveAccent = expressiveAccent, lyricsFontFamily = lyricsFontFamily, lyricsTextPosition = lyricsTextPosition,
                                         respectAgentPositioning = respectAgentPositioning, isAutoScrollEnabled = isAutoScrollEnabled,
