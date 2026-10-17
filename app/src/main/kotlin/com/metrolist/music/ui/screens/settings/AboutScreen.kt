@@ -1,5 +1,5 @@
 /**
- * Onyx Music customization of the original open-source Metrolist project.
+ * Sonet customization of the original open-source Metrolist project.
  * Keep original author notices and the GPL-3.0 license in the source tree.
  */
 package com.metrolist.music.ui.screens.settings
@@ -48,7 +48,7 @@ import com.metrolist.music.ui.component.Material3SettingsGroup
 import com.metrolist.music.ui.component.Material3SettingsItem
 import com.metrolist.music.ui.utils.backToMain
 
-/** Onyx-specific credits. Portrait will be provided later. */
+/** Sonet-specific credits. Portrait will be provided later. */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AboutScreen(navController: NavController) {
@@ -87,7 +87,7 @@ fun AboutScreen(navController: NavController) {
                 ) {
                     Box(contentAlignment = Alignment.Center) {
                         Text(
-                            "O",
+                            "S",
                             style = MaterialTheme.typography.headlineLarge,
                             fontWeight = FontWeight.Bold
                         )
@@ -95,7 +95,7 @@ fun AboutScreen(navController: NavController) {
                 }
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text(
-                        "Onyx Music",
+                        "Sonet",
                         style = MaterialTheme.typography.headlineLarge,
                         fontWeight = FontWeight.SemiBold
                     )
@@ -137,7 +137,7 @@ fun AboutScreen(navController: NavController) {
                     fontWeight = FontWeight.SemiBold
                 )
                 Text(
-                    "Creador de Onyx Music",
+                    "Creador de Sonet",
                     style = MaterialTheme.typography.titleMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
