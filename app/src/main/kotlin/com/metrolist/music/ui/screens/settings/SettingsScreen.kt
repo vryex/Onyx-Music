@@ -129,12 +129,15 @@ fun SettingsScreen(navController: NavController, latestVersionName: String) {
                 Material3SettingsItem(
                     icon = painterResource(R.drawable.palette),
                     title = { Text(stringResource(R.string.sonet_font_title)) },
-                    description = { Text(when (sonetLyricsFont) {
+                    description = { androidx.compose.foundation.layout.Column {
+                        Text(stringResource(R.string.sonet_font_description), style = MaterialTheme.typography.bodySmall)
+                        Text(when (sonetLyricsFont) {
                         "Sans" -> stringResource(R.string.sonet_font_sans)
                         "Serif" -> stringResource(R.string.sonet_font_serif)
                         "Mono" -> stringResource(R.string.sonet_font_mono)
                         else -> "Outfit"
-                    }) },
+                        })
+                    } },
                     onClick = { showFontPicker = true }
                 )
             )
