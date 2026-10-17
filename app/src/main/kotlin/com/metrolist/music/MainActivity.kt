@@ -135,6 +135,21 @@ import coil3.toBitmap
 import com.metrolist.innertube.YouTube
 import com.metrolist.innertube.models.SongItem
 import com.metrolist.innertube.models.WatchEndpoint
+import com.metrolist.music.constants.EnableBetterLyricsKey
+import com.metrolist.music.constants.EnableKugouKey
+import com.metrolist.music.constants.EnableLrcLibKey
+import com.metrolist.music.constants.EnableLyricsPlus
+import com.metrolist.music.constants.EnablePaxsenixKey
+import com.metrolist.music.constants.EnableZemerKey
+import com.metrolist.music.constants.HideExplicitKey
+import com.metrolist.music.constants.HideVideoSongsKey
+import com.metrolist.music.constants.HideYoutubeShortsKey
+import com.metrolist.music.constants.ProxyEnabledKey
+import com.metrolist.music.constants.ShowArtistDescriptionKey
+import com.metrolist.music.constants.ShowArtistSubscriberCountKey
+import com.metrolist.music.constants.ShowMonthlyListenersKey
+import com.metrolist.music.constants.ShowMostStatsPlaylistsKey
+import com.metrolist.music.constants.ShowWrappedCardKey
 import com.metrolist.music.constants.AppBarHeight
 import com.metrolist.music.constants.AppLanguageKey
 import com.metrolist.music.constants.CheckForUpdatesKey
@@ -432,6 +447,26 @@ class MainActivity : FragmentActivity() {
         lifecycleScope.launch(Dispatchers.IO) {
             val preferences = dataStore.data.first()
             val currentVersion = BuildConfig.BASE_VERSION_NAME
+
+            // Restore hidden fixed content options for both new and existing users.
+            // Run off the main thread; leave appearance/misc preferences alone.
+            val onyxAlwaysOn = listOf(
+                ShowArtistDescriptionKey, ShowArtistSubscriberCountKey, ShowMonthlyListenersKey,
+                EnableLrcLibKey, EnableKugouKey, EnableBetterLyricsKey,
+                EnablePaxsenixKey, EnableLyricsPlus, EnableZemerKey,
+                ShowMostStatsPlaylistsKey
+            )
+            val onyxAlwaysOff = listOf(
+                ShowWrappedCardKey, ProxyEnabledKey, HideExplicitKey,
+                HideVideoSongsKey, HideYoutubeShortsKey, CheckForUpdatesKey
+            )
+            if (onyxAlwaysOn.any { preferences[it] != true } ||
+                onyxAlwaysOff.any { preferences[it] != false }) {
+                safeDataStoreEdit { settings ->
+                    onyxAlwaysOn.forEach { settings[it] = true }
+                    onyxAlwaysOff.forEach { settings[it] = false }
+                }
+            }
 
             // SimpMusic Removal Migration
             if (preferences[SimpMusicMigrationDoneKey] != true) {
