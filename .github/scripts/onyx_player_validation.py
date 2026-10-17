@@ -52,10 +52,11 @@ def insert(table, values):
     db.execute('INSERT OR REPLACE INTO ' + table + ' (' + keys + ') VALUES (' + ','.join('?' for _ in row) + ')', list(row.values()))
 
 for i, video in enumerate(['dQw4w9WgXcQ', 'jNQXAC9IVRw']):
-    insert('song', {'id': video, 'title': 'Onyx UI check ' + str(i + 1), 'duration': 180,
+    insert('song', {'id': video, 'title': 'Sonet UI check ' + str(i + 1), 'duration': 180,
                     'isVideo': 1, 'liked': 1, 'likedDate': 1770000000000, 'inLibrary': 1770000000000,
                     'thumbnailUrl': 'https://i.ytimg.com/vi/' + video + '/hqdefault.jpg'})
-insert('artist', {'id': 'onyx-ui-check', 'name': 'Onyx Studio', 'lastUpdateTime': 1770000000000})
+    insert('event', {'id': i + 1, 'songId': video, 'timestamp': 1770000000000 + i * 1000, 'playTime': 41000})
+insert('artist', {'id': 'onyx-ui-check', 'name': 'Sonet Studio', 'lastUpdateTime': 1770000000000})
 for i, video in enumerate(['dQw4w9WgXcQ', 'jNQXAC9IVRw']):
     insert('song_artist_map', {'songId': video, 'artistId': 'onyx-ui-check', 'position': 0})
 insert('related_song_map', {'id': 1, 'songId': 'dQw4w9WgXcQ', 'relatedSongId': 'jNQXAC9IVRw'})
@@ -77,23 +78,23 @@ for attempt in range(8):
     if any(
         label in n.get('text', '').lower()
         for n in home.iter('node')
-        for label in ('recomendaciones', 'recommendations')
+        for label in ('recently played', 'escuchado recientemente')
     ):
         break
     time.sleep(1)
-    home = snapshot('07-daily-selection-' + str(attempt))
+    home = snapshot('07-recently-played-' + str(attempt))
 else:
-    raise AssertionError('Daily selection did not use available recommendation fixtures')
-home = scroll_to_label(home, 'onyx ui check', '07-recommendation-title')
-assert any('Onyx UI check' in n.get('text', '') for n in home.iter('node')), 'Real recommendation title missing'
+    raise AssertionError('Recently played did not show seeded listening history')
+home = scroll_to_label(home, 'sonet ui check', '07-recent-title')
+assert any('Sonet UI check' in n.get('text', '') for n in home.iter('node')), 'Recently played song title missing'
 adb('shell', 'svc', 'wifi', 'enable')
 adb('shell', 'svc', 'data', 'enable')
 tap_label(home, 'library')
 tap_label(scroll_to_label(snapshot('08-seeded-library'), 'liked', '08-find-liked'), 'liked')
-tap_label(scroll_to_label(snapshot('09-liked-songs'), 'onyx ui check 1', '09-find-song'), 'onyx ui check 1')
+tap_label(scroll_to_label(snapshot('09-liked-songs'), 'sonet ui check 1', '09-find-song'), 'sonet ui check 1')
 time.sleep(3)
 adb('shell', 'input', 'keyevent', 'KEYCODE_MEDIA_PAUSE')
-tap_label(snapshot('10-mini-player'), 'onyx ui check 1')
+tap_label(snapshot('10-mini-player'), 'sonet ui check 1')
 player = snapshot('11-player')
 assert any('Minimize player' in n.get('content-desc', '') for n in player.iter('node')), 'Expanded player header missing'
 assert any('Next track' in n.get('content-desc', '') for n in player.iter('node')), 'Transport missing'
@@ -113,7 +114,7 @@ adb('shell', 'settings', 'put', 'system', 'user_rotation', '1')
 time.sleep(3)
 landscape = snapshot('14-player-landscape')
 if not any('Previous track' in n.get('content-desc', '') for n in landscape.iter('node')):
-    tap_label(landscape, 'onyx ui check 1')
+    tap_label(landscape, 'sonet ui check 1')
     landscape = snapshot('14-player-landscape-expanded')
 width, height = map(int, re.findall(r'\d+', adb('shell', 'wm', 'size').decode().splitlines()[-1]))
 # Mini player exposes Next, so require Previous as well to prove expansion.
@@ -148,7 +149,7 @@ adb('shell', 'settings', 'put', 'system', 'user_rotation', '0')
 time.sleep(2)
 portrait = snapshot('15-player-portrait')
 if not any('Minimize player' in n.get('content-desc', '') for n in portrait.iter('node')):
-    tap_label(portrait, 'onyx ui check 1')
+    tap_label(portrait, 'sonet ui check 1')
     portrait = snapshot('15-player-portrait-expanded')
 tap_label(portrait, 'lyrics')
 tap_label(snapshot('16-lyrics'), 'lyrics tools')
