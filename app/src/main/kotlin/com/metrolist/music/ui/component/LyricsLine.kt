@@ -54,6 +54,7 @@ import androidx.compose.ui.text.PlatformTextStyle
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.text.drawText
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.rememberTextMeasurer
@@ -134,6 +135,7 @@ internal fun LyricsLine(
     lyricsTextSize: Float,
     lyricsLineSpacing: Float,
     expressiveAccent: Color,
+    lyricsFontFamily: FontFamily,
     lyricsTextPosition: LyricsPosition,
     respectAgentPositioning: Boolean,
     isAutoScrollEnabled: Boolean,
@@ -232,7 +234,7 @@ internal fun LyricsLine(
                     lineHeight = if (item.isBackground) (lyricsTextSize * 0.7f * lyricsLineSpacing).sp else (lyricsTextSize * lyricsLineSpacing).sp,
                     letterSpacing = (-0.5).sp,
                     textAlign = agentTextAlign,
-                    fontFamily = MaterialTheme.typography.bodyLarge.fontFamily,
+                    fontFamily = lyricsFontFamily,
                     shadow = if (isActiveLine) Shadow(expressiveAccent.copy(alpha = 0.35f), Offset.Zero, blurRadius = 7f) else null,
                     platformStyle = PlatformTextStyle(includeFontPadding = false),
                     lineHeightStyle = LineHeightStyle(
@@ -288,6 +290,7 @@ internal fun LyricsLine(
                         Text(
                             text = it,
                             fontSize = 18.sp,
+                            fontFamily = lyricsFontFamily,
                             color = lineColor.copy(alpha = if (isActiveLine) 0.7f else 0.45f),
                             textAlign = agentTextAlign,
                             fontWeight = FontWeight.Normal,
@@ -301,6 +304,7 @@ internal fun LyricsLine(
                     Text(
                         text = it,
                         fontSize = 16.sp,
+                        fontFamily = lyricsFontFamily,
                         color = lineColor.copy(alpha = if (isActiveLine) 0.6f else 0.4f),
                         textAlign = agentTextAlign,
                         fontWeight = FontWeight.Normal,
