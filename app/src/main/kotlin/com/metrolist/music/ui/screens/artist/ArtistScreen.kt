@@ -102,6 +102,7 @@ import com.metrolist.music.constants.ShowArtistSubscriberCountKey
 import com.metrolist.music.constants.ShowMonthlyListenersKey
 import com.metrolist.music.extensions.toMediaItem
 import com.metrolist.music.models.toMediaMetadata
+import com.metrolist.music.playback.queues.Queue
 import com.metrolist.music.playback.queues.ListQueue
 import com.metrolist.music.playback.queues.YouTubeQueue
 import com.metrolist.music.ui.component.AlbumGridItem
@@ -159,6 +160,11 @@ fun ArtistScreen(
             viewModel.artistId,
             artistPage?.artist?.title ?: libraryArtist?.artist?.name.orEmpty(),
         ).ifEmpty { null }
+    // Every queue launched from the artist page keeps its source label,
+    // including individual songs, radio, shuffle and play-all.
+    fun playArtistQueue(queue: Queue) {
+        playerConnection.playQueue(queue, source = displayArtistName)
+    }
     val librarySongs by viewModel.librarySongs.collectAsStateWithLifecycle()
     val libraryAlbums by viewModel.libraryAlbums.collectAsStateWithLifecycle()
     val isChannelSubscribed by viewModel.isChannelSubscribed.collectAsStateWithLifecycle()
@@ -271,11 +277,11 @@ fun ArtistScreen(
                                 if (!showLocal && !isGuest) {
                                     artistPage?.artist?.radioEndpoint?.let { radioEndpoint ->
                                         LiquidIconButton(R.drawable.radio, stringResource(R.string.radio),
-                                            { playerConnection.playQueue(YouTubeQueue(radioEndpoint), source = displayArtistName) })
+                                            { playArtistQueue(YouTubeQueue(radioEndpoint)) })
                                     }
                                     artistPage?.artist?.shuffleEndpoint?.let { shuffleEndpoint ->
                                         LiquidIconButton(R.drawable.shuffle, stringResource(R.string.shuffle),
-                                            { playerConnection.playQueue(YouTubeQueue(shuffleEndpoint), source = displayArtistName) }, emphasized = true)
+                                            { playArtistQueue(YouTubeQueue(shuffleEndpoint)) }, emphasized = true)
                                     }
                                 }
                             }
@@ -345,7 +351,7 @@ fun ArtistScreen(
                                                     if (song.id == mediaMetadata?.id) {
                                                         playerConnection.togglePlayPause()
                                                     } else {
-                                                        playerConnection.playQueue(
+                                                        playArtistQueue(
                                                             ListQueue(
                                                                 title = displayArtistName ?: "Unknown Artist",
                                                                 items = librarySongs.map { it.toMediaItem() },
@@ -474,7 +480,7 @@ fun ArtistScreen(
                                                         if (song.id == mediaMetadata?.id) {
                                                             playerConnection.togglePlayPause()
                                                         } else {
-                                                            playerConnection.playQueue(
+                                                            playArtistQueue(
                                                                 YouTubeQueue(
                                                                     WatchEndpoint(videoId = song.id),
                                                                     song.toMediaMetadata(),
@@ -523,7 +529,7 @@ fun ArtistScreen(
                                                             when (item) {
                                                                 is SongItem -> {
                                                                     if (!isGuest) {
-                                                                        playerConnection.playQueue(
+                                                                        playArtistQueue(
                                                                             YouTubeQueue(
                                                                                 WatchEndpoint(videoId = item.id),
                                                                                 item.toMediaMetadata(),
@@ -550,7 +556,7 @@ fun ArtistScreen(
 
                                                                 is EpisodeItem -> {
                                                                     if (!isGuest) {
-                                                                        playerConnection.playQueue(
+                                                                        playArtistQueue(
                                                                             YouTubeQueue(
                                                                                 WatchEndpoint(videoId = item.id),
                                                                                 item.toMediaMetadata(),
@@ -741,7 +747,7 @@ fun ArtistScreen(
                     if (!isGuest) {
                         if (showLocal) {
                             if (librarySongs.isNotEmpty()) {
-                                playerConnection.playQueue(
+                                playArtistQueue(
                                     ListQueue(
                                         title = displayArtistName ?: "Unknown Artist",
                                         items = librarySongs.map { it.toMediaItem() },
@@ -761,7 +767,7 @@ fun ArtistScreen(
                                     withContext(kotlinx.coroutines.Dispatchers.Main) {
                                         if (result != null && result.items.isNotEmpty()) {
                                             val songs = result.items.filterIsInstance<SongItem>().map { it.toMediaItem() }
-                                            playerConnection.playQueue(
+                                            playArtistQueue(
                                                 ListQueue(
                                                     title = displayArtistName ?: artistPage.artist.title,
                                                     items = songs,
@@ -771,7 +777,7 @@ fun ArtistScreen(
                                             // Fallback to loaded items
                                             val songs = songSection.items.filterIsInstance<SongItem>().map { it.toMediaItem() }
                                             if (songs.isNotEmpty()) {
-                                                playerConnection.playQueue(
+                                                playArtistQueue(
                                                     ListQueue(
                                                         title = displayArtistName ?: artistPage.artist.title,
                                                         items = songs,
@@ -784,7 +790,7 @@ fun ArtistScreen(
                             } else if (songSection != null) {
                                 // Use loaded items if no more endpoint
                                 val songs = songSection.items.filterIsInstance<SongItem>().map { it.toMediaItem() }
-                                playerConnection.playQueue(
+                                playArtistQueue(
                                     ListQueue(
                                         title = displayArtistName ?: artistPage.artist.title,
                                         items = songs,
@@ -804,7 +810,7 @@ fun ArtistScreen(
                                         } else {
                                             shuffleEndpoint
                                         }
-                                    playerConnection.playQueue(YouTubeQueue(endpoint))
+                                    playArtistQueue(YouTubeQueue(endpoint))
                                 }
                             }
                         }
