@@ -1226,36 +1226,38 @@ fun HomeScreen(
                     )
                 }
                 if (selectedChip == null && dailySelection.isNotEmpty()) {
-                    item(key = "onyx_daily_selection") {
-                        val pick = dailySelection.first()
-                        val queueTitle = stringResource(R.string.onyx_daily_selection)
-                        val playSelection = {
-                            if (!isListenTogetherGuest) playerConnection.playQueue(
-                                ListQueue(title = queueTitle, items = dailySelection.map { it.toMediaMetadata().toMediaItem() }),
-                            )
-                        }
-                        OnyxHomeHero(pick.title, pick.artists.joinToString { it.name }, pick.thumbnail,
-                            onPlay = playSelection, onExplore = playSelection)
-                    }
-                    if (dailySelection.size > 1) {
-                        item(key = "onyx_daily_recommendations") {
-                            LazyRow(contentPadding = PaddingValues(horizontal = 20.dp, vertical = 12.dp),
-                                horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                                items(dailySelection.drop(1), key = { "daily_${it.id}" }) { recommendation ->
-                                    val queueTitle = stringResource(R.string.onyx_daily_selection)
-                                    YouTubeGridItem(item = recommendation, coroutineScope = scope, thumbnailRatio = 1f,
-                                        isActive = recommendation.id == mediaMetadata?.id, isPlaying = isPlaying,
-                                        modifier = Modifier.combinedClickable(onClick = {
-                                            if (!isListenTogetherGuest) playerConnection.playQueue(ListQueue(
-                                                title = queueTitle,
+                    item(key = "sonet_recommendations_carousel") {
+                        val sourceTitle = stringResource(R.string.onyx_daily_selection)
+                        val carouselSongs = remember(dailySelection) { dailySelection.take(8) }
+                        val carouselWidth = (maxWidth * 0.86f).coerceAtMost(440.dp)
+                        LazyRow(
+                            contentPadding = PaddingValues(horizontal = 18.dp, vertical = 12.dp),
+                            horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        ) {
+                            items(
+                                count = carouselSongs.size,
+                                key = { index -> "sonet_reco_${carouselSongs[index].id}" }
+                            ) { index ->
+                                val song = carouselSongs[index]
+                                val playRecommendation = {
+                                    if (!isListenTogetherGuest) {
+                                        playerConnection.playQueue(
+                                            ListQueue(
+                                                title = sourceTitle,
                                                 items = dailySelection.map { it.toMediaMetadata().toMediaItem() },
-                                                startIndex = dailySelection.indexOf(recommendation),
-                                            ))
-                                        }, onLongClick = {
-                                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                                            menuState.show { YouTubeSongMenu(song = recommendation, onDismiss = menuState::dismiss) }
-                                        }))
+                                                startIndex = index,
+                                            ),
+                                        )
+                                    }
                                 }
+                                OnyxHomeHero(
+                                    title = song.title,
+                                    artist = song.artists.joinToString { it.name },
+                                    artwork = song.thumbnail,
+                                    onPlay = playRecommendation,
+                                    onExplore = playRecommendation,
+                                    modifier = Modifier.width(carouselWidth),
+                                )
                             }
                         }
                     }
