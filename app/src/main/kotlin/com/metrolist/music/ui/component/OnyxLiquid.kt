@@ -239,13 +239,14 @@ fun OnyxCollectionCard(title: String, subtitle: String, icon: Int, onClick: (() 
 }
 
 @Composable
-fun OnyxPlayerHeader(onCollapse: () -> Unit, onEqualizer: () -> Unit, modifier: Modifier = Modifier, onVideo: (() -> Unit)? = null, videoSelected: Boolean = false) {
+fun OnyxPlayerHeader(onCollapse: () -> Unit, onEqualizer: () -> Unit, modifier: Modifier = Modifier, onVideo: (() -> Unit)? = null, videoSelected: Boolean = false, showCast: Boolean = false) {
     Row(modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
         LiquidIconButton(R.drawable.expand_more, stringResource(R.string.onyx_minimize_player), onCollapse, plain = true)
         Text(stringResource(R.string.onyx_now_playing), style = MaterialTheme.typography.labelMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant, letterSpacing = 2.sp)
         Row(verticalAlignment = Alignment.CenterVertically) {
+            if (showCast) CastButton(tintColor = Color.White)
             if (onVideo != null) LiquidIconButton(R.drawable.slow_motion_video, stringResource(R.string.onyx_video), onVideo,
                 emphasized = videoSelected, plain = !videoSelected)
             LiquidIconButton(R.drawable.equalizer, stringResource(R.string.equalizer), onEqualizer, plain = true)
