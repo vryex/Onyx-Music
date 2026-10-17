@@ -50,6 +50,7 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
@@ -787,15 +788,59 @@ fun BottomSheetPlayer(
         state = state,
         modifier = modifier,
         background = {
+            // One seamless background for the ENTIRE expanded sheet. Painting
+            // the image here (instead of inside Thumbnail) lets it begin behind
+            // the status bar and now-playing header with no horizontal seam.
+            val darkTone = artworkColor.copy(
+                red = artworkColor.red * 0.45f,
+                green = artworkColor.green * 0.45f,
+                blue = artworkColor.blue * 0.45f,
+            )
             Box(
-                modifier =
-                    Modifier
-                        .fillMaxSize()
-                        .drawWithCache {
-                            val fill = Brush.verticalGradient(listOf(artworkColor, artworkColor.copy(red = artworkColor.red * .45f, green = artworkColor.green * .45f, blue = artworkColor.blue * .45f), Color.Black))
-                            onDrawBehind { drawRect(fill) }
-                        },
+                modifier = Modifier.fillMaxSize().background(
+                    Brush.verticalGradient(
+                        0f to darkTone,
+                        0.62f to darkTone,
+                        1f to Color.Black,
+                    )
+                )
             ) {
+                if (
+                    state.isExpanded &&
+                    !showInlineLyrics &&
+                    !showVideo &&
+                    !hidePlayerThumbnail &&
+                    !mediaMetadata?.thumbnailUrl.isNullOrBlank() &&
+                    LocalConfiguration.current.orientation != Configuration.ORIENTATION_LANDSCAPE
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .align(Alignment.TopCenter)
+                            .fillMaxWidth()
+                            .aspectRatio(0.82f),
+                    ) {
+                        AsyncImage(
+                            model = mediaMetadata?.thumbnailUrl,
+                            contentDescription = null,
+                            contentScale = ContentScale.Crop,
+                            modifier = Modifier.fillMaxSize(),
+                        )
+                        // A light veil under the status icons and one continuous
+                        // lower fade. Last stop equals the color UNDER the image.
+                        Box(
+                            modifier = Modifier.matchParentSize().background(
+                                Brush.verticalGradient(
+                                    0f to Color.Black.copy(alpha = 0.26f),
+                                    0.19f to Color.Transparent,
+                                    0.43f to Color.Transparent,
+                                    0.64f to darkTone.copy(alpha = 0.24f),
+                                    0.82f to darkTone.copy(alpha = 0.82f),
+                                    1f to darkTone,
+                                )
+                            )
+                        )
+                    }
+                }
             }
         },
         onDismiss =
@@ -1230,6 +1275,7 @@ fun BottomSheetPlayer(
                         onEqualizer = { com.metrolist.music.utils.openSystemEqualizer(context, playerConnection.player.audioSessionId) },
                         onVideo = if (canShowVideo) ({ showVideo = !showVideo }) else null,
                         videoSelected = showVideo && canShowVideo,
+                        showCast = true,
                         modifier = Modifier.windowInsetsPadding(WindowInsets.systemBars.only(WindowInsetsSides.Top)),
                     )
                     Box(
