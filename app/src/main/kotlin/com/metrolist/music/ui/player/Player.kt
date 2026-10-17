@@ -38,6 +38,7 @@ import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.expandVertically
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
@@ -829,7 +830,6 @@ fun BottomSheetPlayer(
                     )
                 }
                 if (
-                    state.isExpanded &&
                     !showInlineLyrics &&
                     !showVideo &&
                     !hidePlayerThumbnail &&
@@ -1150,7 +1150,11 @@ fun BottomSheetPlayer(
                 )
             }
 
-            AnimatedVisibility(visible = !isFullScreen, enter = fadeIn(tween(180)), exit = fadeOut(tween(120))) {
+            AnimatedVisibility(
+                visible = !isFullScreen,
+                enter = fadeIn(tween(320)) + expandVertically(tween(320)),
+                exit = fadeOut(tween(240)) + shrinkVertically(tween(320)),
+            ) {
                 Row(
                     Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 8.dp)
                         .clip(RoundedCornerShape(50)).background(Color.White.copy(alpha = .06f))
@@ -1295,6 +1299,7 @@ fun BottomSheetPlayer(
             else -> {
                 val bottomPadding by animateDpAsState(
                     targetValue = if (isFullScreen) 0.dp else queueSheetState.collapsedBound,
+                    animationSpec = tween(320),
                     label = "bottomPadding",
                 )
                 Column(
@@ -1366,8 +1371,8 @@ fun BottomSheetPlayer(
 
         AnimatedVisibility(
             visible = !isFullScreen,
-            enter = fadeIn(tween(160)),
-            exit = fadeOut(tween(120)),
+            enter = fadeIn(tween(320)) + expandVertically(tween(320)),
+            exit = fadeOut(tween(240)) + shrinkVertically(tween(320)),
         ) {
             Queue(
                 state = queueSheetState,
