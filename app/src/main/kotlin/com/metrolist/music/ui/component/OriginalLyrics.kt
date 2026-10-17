@@ -173,6 +173,7 @@ import com.metrolist.music.ui.utils.fadingEdge
 import com.metrolist.music.utils.ComposeToImage
 import com.metrolist.music.utils.rememberEnumPreference
 import com.metrolist.music.ui.theme.rememberLyricsAccent
+import com.metrolist.music.ui.theme.rememberSonetLyricsFontFamily
 import com.metrolist.music.utils.rememberPreference
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -218,6 +219,7 @@ fun OriginalLyrics(
     val lyricsAnimationStyle by rememberEnumPreference(LyricsAnimationStyleKey, LyricsAnimationStyle.APPLE)
     val lyricsTextSize by rememberPreference(LyricsTextSizeKey, 24f)
     val lyricsLineSpacing by rememberPreference(LyricsLineSpacingKey, 1.3f)
+    val lyricsFontFamily = rememberSonetLyricsFontFamily()
 
     val openRouterApiKey by rememberPreference(OpenRouterApiKey, "")
     val deeplApiKey by rememberPreference(DeeplApiKey, "")
@@ -1120,6 +1122,7 @@ fun OriginalLyrics(
                                     }
                                 Text(
                                     text = styledText,
+                                    fontFamily = lyricsFontFamily,
                                     fontSize = lyricsTextSize.sp,
                                     textAlign = alignment,
                                     lineHeight = (lyricsTextSize * lyricsLineSpacing).sp,
@@ -1196,6 +1199,7 @@ fun OriginalLyrics(
                                     }
                                 Text(
                                     text = styledText,
+                                    fontFamily = lyricsFontFamily,
                                     fontSize = lyricsTextSize.sp,
                                     textAlign = alignment,
                                     lineHeight = (lyricsTextSize * lyricsLineSpacing).sp,
@@ -1268,6 +1272,7 @@ fun OriginalLyrics(
                                     }
                                 Text(
                                     text = styledText,
+                                    fontFamily = lyricsFontFamily,
                                     fontSize = lyricsTextSize.sp,
                                     textAlign = alignment,
                                     lineHeight = (lyricsTextSize * lyricsLineSpacing).sp,
@@ -1352,6 +1357,7 @@ fun OriginalLyrics(
                                     }
                                 Text(
                                     text = styledText,
+                                    fontFamily = lyricsFontFamily,
                                     fontSize = lyricsTextSize.sp,
                                     textAlign = alignment,
                                     lineHeight =
@@ -1442,6 +1448,7 @@ fun OriginalLyrics(
                                     }
                                 Text(
                                     text = styledText,
+                                    fontFamily = lyricsFontFamily,
                                     fontSize = lyricsTextSize.sp,
                                     textAlign = alignment,
                                     lineHeight =
@@ -1526,6 +1533,7 @@ fun OriginalLyrics(
                                     }
                                 Text(
                                     text = styledText,
+                                    fontFamily = lyricsFontFamily,
                                     fontSize = lyricsTextSize.sp,
                                     textAlign = alignment,
                                     lineHeight =
@@ -1614,6 +1622,7 @@ fun OriginalLyrics(
 
                                 Text(
                                     text = styledText,
+                                    fontFamily = lyricsFontFamily,
                                     fontSize = lyricsTextSize.sp,
                                     textAlign = alignment,
                                     fontWeight = FontWeight.Medium,
@@ -1629,6 +1638,7 @@ fun OriginalLyrics(
                                 // Active line without glow effect - just bold text
                                 Text(
                                     text = mainText,
+                                    fontFamily = lyricsFontFamily,
                                     fontSize = lyricsTextSize.sp,
                                     color = expressiveAccent,
                                     textAlign = alignment,
@@ -1639,6 +1649,7 @@ fun OriginalLyrics(
                                 // Inactive line
                                 Text(
                                     text = mainText,
+                                    fontFamily = lyricsFontFamily,
                                     fontSize = lyricsTextSize.sp,
                                     color = lineColor,
                                     textAlign = alignment,
@@ -1652,6 +1663,7 @@ fun OriginalLyrics(
                                     Text(
                                         text = text,
                                         fontSize = 18.sp,
+                                        fontFamily = lyricsFontFamily,
                                         color = expressiveAccent.copy(alpha = 0.6f),
                                         textAlign =
                                             when (lyricsTextPosition) {
@@ -1671,6 +1683,7 @@ fun OriginalLyrics(
                                 Text(
                                     text = translated,
                                     fontSize = 16.sp,
+                                    fontFamily = lyricsFontFamily,
                                     color = expressiveAccent.copy(alpha = 0.5f),
                                     textAlign =
                                         when (lyricsTextPosition) {
