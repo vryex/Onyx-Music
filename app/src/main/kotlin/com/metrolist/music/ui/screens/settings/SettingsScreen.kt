@@ -1,5 +1,5 @@
 /**
- * Onyx Music customization of the open-source Metrolist project.
+ * Sonet customization of the open-source Metrolist project.
  * Original copyright and GPL notices remain with the repository.
  */
 package com.metrolist.music.ui.screens.settings
@@ -93,7 +93,7 @@ fun SettingsScreen(navController: NavController, latestVersionName: String) {
             )
         )
         com.metrolist.music.ui.theme.OnyxPageHeader(
-            stringResource(R.string.settings), subtitle = "Onyx Music"
+            stringResource(R.string.settings), subtitle = stringResource(R.string.app_name)
         )
         Spacer(Modifier.height(16.dp))
         Material3SettingsGroup(
