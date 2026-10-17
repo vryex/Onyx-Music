@@ -22,6 +22,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.matchParentSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -51,6 +52,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -82,6 +84,7 @@ import com.metrolist.music.constants.SwipeThumbnailKey
 import com.metrolist.music.constants.ThumbnailCornerRadius
 import com.metrolist.music.listentogether.RoomRole
 import com.metrolist.music.ui.component.CastButton
+import com.metrolist.music.ui.theme.rememberArtworkColor
 import com.metrolist.music.utils.rememberEnumPreference
 import com.metrolist.music.utils.rememberPreference
 import kotlinx.coroutines.delay
@@ -197,6 +200,7 @@ fun Thumbnail(
     isPlayerExpanded: () -> Boolean = { true },
     isLandscape: Boolean = false,
     isListenTogetherGuest: Boolean = false,
+    fullBleedArtwork: Boolean = false,
 ) {
     val playerConnection = LocalPlayerConnection.current ?: return
     val context = LocalContext.current
@@ -215,6 +219,7 @@ fun Thumbnail(
     val swipeThumbnail = swipeThumbnailPref && !isListenTogetherGuest
     val hidePlayerThumbnail by rememberPreference(HidePlayerThumbnailKey, false)
     val cropAlbumArt by rememberPreference(CropAlbumArtKey, false)
+    val fadeColor by rememberArtworkColor(mediaMetadata?.thumbnailUrl)
     val playerBackground = PlayerBackgroundStyle.DEFAULT
     
     // Pre-calculate text color based on background style
@@ -383,6 +388,8 @@ fun Thumbnail(
                                 isListenTogetherGuest = isListenTogetherGuest,
                                 currentMediaId = mediaMetadata?.id,
                                 currentMediaThumbnail = mediaMetadata?.thumbnailUrl,
+                                fullBleedArtwork = fullBleedArtwork,
+                                fadeColor = fadeColor,
                             )
                         }
                     }
@@ -491,6 +498,8 @@ private fun ThumbnailItem(
     isListenTogetherGuest: Boolean = false,
     currentMediaId: String? = null,
     currentMediaThumbnail: String? = null,
+    fullBleedArtwork: Boolean = false,
+    fadeColor: Color = Color.Black,
     modifier: Modifier = Modifier,
 ) {
     val incrementalSeekSkipEnabled by rememberPreference(SeekExtraSeconds, defaultValue = false)
@@ -508,7 +517,7 @@ private fun ThumbnailItem(
                         .fillMaxSize()
                 }
             )
-            .padding(horizontal = PlayerHorizontalPadding)
+            .padding(horizontal = if (fullBleedArtwork) 0.dp else PlayerHorizontalPadding)
             .pointerInput(Unit) {
                 detectTapGestures(
                     onDoubleTap = { offset ->
@@ -543,9 +552,8 @@ private fun ThumbnailItem(
         contentAlignment = Alignment.Center
     ) {
         Box(
-            modifier = Modifier
-                .size(dimensions.thumbnailSize)
-                .clip(RoundedCornerShape(dimensions.cornerRadius))
+            modifier = if (fullBleedArtwork) Modifier.fillMaxSize()
+                else Modifier.size(dimensions.thumbnailSize).clip(RoundedCornerShape(dimensions.cornerRadius))
         ) {
             if (hidePlayerThumbnail) {
                 HiddenThumbnailPlaceholder(textBackgroundColor = textBackgroundColor)
@@ -558,10 +566,31 @@ private fun ThumbnailItem(
 
                 ThumbnailImage(
                     artworkUri = artworkUriToUse,
-                    cropArtwork = cropAlbumArt
+                    cropArtwork = cropAlbumArt || fullBleedArtwork
                 )
+                if (fullBleedArtwork) {
+                    // The artwork fills the available portrait space without
+                    // rounded edges. A soft multi-stop fade blends it into the
+                    // same dynamic color already used by the player background.
+                    val darkTone = fadeColor.copy(
+                        red = fadeColor.red * 0.52f,
+                        green = fadeColor.green * 0.52f,
+                        blue = fadeColor.blue * 0.52f,
+                    )
+                    Box(
+                        Modifier.matchParentSize().background(
+                            Brush.verticalGradient(
+                                0f to Color.Transparent,
+                                0.36f to Color.Transparent,
+                                0.67f to fadeColor.copy(alpha = 0.28f),
+                                0.87f to darkTone.copy(alpha = 0.83f),
+                                1f to darkTone,
+                            )
+                        )
+                    )
+                }
             }
-            
+
             CastButton(
                 modifier = Modifier.align(Alignment.BottomStart).padding(12.dp)
                     .clip(RoundedCornerShape(24.dp)).background(Color(0xFF141414).copy(alpha = 0.9f)),
