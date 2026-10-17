@@ -63,7 +63,7 @@ fun SettingsScreen(navController: NavController, latestVersionName: String) {
     val (explicit, setExplicit) = rememberPreference(HideExplicitKey, false)
     val (video, setVideo) = rememberPreference(HideVideoSongsKey, false)
     val (shorts, setShorts) = rememberPreference(HideYoutubeShortsKey, false)
-    val (sonetFont, setSonetFont) = rememberPreference(SonetFontKey, "Outfit")
+    val (sonetLyricsFont, setSonetLyricsFont) = rememberPreference(SonetLyricsFontKey, "Outfit")
     var showFontPicker by rememberSaveable { mutableStateOf(false) }
 
     LaunchedEffect(
@@ -124,12 +124,12 @@ fun SettingsScreen(navController: NavController, latestVersionName: String) {
         )
         Spacer(Modifier.height(20.dp))
         Material3SettingsGroup(
-            title = stringResource(R.string.sonet_appearance),
+            title = stringResource(R.string.lyrics),
             items = listOf(
                 Material3SettingsItem(
                     icon = painterResource(R.drawable.palette),
                     title = { Text(stringResource(R.string.sonet_font_title)) },
-                    description = { Text(when (sonetFont) {
+                    description = { Text(when (sonetLyricsFont) {
                         "Sans" -> stringResource(R.string.sonet_font_sans)
                         "Serif" -> stringResource(R.string.sonet_font_serif)
                         "Mono" -> stringResource(R.string.sonet_font_mono)
@@ -193,15 +193,15 @@ fun SettingsScreen(navController: NavController, latestVersionName: String) {
                     ).forEach { (key, label) ->
                         TextButton(
                             onClick = {
-                                setSonetFont(key)
+                                setSonetLyricsFont(key)
                                 showFontPicker = false
                             },
                             modifier = Modifier.fillMaxWidth()
                         ) {
                             Text(
-                                text = if (sonetFont == key) "✓  $label" else label,
+                                text = if (sonetLyricsFont == key) "✓  $label" else label,
                                 style = MaterialTheme.typography.titleMedium,
-                                color = if (sonetFont == key) MaterialTheme.colorScheme.primary
+                                color = if (sonetLyricsFont == key) MaterialTheme.colorScheme.primary
                                         else MaterialTheme.colorScheme.onSurface
                             )
                         }
