@@ -1030,4 +1030,5 @@
     <string name="sonet_playback_mix">Mix of %1$s</string>
     <string name="sonet_playback_library">Your library</string>
     <string name="sonet_now_playing">NOW PLAYING</string>
+    <string name="sonet_recently_heard">Recently played</string>
 </resources>
