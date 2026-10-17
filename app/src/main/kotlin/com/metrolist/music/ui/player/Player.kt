@@ -35,7 +35,6 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
-import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.animation.slideInVertically
@@ -245,8 +244,6 @@ fun BottomSheetPlayer(
         mutableStateOf(false)
     }
 
-    // Artwork focus is separate from lyrics fullscreen and does not change playback.
-    var isArtworkImmersive by rememberSaveable { mutableStateOf(false) }
 
     val playerBackground = PlayerBackgroundStyle.GRADIENT
     val playerButtonsStyle by rememberEnumPreference(
@@ -308,8 +305,7 @@ fun BottomSheetPlayer(
     }
 
     BackHandler(enabled = state.isExpanded) {
-        if (isArtworkImmersive) isArtworkImmersive = false
-        else state.collapseSoft()
+        state.collapseSoft()
     }
 
     val onBackgroundColor =
@@ -323,9 +319,6 @@ fun BottomSheetPlayer(
     val mediaMetadata by playerConnection.mediaMetadata.collectAsStateWithLifecycle()
     val artworkColor by rememberArtworkColor(mediaMetadata?.thumbnailUrl)
     var showVideo by rememberSaveable { mutableStateOf(false) }
-    LaunchedEffect(state.isExpanded, showInlineLyrics, showVideo) {
-        if (!state.isExpanded || showInlineLyrics || showVideo) isArtworkImmersive = false
-    }
     var videoUnavailable by remember(mediaMetadata?.id) { mutableStateOf(false) }
     val currentSong by playerConnection.currentSong.collectAsStateWithLifecycle(initialValue = null)
     val automix by playerConnection.service.automixItems.collectAsStateWithLifecycle()
@@ -1146,7 +1139,7 @@ fun BottomSheetPlayer(
                         Modifier
                             .windowInsetsPadding(
                                 WindowInsets.systemBars.only(WindowInsetsSides.Horizontal).add(verticalWindowInsets),
-                            ).padding(bottom = if (isFullScreen || isArtworkImmersive) 0.dp else queueSheetState.collapsedBound)
+                            ).padding(bottom = if (isFullScreen) 0.dp else queueSheetState.collapsedBound)
                             .fillMaxSize(),
                 ) {
                     Box(
@@ -1187,14 +1180,12 @@ fun BottomSheetPlayer(
                                     isPlayerExpanded = isExpandedProvider,
                                     isLandscape = true,
                                     isListenTogetherGuest = isListenTogetherGuest,
-                                    immersive = isArtworkImmersive,
-                                    onArtworkTap = { isArtworkImmersive = !isArtworkImmersive },
                                 )
                             }
                         }
                     }
 
-                    if (!isArtworkImmersive) Column(
+                    Column(
                         horizontalAlignment = Alignment.CenterHorizontally,
                         modifier =
                             Modifier
@@ -1213,7 +1204,7 @@ fun BottomSheetPlayer(
 
             else -> {
                 val bottomPadding by animateDpAsState(
-                    targetValue = if (isFullScreen || isArtworkImmersive) 0.dp else queueSheetState.collapsedBound,
+                    targetValue = if (isFullScreen) 0.dp else queueSheetState.collapsedBound,
                     label = "bottomPadding",
                 )
                 Column(
@@ -1265,33 +1256,23 @@ fun BottomSheetPlayer(
                                     modifier = Modifier.nestedScroll(state.preUpPostDownNestedScrollConnection),
                                     isPlayerExpanded = isExpandedProvider,
                                     isListenTogetherGuest = isListenTogetherGuest,
-                                    immersive = isArtworkImmersive,
-                                    onArtworkTap = { isArtworkImmersive = !isArtworkImmersive },
                                 )
                             }
                         }
                     }
 
                     mediaMetadata?.let {
-                        AnimatedVisibility(
-                            visible = !isArtworkImmersive,
-                            enter = fadeIn(tween(200)) + expandVertically(tween(220)),
-                            exit = fadeOut(tween(120)) + shrinkVertically(tween(200)),
-                        ) {
-                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                metadataContent(it)
-                                controlsContent(it)
-                            }
-                        }
+                        metadataContent(it)
+                        controlsContent(it)
                     }
 
-                    if (!isArtworkImmersive) Spacer(Modifier.height(8.dp))
+                    Spacer(Modifier.height(8.dp))
                 }
             }
         }
 
         AnimatedVisibility(
-            visible = !isFullScreen && !isArtworkImmersive,
+            visible = !isFullScreen,
             enter = fadeIn(tween(160)),
             exit = fadeOut(tween(120)),
         ) {
