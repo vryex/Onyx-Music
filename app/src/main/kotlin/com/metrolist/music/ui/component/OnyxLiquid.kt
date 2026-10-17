@@ -152,66 +152,76 @@ fun OnyxHomeHero(
     title: String?,
     artist: String?,
     artwork: String?,
+    label: String,
     onPlay: () -> Unit,
     onExplore: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     if (title.isNullOrBlank() || artwork.isNullOrBlank()) return
-    var useOriginalArtwork by remember(artwork) { mutableStateOf(false) }
+    var fallbackArt by remember(artwork) { mutableStateOf(false) }
     val artTone by rememberArtworkColor(artwork.resize(224, 224))
-
-    // One full-bleed image per carousel page; no separate framed cover/card.
-    // The fade is INSIDE this item's bounds, never across neighboring pages.
+    // One understated surface. The parent crossfades artwork AND metadata in
+    // this same position; no card carousel, pagination, or magazine layout.
     Box(
-        modifier = modifier.height(352.dp).clip(RoundedCornerShape(22.dp)).background(Color.Black),
+        modifier = modifier.height(316.dp)
+            .clip(RoundedCornerShape(20.dp))
+            .background(Color.Black)
+            .clickable(role = Role.Button, onClick = onExplore),
     ) {
         AsyncImage(
-            model = if (useOriginalArtwork) artwork else artwork.recommendationArtworkUrl(),
+            model = if (fallbackArt) artwork else artwork.recommendationArtworkUrl(),
             contentDescription = title,
-            onError = { useOriginalArtwork = true },
+            onError = { fallbackArt = true },
             contentScale = ContentScale.Crop,
-            modifier = Modifier.fillMaxSize().clickable(role = Role.Button, onClick = onExplore),
+            modifier = Modifier.fillMaxSize(),
         )
-        val overlay = remember(artTone) {
-            Brush.verticalGradient(
-                0.00f to Color.Black.copy(alpha = 0.06f),
-                0.30f to Color.Transparent,
-                0.50f to artTone.copy(alpha = 0.14f),
-                0.73f to Color.Black.copy(alpha = 0.72f),
-                1.00f to Color.Black,
-            )
-        }
-        Box(Modifier.fillMaxSize().background(overlay))
+        Box(
+            Modifier.fillMaxSize().background(
+                Brush.verticalGradient(
+                    0f to Color.Black.copy(alpha = .10f),
+                    .32f to Color.Transparent,
+                    .62f to artTone.copy(alpha = .12f),
+                    .82f to Color.Black.copy(alpha = .76f),
+                    1f to Color.Black.copy(alpha = .96f),
+                ),
+            ),
+        )
         Text(
-            stringResource(R.string.onyx_daily_selection),
-            color = Color.White.copy(alpha = 0.95f),
-            style = MaterialTheme.typography.labelLarge,
-            modifier = Modifier.align(Alignment.TopStart).padding(20.dp),
+            label,
+            color = Color.White.copy(alpha = .92f),
+            style = MaterialTheme.typography.labelMedium,
+            modifier = Modifier.align(Alignment.TopStart).padding(18.dp),
         )
-        Column(
-            Modifier.align(Alignment.BottomCenter).fillMaxWidth().padding(18.dp),
-            verticalArrangement = Arrangement.spacedBy(9.dp),
+        Row(
+            modifier = Modifier.align(Alignment.BottomStart).fillMaxWidth().padding(18.dp),
+            verticalAlignment = Alignment.Bottom,
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            Text(title, style = MaterialTheme.typography.headlineSmall,
-                color = Color.White, fontWeight = FontWeight.SemiBold,
-                maxLines = 2, overflow = TextOverflow.Ellipsis)
-            Text(artist.orEmpty(), style = MaterialTheme.typography.bodyMedium,
-                color = Color.White.copy(alpha = 0.75f),
-                maxLines = 1, overflow = TextOverflow.Ellipsis)
-            Spacer(Modifier.height(5.dp))
-            Row(
-                Modifier.fillMaxWidth().clip(RoundedCornerShape(22.dp))
-                    .background(Color.White.copy(alpha = 0.16f))
-                    .clickable(role = Role.Button, onClick = onPlay)
-                    .heightIn(min = 48.dp).padding(horizontal = 14.dp, vertical = 10.dp),
-                horizontalArrangement = Arrangement.Center,
-                verticalAlignment = Alignment.CenterVertically,
+            Column(
+                Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(4.dp),
             ) {
-                Icon(painterResource(R.drawable.play), contentDescription = null,
-                    modifier = Modifier.size(20.dp), tint = Color.White)
-                Spacer(Modifier.width(8.dp))
-                Text(stringResource(R.string.play), style = MaterialTheme.typography.labelLarge,
-                    color = Color.White)
+                Text(
+                    title, color = Color.White, style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.SemiBold, maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                Text(
+                    artist.orEmpty(), color = Color.White.copy(alpha = .76f),
+                    style = MaterialTheme.typography.bodyMedium,
+                    maxLines = 1, overflow = TextOverflow.Ellipsis,
+                )
+            }
+            Box(
+                Modifier.size(42.dp).clip(CircleShape)
+                    .background(Color.White.copy(alpha = .20f))
+                    .clickable(role = Role.Button, onClick = onPlay),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(
+                    painterResource(R.drawable.play), contentDescription = stringResource(R.string.play),
+                    tint = Color.White, modifier = Modifier.size(22.dp),
+                )
             }
         }
     }
