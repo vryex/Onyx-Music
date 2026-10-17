@@ -44,6 +44,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -1126,6 +1127,20 @@ class MainActivity : FragmentActivity() {
                                     }
                                 }
 
+                            // The search keyboard overlays our edge-to-edge window. Move ONLY the
+                            // collapsed sheet while typing; other routes keep their anchors.
+                            val searchImeBottomPx =
+                                if (currentRoute == Screens.Search.route) WindowInsets.ime.getBottom(density) else 0
+                            val searchPlayerKeyboardOffsetPx =
+                                if (searchImeBottomPx > 0 && playerBottomSheetState.isCollapsed) {
+                                    val restingBottomPx =
+                                        with(density) { (playerBottomSheetState.collapsedBound - MiniPlayerHeight).toPx() }
+                                    (searchImeBottomPx - restingBottomPx + with(density) { 8.dp.toPx() })
+                                        .coerceAtLeast(0f)
+                                } else {
+                                    0f
+                                }
+
                             // Pre-calculate values for graphicsLayer to avoid reading state during composition
                             val navBarTotalHeight = bottomInset + NavigationBarHeight
 
@@ -1136,6 +1151,9 @@ class MainActivity : FragmentActivity() {
                                             state = playerBottomSheetState,
                                             navController = navController,
                                             pureBlack = pureBlack,
+                                            modifier = Modifier.graphicsLayer {
+                                                translationY = -searchPlayerKeyboardOffsetPx
+                                            },
                                         )
                                     }
 

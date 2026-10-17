@@ -380,10 +380,10 @@ private fun NewMiniPlayer(
                     // it uses no extra row width and disappears when playback pauses.
                     if (isEffectivelyPlaying) {
                         Box(
-                            Modifier.align(Alignment.BottomEnd).size(19.dp)
-                                .background(Color.Black.copy(alpha = 0.68f), RoundedCornerShape(7.dp)),
+                            Modifier.align(Alignment.BottomEnd).size(19.dp),
                             contentAlignment = Alignment.Center,
                         ) {
+                            // Floating white bars directly over the cover: no dark pill.
                             MiniPlayingEqualizer(Modifier.size(12.dp))
                         }
                     }
