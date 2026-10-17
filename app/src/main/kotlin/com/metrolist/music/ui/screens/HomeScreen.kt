@@ -897,6 +897,7 @@ fun HomeScreen(
             is Artist -> {
                 ArtistGridItem(
                     artist = it,
+                    tintInHome = true,
                     modifier =
                         Modifier
                             .fillMaxWidth()
@@ -927,6 +928,7 @@ fun HomeScreen(
     val ytGridItem: @Composable (YTItem) -> Unit = { item ->
         YouTubeGridItem(
             item = item,
+            tintArtistsInHome = true,
             isActive = item.id in listOf(mediaMetadata?.album?.id, mediaMetadata?.id),
             isPlaying = isPlaying,
             coroutineScope = scope,
@@ -1975,11 +1977,13 @@ fun HomeScreen(
                                                     (
                                                         currentGridHeight +
                                                             with(LocalDensity.current) {
+                                                                // Two artist-name lines plus an entire subtitle,
+                                                                // and padding for both glass and tinted cards.
                                                                 MaterialTheme.typography.bodyLarge.lineHeight
-                                                                    .toDp() * 2 +
+                                                                    .toDp() * 3 +
                                                                     MaterialTheme.typography.bodyMedium.lineHeight
                                                                         .toDp() * 2
-                                                            }
+                                                            } + 24.dp
                                                     ) * rows,
                                                 ),
                                     ) {

@@ -28,6 +28,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
+import com.metrolist.music.ui.theme.rememberHomeArtistTint
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
@@ -192,9 +193,13 @@ fun OnyxHomeHero(title: String?, artist: String?, artwork: String?, onPlay: () -
 @Composable
 fun OnyxQuickAccessItem(item: YTItem, isPinned: Boolean, modifier: Modifier = Modifier,
     isActive: Boolean = false, isPlaying: Boolean = false) {
+    val artistTint = if (item is com.metrolist.innertube.models.ArtistItem) rememberHomeArtistTint(item.thumbnail) else null
     Row(modifier.clip(RoundedCornerShape(16.dp))
-        .background(MaterialTheme.colorScheme.surface)
-        .border(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = if (isActive) .5f else .16f), RoundedCornerShape(16.dp))
+        .then(
+            if (artistTint != null) Modifier.background(artistTint)
+            else Modifier.background(MaterialTheme.colorScheme.surface)
+                .border(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = if (isActive) .5f else .16f), RoundedCornerShape(16.dp))
+        )
         .padding(8.dp), verticalAlignment = Alignment.CenterVertically) {
         ItemThumbnail(item.thumbnail, isActive, isPlaying, RoundedCornerShape(8.dp), Modifier.size(56.dp))
         Text(item.title, Modifier.weight(1f).padding(horizontal = 12.dp),

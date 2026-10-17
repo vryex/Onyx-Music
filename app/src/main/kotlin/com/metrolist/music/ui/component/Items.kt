@@ -8,6 +8,7 @@
 package com.metrolist.music.ui.component
 
 import com.metrolist.music.ui.theme.onyxGlass
+import com.metrolist.music.ui.theme.rememberHomeArtistTint
 import android.widget.Toast
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animate
@@ -417,6 +418,7 @@ fun GridItem(
     thumbnailContent: @Composable BoxWithConstraintsScope.() -> Unit,
     thumbnailRatio: Float = 1f,
     fillMaxWidth: Boolean = false,
+    artistCardTint: Brush? = null,
 ) {
     val gridHeight = currentGridThumbnailHeight()
     val cardShape = RoundedCornerShape(16.dp)
@@ -424,7 +426,14 @@ fun GridItem(
         modifier = modifier
             .padding(8.dp)
             .then(if (fillMaxWidth) Modifier.fillMaxWidth() else Modifier.width(gridHeight * thumbnailRatio))
-            .onyxGlass(cardShape)
+            .then(
+                if (artistCardTint != null) {
+                    // Home artist cards reuse the artist-profile palette, not costly blur.
+                    Modifier.clip(cardShape).background(artistCardTint)
+                } else {
+                    Modifier.onyxGlass(cardShape)
+                },
+            )
             .padding(10.dp)
     ) {
         BoxWithConstraints(
@@ -461,6 +470,8 @@ fun GridItem(
     thumbnailContent: @Composable BoxWithConstraintsScope.() -> Unit,
     thumbnailRatio: Float = 1f,
     fillMaxWidth: Boolean = false,
+    titleMaxLines: Int = 1,
+    artistCardTint: Brush? = null,
 ) = GridItem(
     modifier = modifier,
     title = {
@@ -468,7 +479,7 @@ fun GridItem(
             text = title,
             style = MaterialTheme.typography.bodyLarge,
             fontWeight = FontWeight.Medium,
-            maxLines = 1,
+            maxLines = titleMaxLines,
             overflow = TextOverflow.Ellipsis,
             textAlign = TextAlign.Start,
             modifier = Modifier.fillMaxWidth()
@@ -486,7 +497,8 @@ fun GridItem(
     badges = badges,
     thumbnailContent = thumbnailContent,
     thumbnailRatio = thumbnailRatio,
-    fillMaxWidth = fillMaxWidth
+    fillMaxWidth = fillMaxWidth,
+    artistCardTint = artistCardTint,
 )
 
 @Composable
@@ -695,6 +707,7 @@ fun ArtistListItem(
 fun ArtistGridItem(
     artist: Artist,
     modifier: Modifier = Modifier,
+    tintInHome: Boolean = false,
     badges: @Composable RowScope.() -> Unit = {
         if (artist.artist.bookmarkedAt != null) {
             Icon.Favorite()
@@ -721,6 +734,8 @@ fun ArtistGridItem(
         )
     },
     fillMaxWidth = fillMaxWidth,
+    titleMaxLines = if (tintInHome) 2 else 1,
+    artistCardTint = if (tintInHome) rememberHomeArtistTint(artist.artist.thumbnailUrl) else null,
     modifier = modifier
 )
 
@@ -1274,6 +1289,7 @@ fun YouTubeGridItem(
     isActive: Boolean = false,
     isPlaying: Boolean = false,
     fillMaxWidth: Boolean = false,
+    tintArtistsInHome: Boolean = false,
 ) = GridItem(
     title = {
         Text(
@@ -1284,7 +1300,7 @@ fun YouTubeGridItem(
             },
             style = MaterialTheme.typography.bodyLarge,
             fontWeight = FontWeight.Medium,
-            maxLines = 1,
+            maxLines = if (item is ArtistItem && tintArtistsInHome) 2 else 1,
             overflow = TextOverflow.Ellipsis,
             textAlign = if (item is ArtistItem) TextAlign.Center else TextAlign.Start,
             modifier = Modifier.fillMaxWidth()
@@ -1352,6 +1368,7 @@ fun YouTubeGridItem(
     },
     thumbnailRatio = thumbnailRatio,
     fillMaxWidth = fillMaxWidth,
+    artistCardTint = if (item is ArtistItem && tintArtistsInHome) rememberHomeArtistTint(item.thumbnail) else null,
     modifier = modifier
 )
 
