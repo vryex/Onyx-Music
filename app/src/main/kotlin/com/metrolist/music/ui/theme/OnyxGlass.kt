@@ -75,7 +75,7 @@ fun OnyxBrand(
     ) {
         Column {
             Text(
-                text = "Onyx Music",
+                text = stringResource(R.string.app_name),
                 style = MaterialTheme.typography.titleLarge,
                 letterSpacing = (-0.5).sp,
                 fontWeight = FontWeight.Medium,
