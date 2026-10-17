@@ -7,6 +7,7 @@ package com.metrolist.music.ui.player
 
 import com.metrolist.music.ui.component.LiquidIconButton
 import com.metrolist.music.ui.component.OnyxPlayerHeader
+import com.metrolist.music.ui.theme.SonetLyricsBackdrop
 import com.metrolist.music.ui.theme.rememberArtworkColor
 import com.metrolist.music.ui.utils.resize
 import androidx.compose.ui.draw.shadow
@@ -819,6 +820,14 @@ fun BottomSheetPlayer(
                     )
                 )
             ) {
+                if (state.isExpanded && showInlineLyrics) {
+                    // Multiple REAL cover colors slowly blend only on the lyrics page.
+                    // Playback artwork, buttons and word-by-word coloring are unchanged.
+                    SonetLyricsBackdrop(
+                        artwork = mediaMetadata?.thumbnailUrl,
+                        modifier = Modifier.matchParentSize(),
+                    )
+                }
                 if (
                     state.isExpanded &&
                     !showInlineLyrics &&
