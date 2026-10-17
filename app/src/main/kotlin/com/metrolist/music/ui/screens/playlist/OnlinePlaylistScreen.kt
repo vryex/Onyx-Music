@@ -84,6 +84,7 @@ import com.metrolist.music.LocalDatabase
 import com.metrolist.music.LocalListenTogetherManager
 import com.metrolist.music.LocalNavController
 import com.metrolist.music.LocalPlayerAwareWindowInsets
+import com.metrolist.music.ui.theme.CollectionHeaderTint
 import com.metrolist.music.LocalPlayerConnection
 import com.metrolist.music.LocalSyncUtils
 import com.metrolist.music.R
@@ -191,6 +192,11 @@ fun OnlinePlaylistScreen(
     }
 
     Box(Modifier.fillMaxSize()) {
+        CollectionHeaderTint(
+            artwork = (if (isPlaying) mediaMetadata?.thumbnailUrl else null)
+                ?: playlist?.thumbnail,
+            scrollState = lazyListState,
+        )
         LazyColumn(
             state = lazyListState,
             contentPadding = LocalPlayerAwareWindowInsets.current.union(WindowInsets.ime).asPaddingValues(),

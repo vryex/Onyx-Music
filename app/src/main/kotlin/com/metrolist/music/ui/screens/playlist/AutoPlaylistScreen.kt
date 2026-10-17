@@ -94,6 +94,7 @@ import coil3.compose.AsyncImage
 import com.metrolist.innertube.YouTube
 import com.metrolist.music.LocalDownloadUtil
 import com.metrolist.music.LocalPlayerAwareWindowInsets
+import com.metrolist.music.ui.theme.CollectionHeaderTint
 import com.metrolist.music.LocalPlayerConnection
 import com.metrolist.music.R
 import com.metrolist.music.constants.HideExplicitKey
@@ -504,6 +505,11 @@ fun AutoPlaylistScreen(
                     },
                 ),
     ) {
+        CollectionHeaderTint(
+            artwork = (if (isPlaying) mediaMetadata?.thumbnailUrl else null)
+                ?: songs?.firstOrNull()?.song?.thumbnailUrl,
+            scrollState = state,
+        )
         LazyColumn(
             state = state,
             contentPadding = LocalPlayerAwareWindowInsets.current.asPaddingValues(),
