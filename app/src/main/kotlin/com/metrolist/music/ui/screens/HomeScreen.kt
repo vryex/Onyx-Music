@@ -140,6 +140,7 @@ import com.metrolist.music.ui.component.ChipsRow
 import com.metrolist.music.ui.component.HideOnScrollFAB
 import com.metrolist.music.ui.component.LocalBottomSheetPageState
 import com.metrolist.music.ui.component.LocalMenuState
+import com.metrolist.music.ui.theme.OnyxPageHeader
 import com.metrolist.music.ui.component.NavigationTitle
 import com.metrolist.music.ui.component.RandomizeGridItem
 import com.metrolist.music.ui.component.SongGridItem
@@ -237,7 +238,7 @@ fun CommunityPlaylistCard(
             CardDefaults.cardColors(
                 containerColor = containerColor,
             ),
-        shape = RoundedCornerShape(28.dp),
+        shape = RoundedCornerShape(16.dp),
         onClick = onClick,
     ) {
         Column(
@@ -541,7 +542,7 @@ fun DailyDiscoverCard(
             CardDefaults.cardColors(
                 containerColor = MaterialTheme.colorScheme.surfaceVariant,
             ),
-        shape = RoundedCornerShape(28.dp),
+        shape = RoundedCornerShape(16.dp),
     ) {
         BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
             AsyncImage(
@@ -692,7 +693,7 @@ fun HomeScreen(
     val accountName by viewModel.accountName.collectAsStateWithLifecycle()
     val accountImageUrl by viewModel.accountImageUrl.collectAsStateWithLifecycle()
     val innerTubeCookie by rememberPreference(InnerTubeCookieKey, "")
-    val (randomizeHomeOrder) = rememberPreference(RandomizeHomeOrderKey, true)
+    val (randomizeHomeOrder) = rememberPreference(RandomizeHomeOrderKey, false)
     val autoRadioQueue by rememberPreference(AutoRadioQueueKey, defaultValue = true)
 
     LaunchedEffect(Unit) { viewModel.loadHomeData() }
@@ -1117,11 +1118,11 @@ fun HomeScreen(
             } else {
                 val defaultOrder =
                     mapOf(
-                        HomeSection.SpeedDial to 100,
-                        HomeSection.QuickPicks to 90,
-                        HomeSection.FromTheCommunity to 80,
-                        HomeSection.DailyDiscover to 70,
-                        HomeSection.KeepListening to 60,
+                        HomeSection.KeepListening to 110,
+                        HomeSection.QuickPicks to 100,
+                        HomeSection.SpeedDial to 90,
+                        HomeSection.DailyDiscover to 80,
+                        HomeSection.FromTheCommunity to 60,
                         HomeSection.AccountPlaylists to 50,
                         HomeSection.ForgottenFavorites to 40,
                         HomeSection.MoodAndGenres to 10,
@@ -1189,6 +1190,9 @@ fun HomeScreen(
                 state = lazylistState,
                 contentPadding = LocalPlayerAwareWindowInsets.current.asPaddingValues(),
             ) {
+                item(key = "onyx_title") {
+                    OnyxPageHeader(title = stringResource(R.string.home))
+                }
                 item {
                     ChipsRow(
                         chips = homePage?.chips?.map { it to it.title } ?: emptyList(),

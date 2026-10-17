@@ -53,7 +53,7 @@ fun NavigationTitle(
             .clickable(enabled = onClick != null) {
                 onClick?.invoke()
             }
-            .padding(horizontal = 12.dp, vertical = 12.dp)
+            .padding(horizontal = 20.dp, vertical = 16.dp)
     ) {
         thumbnail?.invoke()
 
@@ -72,8 +72,8 @@ fun NavigationTitle(
             Text(
                 text = title,
                 style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.primary,
+                fontWeight = FontWeight.Medium,
+                color = MaterialTheme.colorScheme.onSurface,
                 overflow = TextOverflow.Ellipsis,
                 maxLines = 1,
             )
@@ -82,18 +82,18 @@ fun NavigationTitle(
         onPlayAllClick?.let { playAllClick ->
             OutlinedButton(
                 onClick = playAllClick,
-                shape = RoundedCornerShape(12.dp),
-                border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.5f)),
+                shape = RoundedCornerShape(24.dp),
+                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
                 colors = ButtonDefaults.outlinedButtonColors(
                     contentColor = MaterialTheme.colorScheme.primary
                 ),
                 contentPadding = PaddingValues(horizontal = 12.dp, vertical = 2.dp),
                 modifier = Modifier
-                    .height(24.dp)
+                    .height(48.dp)
             ) {
                 Text(
                     text = stringResource(R.string.play_all),
-                    style = MaterialTheme.typography.labelSmall
+                    style = MaterialTheme.typography.labelMedium
                 )
             }
         }

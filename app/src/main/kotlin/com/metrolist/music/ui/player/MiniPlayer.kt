@@ -149,7 +149,7 @@ fun MiniPlayer(
     val useNewMiniPlayerDesign by rememberPreference(UseNewMiniPlayerDesignKey, true)
 
     // Create stable progress state - doesn't cause recomposition on position changes
-    val progressState = remember { ProgressState(positionState, durationState) }
+    val progressState = remember(positionState, durationState) { ProgressState(positionState, durationState) }
 
     if (useNewMiniPlayerDesign) {
         NewMiniPlayer(
@@ -186,17 +186,11 @@ private fun NewMiniPlayer(
         defaultValue = MiniPlayerBackgroundStyle.DEFAULT,
     )
     val context = LocalContext.current
-    var gradientColors by remember { mutableStateOf<List<Color>>(emptyList()) }
-    val isSystemInDarkTheme = isSystemInDarkTheme()
-    val darkTheme by rememberEnumPreference(DarkModeKey, defaultValue = DarkMode.AUTO)
-    val useDarkTheme =
-        remember(darkTheme, isSystemInDarkTheme) {
-            if (darkTheme == DarkMode.AUTO) isSystemInDarkTheme else darkTheme == DarkMode.ON
-        }
+    val useDarkTheme = true
 
     // Player states - only collect what's needed at this level
-    val playbackState by playerConnection.playbackState.collectAsState()
-    val mediaMetadata by playerConnection.mediaMetadata.collectAsState()
+    val playbackState by playerConnection.playbackState.collectAsStateWithLifecycle()
+    val mediaMetadata by playerConnection.mediaMetadata.collectAsStateWithLifecycle()
     val canSkipNext by playerConnection.canSkipNext.collectAsStateWithLifecycle()
     val canSkipPrevious by playerConnection.canSkipPrevious.collectAsStateWithLifecycle()
 
@@ -246,45 +240,6 @@ private fun NewMiniPlayer(
             (600 / (1f + kotlin.math.exp(-(-11.44748 * swipeSensitivity + 9.04945)))).roundToInt()
         }
 
-    LaunchedEffect(mediaMetadata?.id, miniPlayerBackground) {
-        gradientColors = emptyList()
-        if (miniPlayerBackground == MiniPlayerBackgroundStyle.GRADIENT) {
-            val url = mediaMetadata?.thumbnailUrl
-            if (url != null) {
-                withContext(Dispatchers.IO) {
-                    val request = ImageRequest.Builder(context)
-                        .data(url)
-                        .size(100, 100)
-                        .allowHardware(false)
-                        .build()
-                    val result = runCatching { context.imageLoader.execute(request) }.getOrNull()
-                    val bitmap = result?.image?.toBitmap()
-                    if (bitmap != null) {
-                        val palette = withContext(Dispatchers.Default) {
-                            Palette.from(bitmap)
-                                .maximumColorCount(8)
-                                .resizeBitmapArea(100 * 100)
-                                .generate()
-                        }
-                        val extracted = PlayerColorExtractor.extractGradientColors(
-                            palette = palette,
-                            fallbackColor = 0xFF000000.toInt(),
-                        )
-                        withContext(Dispatchers.Main) {
-                            gradientColors = extracted
-                        }
-                    } else {
-                        withContext(Dispatchers.Main) {
-                            gradientColors = emptyList()
-                        }
-                    }
-                }
-            }
-        } else {
-            gradientColors = emptyList()
-        }
-    }
-
     // Memoize colors
     val backgroundColor = when (miniPlayerBackground) {
         MiniPlayerBackgroundStyle.DEFAULT    -> MaterialTheme.colorScheme.surfaceContainer
@@ -300,7 +255,7 @@ private fun NewMiniPlayer(
     val primaryColor = if (forceLightColors) Color.White else MaterialTheme.colorScheme.primary
     val outlineColor = if (forceLightColors) Color.White else MaterialTheme.colorScheme.outline
     val onSurfaceColor = if (forceLightColors) Color.White else MaterialTheme.colorScheme.onSurface
-    val errorColor = if (forceLightColors) Color(0xFFFF6B6B) else MaterialTheme.colorScheme.error
+    val errorColor = onSurfaceColor
 
     Box(
         modifier =
@@ -379,52 +334,27 @@ private fun NewMiniPlayer(
                     .then(if (isTabletLandscape) Modifier.width(500.dp).align(Alignment.Center) else Modifier.fillMaxWidth())
                     .height(64.dp)
                     .offset { IntOffset(offsetXAnimatable.value.roundToInt(), 0) }
-                    .clip(RoundedCornerShape(32.dp))
+                    .clip(RoundedCornerShape(16.dp))
                     .background(color = backgroundColor)
-                    .border(1.dp, outlineColor.copy(alpha = 0.3f), RoundedCornerShape(32.dp))
+                    .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(16.dp))
+                    .drawWithContent {
+                        drawContent()
+                        val y = size.height - 1.dp.toPx()
+                        val inset = 16.dp.toPx()
+                        val start = Offset(inset, y)
+                        val end = Offset(size.width - inset, y)
+                        drawLine(outlineColor.copy(alpha = 0.25f), start, end, 2.dp.toPx(), StrokeCap.Round)
+                        val fraction = progressState.progress
+                        val progressEnd = if (layoutDirection == LayoutDirection.Rtl) start else end
+                        val progressStart = if (layoutDirection == LayoutDirection.Rtl) end else start
+                        drawLine(primaryColor, progressStart, progressStart + (progressEnd - progressStart) * fraction, 2.dp.toPx(), StrokeCap.Round)
+                    }
                     .clickable(
                         interactionSource = interactionSource,
                         indication = LocalIndication.current,
                         onClick = onClick
                     ),
         ) {
-            when (miniPlayerBackground) {
-                MiniPlayerBackgroundStyle.BLUR -> {
-                    if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
-                        mediaMetadata?.thumbnailUrl?.let { url ->
-                            AsyncImage(
-                                model = url,
-                                contentDescription = null,
-                                contentScale = ContentScale.Crop,
-                                modifier = Modifier
-                                    .fillMaxSize()
-                                    .blur(60.dp),
-                            )
-                            Box(
-                                Modifier
-                                    .fillMaxSize()
-                                    .background(Color.Black.copy(alpha = 0.45f)),
-                            )
-                        }
-                    }
-                }
-                MiniPlayerBackgroundStyle.GRADIENT -> {
-                    val colors = if (gradientColors.isNotEmpty()) gradientColors
-                    else listOf(
-                        MaterialTheme.colorScheme.surfaceContainer,
-                        MaterialTheme.colorScheme.surfaceContainer,
-                    )
-                    Box(
-                        Modifier
-                            .fillMaxSize()
-                            .background(
-                                Brush.horizontalGradient(colors)
-                            )
-                            .background(Color.Black.copy(alpha = 0.15f)),
-                    )
-                }
-                else -> {}
-            }
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier.fillMaxSize().padding(horizontal = 8.dp, vertical = 8.dp),
@@ -507,51 +437,15 @@ private fun NewMiniPlayerPlayButton(
     outlineColor: Color,
     listenTogetherManager: ListenTogetherManager?,
 ) {
-    val isPlaying by playerConnection.isPlaying.collectAsState()
-    val castIsPlaying by castHandler?.castIsPlaying?.collectAsState() ?: remember { mutableStateOf(false) }
+    val isPlaying by playerConnection.isPlaying.collectAsStateWithLifecycle()
+    val castIsPlaying by castHandler?.castIsPlaying?.collectAsStateWithLifecycle() ?: remember { mutableStateOf(false) }
     val effectiveIsPlaying = if (isCasting) castIsPlaying else isPlaying
     val isListenTogetherGuest = listenTogetherManager?.let { it.isInRoom && !it.isHost } ?: false
     val isMuted by playerConnection.isMuted.collectAsStateWithLifecycle()
 
-    val trackColor = outlineColor.copy(alpha = 0.2f)
-    val strokeWidth = 3.dp
-
     Box(
         contentAlignment = Alignment.Center,
-        modifier =
-            Modifier
-                .size(48.dp)
-                .drawWithContent {
-                    drawContent()
-                    // Draw progress arc - this reads progressState.progress during draw phase only
-                    val progress = progressState.progress
-                    val stroke = Stroke(width = strokeWidth.toPx(), cap = StrokeCap.Round)
-                    val startAngle = -90f
-                    val sweepAngle = 360f * progress
-                    val diameter = size.minDimension
-                    val topLeft = Offset((size.width - diameter) / 2, (size.height - diameter) / 2)
-
-                    // Draw track
-                    drawArc(
-                        color = trackColor,
-                        startAngle = 0f,
-                        sweepAngle = 360f,
-                        useCenter = false,
-                        topLeft = topLeft,
-                        size = Size(diameter, diameter),
-                        style = stroke,
-                    )
-                    // Draw progress
-                    drawArc(
-                        color = primaryColor,
-                        startAngle = startAngle,
-                        sweepAngle = sweepAngle,
-                        useCenter = false,
-                        topLeft = topLeft,
-                        size = Size(diameter, diameter),
-                        style = stroke,
-                    )
-                },
+        modifier = Modifier.size(48.dp),
     ) {
         // Thumbnail with play/pause overlay
         Box(
@@ -629,7 +523,7 @@ private fun NewMiniPlayerSongInfo(
     errorColor: Color,
     modifier: Modifier = Modifier,
 ) {
-    val error by LocalPlayerConnection.current?.error?.collectAsState() ?: remember { mutableStateOf(null) }
+    val error by LocalPlayerConnection.current?.error?.collectAsStateWithLifecycle() ?: remember { mutableStateOf(null) }
 
     Column(
         modifier = modifier,
@@ -688,8 +582,8 @@ private fun LegacyMiniPlayer(
     val playerConnection = LocalPlayerConnection.current ?: return
     val pureBlack by rememberPreference(PureBlackMiniPlayerKey, defaultValue = false)
 
-    val playbackState by playerConnection.playbackState.collectAsState()
-    val mediaMetadata by playerConnection.mediaMetadata.collectAsState()
+    val playbackState by playerConnection.playbackState.collectAsStateWithLifecycle()
+    val mediaMetadata by playerConnection.mediaMetadata.collectAsStateWithLifecycle()
     val canSkipNext by playerConnection.canSkipNext.collectAsStateWithLifecycle()
     val canSkipPrevious by playerConnection.canSkipPrevious.collectAsStateWithLifecycle()
 
@@ -898,8 +792,8 @@ private fun LegacyPlayPauseButton(
     playerConnection: PlayerConnection,
     listenTogetherManager: ListenTogetherManager?,
 ) {
-    val isPlaying by playerConnection.isPlaying.collectAsState()
-    val castIsPlaying by castHandler?.castIsPlaying?.collectAsState() ?: remember { mutableStateOf(false) }
+    val isPlaying by playerConnection.isPlaying.collectAsStateWithLifecycle()
+    val castIsPlaying by castHandler?.castIsPlaying?.collectAsStateWithLifecycle() ?: remember { mutableStateOf(false) }
     val effectiveIsPlaying = if (isCasting) castIsPlaying else isPlaying
     val isListenTogetherGuest = listenTogetherManager?.let { it.isInRoom && !it.isHost } ?: false
     val isMuted by playerConnection.isMuted.collectAsStateWithLifecycle()
@@ -941,7 +835,7 @@ private fun LegacyMiniMediaInfo(
     pureBlack: Boolean,
     modifier: Modifier = Modifier,
 ) {
-    val error by LocalPlayerConnection.current?.error?.collectAsState() ?: remember { mutableStateOf(null) }
+    val error by LocalPlayerConnection.current?.error?.collectAsStateWithLifecycle() ?: remember { mutableStateOf(null) }
     val cropAlbumArt by rememberPreference(CropAlbumArtKey, false)
 
     Row(
@@ -1008,7 +902,7 @@ private fun LegacyMiniMediaInfo(
                 fontWeight = FontWeight.Bold,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.basicMarquee(),
+                modifier = Modifier.basicMarquee(iterations = 1, initialDelayMillis = 3000),
             )
 
              if (mediaMetadata.artists.any { it.name.isNotBlank() }) {

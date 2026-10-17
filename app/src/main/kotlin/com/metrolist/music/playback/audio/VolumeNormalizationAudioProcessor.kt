@@ -59,7 +59,12 @@ class VolumeNormalizationAudioProcessor : BaseAudioProcessor() {
         val gain = currentGain
         val applyGain = enabled && gain.targetGainMb != 0
         val sampleCount = inputBuffer.remaining() / bytesPerSample
-        val output = replaceOutputBuffer(sampleCount * bytesPerSample)
+        val output = replaceOutputBuffer(inputBuffer.remaining())
+        if (!applyGain) {
+            output.put(inputBuffer)
+            output.flip()
+            return
+        }
 
         inputBuffer.order(ByteOrder.LITTLE_ENDIAN)
         output.order(ByteOrder.LITTLE_ENDIAN)

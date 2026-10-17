@@ -29,7 +29,7 @@ fun PlayerSliderTrack(
     sliderState: SliderState,
     modifier: Modifier = Modifier,
     colors: SliderColors = SliderDefaults.colors(),
-    trackHeight: Dp = 10.dp
+    trackHeight: Dp = 4.dp
 ) {
     val inactiveTrackColor = colors.inactiveTrackColor
     val activeTrackColor = colors.activeTrackColor

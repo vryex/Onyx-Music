@@ -6,27 +6,80 @@
 package com.metrolist.music.ui.theme
 
 import android.graphics.Bitmap
-import android.os.Build
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.dynamicDarkColorScheme
-import androidx.compose.material3.dynamicLightColorScheme
+import androidx.compose.material3.darkColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.Saver
 import androidx.compose.runtime.saveable.SaverScope
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
-import androidx.compose.ui.platform.LocalContext
 import androidx.palette.graphics.Palette
-import com.materialkolor.PaletteStyle
-import com.materialkolor.dynamiccolor.ColorSpec
-import com.materialkolor.rememberDynamicColorScheme
 import com.materialkolor.score.Score
 
-val DefaultThemeColor = Color(0xFFED5564)
+val DefaultThemeColor = Color(0xFFD1E4FA)
 
+val MidnightCanvas = Color(0xFF05060F)
+val FrostGlow = Color(0xFFD1E4FA)
+val MoonMist = Color(0xFFC7D3EA)
+val FogVeil = Color(0xFF9DA7BA)
+val GlassEdge = Color(0x1FBAD7F7)
+val AuthViolet = Color(0xFF663AF3)
+
+private val MidnightColors = darkColorScheme(
+    primary = FrostGlow,
+    onPrimary = MidnightCanvas,
+    primaryContainer = Color(0xFF242C3A),
+    onPrimaryContainer = FrostGlow,
+    secondary = MoonMist,
+    onSecondary = MidnightCanvas,
+    secondaryContainer = Color(0xFF1B2230),
+    onSecondaryContainer = FrostGlow,
+    tertiary = FrostGlow,
+    onTertiary = MidnightCanvas,
+    tertiaryContainer = Color(0xFF242C3A),
+    onTertiaryContainer = FrostGlow,
+    background = MidnightCanvas,
+    onBackground = Color(0xFFD8ECF8),
+    surface = MidnightCanvas,
+    onSurface = FrostGlow,
+    surfaceVariant = Color(0xFF171D29),
+    onSurfaceVariant = FogVeil,
+    surfaceTint = Color.Transparent,
+    surfaceContainerLowest = MidnightCanvas,
+    surfaceContainerLow = Color(0xFF0D101A),
+    surfaceContainer = Color(0xFF111622),
+    surfaceContainerHigh = Color(0xFF191F2C),
+    surfaceContainerHighest = Color(0xFF242C3A),
+    inverseSurface = FrostGlow,
+    inverseOnSurface = MidnightCanvas,
+    inversePrimary = Color(0xFF242C3A),
+    outline = Color(0xFF647084),
+    outlineVariant = GlassEdge,
+)
+
+private val MidnightShapes = androidx.compose.material3.Shapes(
+    extraSmall = androidx.compose.foundation.shape.RoundedCornerShape(6.dp),
+    small = androidx.compose.foundation.shape.RoundedCornerShape(6.dp),
+    medium = androidx.compose.foundation.shape.RoundedCornerShape(16.dp),
+    large = androidx.compose.foundation.shape.RoundedCornerShape(16.dp),
+    extraLarge = androidx.compose.foundation.shape.RoundedCornerShape(16.dp),
+)
+
+private val MidnightTypography = androidx.compose.material3.Typography().let { type ->
+    type.copy(
+        headlineLarge = type.headlineLarge.copy(fontWeight = androidx.compose.ui.text.font.FontWeight.Medium, letterSpacing = (-0.4).sp),
+        headlineMedium = type.headlineMedium.copy(fontWeight = androidx.compose.ui.text.font.FontWeight.Medium, letterSpacing = (-0.3).sp),
+        titleLarge = type.titleLarge.copy(fontWeight = androidx.compose.ui.text.font.FontWeight.Medium, letterSpacing = (-0.24).sp),
+        bodyLarge = type.bodyLarge.copy(letterSpacing = (-0.16).sp),
+    )
+}
+
+@Suppress("UNUSED_PARAMETER")
 @Composable
 fun MetrolistTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
@@ -34,36 +87,10 @@ fun MetrolistTheme(
     themeColor: Color = DefaultThemeColor,
     content: @Composable () -> Unit,
 ) {
-    val context = LocalContext.current
-    // Determine if system dynamic colors should be used (Android S+ and default theme color)
-    val useSystemDynamicColor = (themeColor == DefaultThemeColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S)
-
-    // Select the appropriate color scheme generation method
-    val baseColorScheme = if (useSystemDynamicColor) {
-        // Use standard Material 3 dynamic color functions for system wallpaper colors
-        if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
-    } else {
-        // Use materialKolor only when a specific seed color is provided
-        rememberDynamicColorScheme(
-            seedColor = themeColor, // themeColor is guaranteed non-default here
-            isDark = darkTheme,
-            specVersion = ColorSpec.SpecVersion.SPEC_2025,
-            style = PaletteStyle.TonalSpot // Keep existing style
-        )
-    }
-
-    // Apply pureBlack modification if needed, similar to original logic
-    val colorScheme = remember(baseColorScheme, pureBlack, darkTheme) {
-        if (darkTheme && pureBlack) {
-            baseColorScheme.pureBlack(true)
-        } else {
-            baseColorScheme
-        }
-    }
-
-    // Use standard MaterialTheme instead of MaterialExpressiveTheme
     MaterialTheme(
-        colorScheme = colorScheme,
+        colorScheme = MidnightColors,
+        shapes = MidnightShapes,
+        typography = MidnightTypography,
         content = content,
     )
 }

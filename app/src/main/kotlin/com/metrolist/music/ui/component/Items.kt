@@ -265,18 +265,18 @@ inline fun ListItem(
             modifier // playing highlight
                 .height(ListItemHeight)
                 .padding(horizontal = 8.dp)
-                .clip(RoundedCornerShape(8.dp))
+                .clip(RoundedCornerShape(16.dp))
                 .background(
                     color = // selected active
-                        if (isSelected == true) MaterialTheme.colorScheme.primary.copy(alpha = 0.4f)
+                        if (isSelected == true) MaterialTheme.colorScheme.primary.copy(alpha = 0.14f)
                         else MaterialTheme.colorScheme.secondaryContainer
                 )
         } else if (isSelected == true) {
             modifier // inactive selected
                 .height(ListItemHeight)
                 .padding(horizontal = 8.dp)
-                .clip(RoundedCornerShape(8.dp))
-                .background(color = MaterialTheme.colorScheme.inversePrimary.copy(alpha = 0.4f))
+                .clip(RoundedCornerShape(16.dp))
+                .background(color = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f))
         } else {
             modifier // default
                 .height(ListItemHeight)
@@ -318,7 +318,7 @@ inline fun ListItem(
             Text(
                 text = title,
                 style = MaterialTheme.typography.bodyMedium,
-                fontWeight = FontWeight.Bold,
+                fontWeight = FontWeight.Medium,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )
@@ -458,7 +458,7 @@ fun GridItem(
         Text(
             text = title,
             style = MaterialTheme.typography.bodyLarge,
-            fontWeight = FontWeight.Bold,
+            fontWeight = FontWeight.Medium,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
             textAlign = TextAlign.Start,
@@ -601,7 +601,7 @@ fun SongGridItem(
         Text(
             text = song.song.title,
             style = MaterialTheme.typography.bodyLarge,
-            fontWeight = FontWeight.Bold,
+            fontWeight = FontWeight.Medium,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
             modifier = Modifier.basicMarquee().fillMaxWidth()
@@ -832,7 +832,7 @@ fun AlbumGridItem(
         Text(
             text = album.album.title,
             style = MaterialTheme.typography.bodyLarge,
-            fontWeight = FontWeight.Bold,
+            fontWeight = FontWeight.Medium,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
             modifier = Modifier.basicMarquee().fillMaxWidth()
@@ -998,7 +998,7 @@ fun PlaylistGridItem(
         Text(
             text = playlist.playlist.name,
             style = MaterialTheme.typography.bodyLarge,
-            fontWeight = FontWeight.Bold,
+            fontWeight = FontWeight.Medium,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
             modifier = Modifier.basicMarquee().fillMaxWidth()
@@ -1089,7 +1089,7 @@ fun MediaMetadataListItem(
                     append(base)
                     if (mediaMetadata.suggestedBy != null && base.isNotEmpty()) {
                         append(" • ")
-                        withStyle(SpanStyle(fontWeight = FontWeight.Bold)) {
+                        withStyle(SpanStyle(fontWeight = FontWeight.Medium)) {
                             append(mediaMetadata.suggestedBy)
                         }
                     }
@@ -1268,7 +1268,7 @@ fun YouTubeGridItem(
                 item.title
             },
             style = MaterialTheme.typography.bodyLarge,
-            fontWeight = FontWeight.Bold,
+            fontWeight = FontWeight.Medium,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
             textAlign = if (item is ArtistItem) TextAlign.Center else TextAlign.Start,
@@ -1351,7 +1351,7 @@ fun LocalSongsGrid(
     fillMaxWidth: Boolean = false,
     modifier: Modifier = Modifier
 ) = GridItem(
-    title = { Text(title, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis) },
+    title = { Text(title, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Medium, maxLines = 1, overflow = TextOverflow.Ellipsis) },
     subtitle = {
         Text(
             text = subtitle,
@@ -1393,7 +1393,7 @@ fun LocalArtistsGrid(
     fillMaxWidth: Boolean = false,
     modifier: Modifier = Modifier
 ) = GridItem(
-    title = { Text(title, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis) },
+    title = { Text(title, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Medium, maxLines = 1, overflow = TextOverflow.Ellipsis) },
     subtitle = {
         Text(
             text = subtitle,
@@ -1435,7 +1435,7 @@ fun LocalAlbumsGrid(
     fillMaxWidth: Boolean = false,
     modifier: Modifier = Modifier
 ) = GridItem(
-    title = { Text(title, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis) },
+    title = { Text(title, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Medium, maxLines = 1, overflow = TextOverflow.Ellipsis) },
     subtitle = {
         Text(
             text = subtitle,
@@ -1478,7 +1478,15 @@ fun ItemThumbnail(
     thumbnailRatio: Float = 1f
 ) {
     val cropAlbumArt by rememberPreference(CropAlbumArtKey, false)
-    
+    val context = LocalContext.current
+    val imageRequest = remember(context, thumbnailUrl) {
+        ImageRequest.Builder(context)
+            .data(thumbnailUrl?.resize(544, 544))
+            .memoryCachePolicy(coil3.request.CachePolicy.ENABLED)
+            .diskCachePolicy(coil3.request.CachePolicy.ENABLED)
+            .build()
+    }
+
     Box(
         contentAlignment = Alignment.Center,
         modifier = modifier
@@ -1488,12 +1496,7 @@ fun ItemThumbnail(
     ) {
         if (albumIndex == null) {
             AsyncImage(
-                model = ImageRequest.Builder(LocalContext.current)
-                    .data(thumbnailUrl?.resize(544, 544))
-                    .memoryCachePolicy(coil3.request.CachePolicy.ENABLED)
-                    .diskCachePolicy(coil3.request.CachePolicy.ENABLED)
-                    .networkCachePolicy(coil3.request.CachePolicy.ENABLED)
-                    .build(),
+                model = imageRequest,
                 contentDescription = null,
                 contentScale = if (cropAlbumArt) ContentScale.Crop else ContentScale.Fit,
                 modifier = Modifier

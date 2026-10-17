@@ -61,7 +61,7 @@ fun <E> ChipsRow(
     currentValue: E,
     onValueUpdate: (E) -> Unit,
     modifier: Modifier = Modifier,
-    containerColor: Color = MaterialTheme.colorScheme.surfaceContainer,
+    containerColor: Color = MaterialTheme.colorScheme.surfaceContainerHigh,
 ) {
     Row(
         modifier =
@@ -78,9 +78,12 @@ fun <E> ChipsRow(
                 selected = currentValue == value,
                 colors = FilterChipDefaults.filterChipColors(
                     containerColor = containerColor,
+                    selectedContainerColor = MaterialTheme.colorScheme.primary,
+                    selectedLabelColor = MaterialTheme.colorScheme.onPrimary,
+                    labelColor = MaterialTheme.colorScheme.onSurfaceVariant,
                 ),
                 onClick = { onValueUpdate(value) },
-                shape = RoundedCornerShape(16.dp),
+                shape = RoundedCornerShape(50.dp),
                 border = null
             )
 
@@ -99,12 +102,12 @@ fun <Int> ChoiceChipsRow(
     currentValue: Int,
     onValueUpdate: (Int) -> Unit,
     modifier: Modifier = Modifier,
-    containerColor: Color = MaterialTheme.colorScheme.surfaceContainer,
+    containerColor: Color = MaterialTheme.colorScheme.surfaceContainerHigh,
 ) {
     var expandIconDegree by remember { mutableFloatStateOf(0f) }
     val rotationAnimation by animateFloatAsState(
         targetValue = expandIconDegree,
-        animationSpec = tween(durationMillis = 400),
+        animationSpec = tween(durationMillis = 180),
         label = "",
     )
 
@@ -141,7 +144,7 @@ fun <Int> ChoiceChipsRow(
                         modifier = Modifier.graphicsLayer(rotationZ = rotationAnimation),
                     )
                 },
-                shape = RoundedCornerShape(16.dp),
+                shape = RoundedCornerShape(50.dp),
                 border = null,
                 colors = AssistChipDefaults.assistChipColors(
                     containerColor = containerColor,
@@ -196,9 +199,12 @@ fun <Int> ChoiceChipsRow(
                         selected = currentValue == value,
                         colors = FilterChipDefaults.filterChipColors(
                             containerColor = containerColor,
+                    selectedContainerColor = MaterialTheme.colorScheme.primary,
+                    selectedLabelColor = MaterialTheme.colorScheme.onPrimary,
+                    labelColor = MaterialTheme.colorScheme.onSurfaceVariant,
                         ),
                         onClick = { onValueUpdate(value) },
-                        shape = RoundedCornerShape(16.dp),
+                        shape = RoundedCornerShape(50.dp),
                         border = null
                     )
                 }
