@@ -42,7 +42,7 @@ sealed class LyricsListItem {
 internal fun IntervalIndicator(
     gapStartMs: Long,
     gapEndMs: Long,
-    currentPositionMs: Long,
+    positionProvider: () -> Long,
     visible: Boolean,
     color: Color,
     modifier: Modifier = Modifier
@@ -62,6 +62,7 @@ internal fun IntervalIndicator(
 
     val targetHeightDp = 72.dp
 
+    val currentPositionMs = if (visible) positionProvider() else gapStartMs
     val progress = if (gapEndMs > gapStartMs) {
         ((currentPositionMs - gapStartMs).toFloat() / (gapEndMs - gapStartMs).toFloat()).coerceIn(0f, 1f)
     } else 0f

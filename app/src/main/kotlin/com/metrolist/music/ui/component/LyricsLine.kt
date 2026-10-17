@@ -129,7 +129,7 @@ internal fun LyricsLine(
     bgVisible: Boolean,
     isSelected: Boolean,
     isSelectionModeActive: Boolean,
-    currentPositionState: Long,
+    playbackActive: Boolean,
     lyricsOffset: Long,
     nextLineTimeMs: Long?,
     playerConnection: PlayerConnection,
@@ -269,7 +269,7 @@ internal fun LyricsLine(
                         mainText = mainText,
                         words = effectiveWords,
                         isActiveLine = isActiveLine,
-                        currentPositionState = currentPositionState,
+                        playbackActive = playbackActive,
                         lyricsOffset = lyricsOffset,
                         nextLineTimeMs = nextLineTimeMs,
                         playerConnection = playerConnection,
@@ -336,7 +336,7 @@ private fun WordLevelLyrics(
     mainText: String,
     words: List<WordTimestamp>,
     isActiveLine: Boolean,
-    currentPositionState: Long,
+    playbackActive: Boolean,
     lyricsOffset: Long,
     nextLineTimeMs: Long?,
     playerConnection: PlayerConnection,
@@ -355,11 +355,12 @@ private fun WordLevelLyrics(
         }
     }
     
-    var smoothPosition by remember { mutableLongStateOf(currentPositionState + lyricsOffset) }
+    var smoothPosition by remember { mutableLongStateOf(playerConnection.player.currentPosition + lyricsOffset) }
     
-    LaunchedEffect(isActiveLine) {
-        if (isActiveLine) {
+    LaunchedEffect(isActiveLine, playbackActive, lyricsOffset) {
+        if (isActiveLine && playbackActive) {
             var lastPlayerPos = playerConnection.player.currentPosition
+            smoothPosition = lastPlayerPos + lyricsOffset
             var lastUpdateTime = System.currentTimeMillis()
             while (isActive) {
                 withFrameMillis {
@@ -376,11 +377,6 @@ private fun WordLevelLyrics(
         }
     }
     
-    LaunchedEffect(isActiveLine, currentPositionState) {
-        if (!isActiveLine) {
-            smoothPosition = currentPositionState + lyricsOffset
-        }
-    }
 
     val (effectiveWords, effectiveToOriginalIdx) = remember(words, isBackground) {
         words.flatMapIndexed { originalIdx, word ->
@@ -517,6 +513,19 @@ private fun WordLevelLyrics(
             )
         }
         
+        val clusterBounds = remember(layoutResult, clusterCharOffsets) {
+            clusterCharOffsets.map { layoutResult.getBoundingBox(it) }
+        }
+        val clusterLines = remember(layoutResult, clusterCharOffsets) {
+            IntArray(clusterCount) { layoutResult.getLineForOffset(clusterCharOffsets[it]) }
+        }
+        val wordWobbles = remember(words.size) { FloatArray(words.size) }
+        val lineCurrentPushes = remember(layoutResult.lineCount) { FloatArray(layoutResult.lineCount) }
+        val lineTotalPushes = remember(layoutResult.lineCount) { FloatArray(layoutResult.lineCount) }
+        val glowTypeface = remember {
+            android.graphics.Typeface.create(android.graphics.Typeface.DEFAULT, android.graphics.Typeface.BOLD)
+        }
+
         // Each layout corresponds to one grapheme cluster (the visual unit),
         // not one codepoint. Fixes Devanagari/Bengali matra fragmentation.
         val letterLayouts = remember(mainText, lyricStyle) {
@@ -565,7 +574,7 @@ private fun WordLevelLyrics(
                         for (i in 0 until clusterCount) {
                             if (wordIdxMap[i] == wIdx) {
                                 val charOffset = clusterCharOffsets[i]
-                                val bounds = layoutResult.getBoundingBox(charOffset)
+                                val bounds = clusterBounds[i]
                                 left = minOf(left, bounds.left)
                                 right = maxOf(right, bounds.right)
                                 top = minOf(top, bounds.top)
@@ -605,7 +614,7 @@ private fun WordLevelLyrics(
                     Triple(sungFactor, word, isWordSung)
                 }
 
-                val wordWobbles = FloatArray(words.size)
+                wordWobbles.fill(0f)
                 words.forEachIndexed { wordIdx, word ->
                     val startMs = (word.startTime * 1000).toLong()
                     val timeSinceStart = (smoothPosition - startMs).toFloat()
@@ -616,14 +625,14 @@ private fun WordLevelLyrics(
                     wordWobbles[wordIdx] = wobble
                 }
 
-                val lineCurrentPushes = FloatArray(layoutResult.lineCount)
-                val lineTotalPushes = FloatArray(layoutResult.lineCount)
+                lineCurrentPushes.fill(0f)
+                lineTotalPushes.fill(0f)
                 
                 // Pre-calculate total pushes per line to handle alignment correctly.
                 // Iterate over cluster indices so each visual glyph unit is one slot.
                 for (i in 0 until clusterCount) {
                     val charOffset = clusterCharOffsets[i]
-                    val lineIdx = layoutResult.getLineForOffset(charOffset)
+                    val lineIdx = clusterLines[i]
                     val wordIdx = wordIdxMap[i]
                     val originalWordIdx = if (wordIdx != -1) effectiveToOriginalIdx[wordIdx] else -1
                     
@@ -669,7 +678,7 @@ private fun WordLevelLyrics(
                     } else 0f
 
                     val charScaleX = 1f + (wobble * 0.025f) + crescendoDeltaX + (nudgeScale * 0.3f)
-                    val charBounds = layoutResult.getBoundingBox(charOffset)
+                    val charBounds = clusterBounds[i]
                     lineTotalPushes[lineIdx] += charBounds.width * (charScaleX - 1f)
                 }
 
@@ -677,8 +686,8 @@ private fun WordLevelLyrics(
                 // glyph (including multi-codepoint Devanagari clusters) is one unit.
                 for (i in 0 until clusterCount) {
                     val charOffset = clusterCharOffsets[i]
-                    val lineIdx = layoutResult.getLineForOffset(charOffset)
-                    val charBounds = layoutResult.getBoundingBox(charOffset)
+                    val lineIdx = clusterLines[i]
+                    val charBounds = clusterBounds[i]
                     val wordIdx = wordIdxMap[i]
                     val originalWordIdx = if (wordIdx != -1) effectiveToOriginalIdx[wordIdx] else -1
                     
@@ -783,7 +792,7 @@ private fun WordLevelLyrics(
                                     glowPaint.maskFilter = BlurMaskFilter(baseGlowRadius, BlurMaskFilter.Blur.NORMAL)
                                     glowPaint.color = expressiveAccent.copy(alpha = glowAlpha).toArgb()
                                     glowPaint.textSize = lyricStyle.fontSize.toPx()
-                                    glowPaint.typeface = android.graphics.Typeface.create(android.graphics.Typeface.DEFAULT, android.graphics.Typeface.BOLD)
+                                    glowPaint.typeface = glowTypeface
                                     canvas.nativeCanvas.drawText(letterLayouts[i].layoutInput.text.text, 0f, letterLayouts[i].firstBaseline, glowPaint)
                                 }
                             }

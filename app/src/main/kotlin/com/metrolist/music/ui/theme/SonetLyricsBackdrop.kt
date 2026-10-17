@@ -40,6 +40,14 @@ fun SonetLyricsBackdrop(artwork: String?, modifier: Modifier = Modifier, active:
         }
     }
 
+    val contrastOverlay = remember {
+        Brush.verticalGradient(
+            0f to Color.Black.copy(alpha = .08f),
+            .53f to Color.Transparent,
+            1f to Color.Black.copy(alpha = .62f),
+        )
+    }
+
     Canvas(modifier) {
         drawRect(Color(0xFF020305))
         val phase = phaseState.value
@@ -54,21 +62,18 @@ fun SonetLyricsBackdrop(artwork: String?, modifier: Modifier = Modifier, active:
             val y = (0.43f +
                 0.29f * cos(phase * (0.69f + indexF * .18f) + indexF * 2.16f) +
                 0.09f * sin(phase * 1.23f + indexF)).coerceIn(0.12f, 0.83f)
-            drawRect(
+            val center = Offset(size.width * x, size.height * y)
+            drawCircle(
                 brush = Brush.radialGradient(
                     colors = listOf(color.copy(alpha = .76f), Color.Transparent),
-                    center = Offset(size.width * x, size.height * y),
+                    center = center,
                     radius = radius,
                 ),
+                center = center,
+                radius = radius,
             )
         }
         // Retain contrast at the bottom controls and across inactive words.
-        drawRect(
-            brush = Brush.verticalGradient(
-                0f to Color.Black.copy(alpha = .08f),
-                .53f to Color.Transparent,
-                1f to Color.Black.copy(alpha = .62f),
-            ),
-        )
+        drawRect(brush = contrastOverlay)
     }
 }

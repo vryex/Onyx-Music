@@ -305,7 +305,7 @@ fun ExperimentalLyrics(
     var scrollTargetIndex by rememberSaveable { mutableIntStateOf(-1) }
     var previousScrollActiveIndices by remember { mutableStateOf(emptySet<Int>()) }
 
-    var currentPositionState by remember { mutableLongStateOf(0L) }
+    val currentPositionState = remember { mutableLongStateOf(0L) }
     var deferredCurrentLineIndex by rememberSaveable { mutableIntStateOf(0) }
     var lastPreviewTime by rememberSaveable { mutableLongStateOf(0L) }
     var isSeeking by remember { mutableStateOf(false) }
@@ -332,7 +332,6 @@ fun ExperimentalLyrics(
     }
 
     var lastMainMaxSeen by remember(lyrics, lines) { mutableIntStateOf(-1) }
-    var smoothPositionForSync by remember { mutableLongStateOf(0L) }
 
     val lyricsLifecycleOwner = LocalLifecycleOwner.current
     LaunchedEffect(lyrics, lines, lyricsLifecycleOwner, playbackActive) {
@@ -368,8 +367,7 @@ fun ExperimentalLyrics(
                     lastPlayerPos + (if (playerConnection.player.isPlaying) elapsed else 0)
                 }
 
-                currentPositionState = position
-                smoothPositionForSync = position
+                currentPositionState.longValue = position
 
                 val lyricsOffset = currentSong?.song?.lyricsOffset ?: 0
                 val effectivePosition = position + lyricsOffset
@@ -630,7 +628,7 @@ fun ExperimentalLyrics(
                     target =
                         findActiveLineIndices(
                             lines,
-                            currentPositionState + (currentSong?.song?.lyricsOffset ?: 0),
+                            currentPositionState.longValue + (currentSong?.song?.lyricsOffset ?: 0),
                         ).maxOrNull() ?: -1
                 }
                 if (target != -1) {
@@ -709,7 +707,6 @@ fun ExperimentalLyrics(
                     }
             ) {
                 val lyricsOffsetVal = (currentSong?.song?.lyricsOffset ?: 0).toLong()
-                val currentEffectivePosition = currentPositionState + lyricsOffsetVal
 
                 mergedLyricsList.forEachIndexed { listIndex, listItem ->
                     key(listItem) {
@@ -736,11 +733,17 @@ fun ExperimentalLyrics(
                         ) {
                             when (listItem) {
                                 is LyricsListItem.Indicator -> {
-                                    val visible =
-                                        isAutoScrollEnabled &&
-                                            currentEffectivePosition >= listItem.gapStartMs &&
-                                            currentEffectivePosition <= listItem.gapEndMs - 650L
-                                    IntervalIndicator(listItem.gapStartMs, listItem.gapEndMs - 650L, currentEffectivePosition, visible, expressiveAccent,
+                                    val visible by remember(listItem, lyricsOffsetVal) {
+                                        derivedStateOf {
+                                            val position = currentPositionState.longValue + lyricsOffsetVal
+                                            isAutoScrollEnabled && position >= listItem.gapStartMs &&
+                                                position <= listItem.gapEndMs - 650L
+                                        }
+                                    }
+                                    val positionProvider = remember(lyricsOffsetVal) {
+                                        { currentPositionState.longValue + lyricsOffsetVal }
+                                    }
+                                    IntervalIndicator(listItem.gapStartMs, listItem.gapEndMs - 650L, positionProvider, visible, expressiveAccent,
                                         Modifier.fillMaxWidth().onSizeChanged { itemHeights[listIndex] = it.height }.padding(horizontal = 24.dp).wrapContentWidth(Alignment.CenterHorizontally))
                                 }
                                 is LyricsListItem.Line -> {
@@ -749,10 +752,15 @@ fun ExperimentalLyrics(
                                     val isActiveLine = activeLineIndices.contains(index)
                                     val pairedMainLineIndex = if (item.isBackground) (index - 1 downTo 0).firstOrNull { lines.getOrNull(it)?.isBackground == false } ?: -1 else -1
 
-                                    val isInGapWithMain = if (item.isBackground && pairedMainLineIndex != -1) {
-                                        val pairedMainLine = lines[pairedMainLineIndex]
-                                        currentEffectivePosition >= pairedMainLine.time && currentEffectivePosition <= item.time
-                                    } else false
+                                    val isInGapWithMain by remember(item, pairedMainLineIndex, lines, lyricsOffsetVal) {
+                                        derivedStateOf {
+                                            if (!item.isBackground || pairedMainLineIndex == -1) false
+                                            else {
+                                                val position = currentPositionState.longValue + lyricsOffsetVal
+                                                position >= lines[pairedMainLineIndex].time && position <= item.time
+                                            }
+                                        }
+                                    }
 
                                     val bgVisible = item.isBackground && (activeLineIndices.contains(pairedMainLineIndex) || activeLineIndices.contains(index) || isInGapWithMain)
 
@@ -760,7 +768,7 @@ fun ExperimentalLyrics(
                                         index = index, item = item, isSynced = isSynced,
                                         isActiveLine = isActiveLine,
                                         bgVisible = bgVisible, isSelected = selectedIndices.contains(index),
-                                        isSelectionModeActive = isSelectionModeActive, currentPositionState = currentPositionState,
+                                        isSelectionModeActive = isSelectionModeActive, playbackActive = playbackActive,
                                         lyricsOffset = (currentSong?.song?.lyricsOffset ?: 0).toLong(),
                                         nextLineTimeMs = remember(lines, index) {
                                             lines.asSequence().drop(index + 1)
