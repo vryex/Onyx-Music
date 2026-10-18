@@ -36,6 +36,9 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import com.metrolist.music.ui.component.SonetLoadingIndicator
+import androidx.compose.animation.animateBounds
+import androidx.compose.animation.EnterTransition
+import androidx.compose.animation.ExitTransition
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
@@ -809,7 +812,7 @@ fun BottomSheetPlayer(
 
 
 
-    val lyricsMix = animateFloatAsState(if (showInlineLyrics) 1f else 0f, tween(420), label = "lyricsPaletteBlend")
+    val lyricsMix = animateFloatAsState(if (showInlineLyrics) 1f else 0f, tween(320), label = "lyricsPaletteBlend")
     val lyricsBackdropActive by remember(state, showInlineLyrics) {
         derivedStateOf { state.progress > 0f && (showInlineLyrics || lyricsMix.value > 0f) }
     }
@@ -850,7 +853,7 @@ fun BottomSheetPlayer(
                 ) {
                     AnimatedVisibility(
                         visible = !showInlineLyrics,
-                        enter = fadeIn(tween(420)), exit = fadeOut(tween(420)),
+                        enter = fadeIn(tween(320)), exit = fadeOut(tween(320)),
                     ) {
                     Box(
                         modifier = Modifier.fillMaxWidth().aspectRatio(0.82f),
@@ -860,10 +863,11 @@ fun BottomSheetPlayer(
                             placeholder = instantArtworkPainter,
                             contentDescription = null,
                             contentScale = ContentScale.Crop,
-                            modifier = Modifier.fillMaxSize().sharedElement(
+                            modifier = Modifier.fillMaxSize().sharedBounds(
                                 rememberSharedContentState("sonet_cover"),
                                 animatedVisibilityScope = this@AnimatedVisibility,
-                                boundsTransform = { _, _ -> tween(420) },
+                                enter = EnterTransition.None, exit = ExitTransition.None,
+                                boundsTransform = { _, _ -> tween(320) },
                                 renderInOverlayDuringTransition = false,
                             ),
                         )
@@ -906,10 +910,7 @@ fun BottomSheetPlayer(
         },
     ) {
         val metadataContent: @Composable (MediaMetadata) -> Unit = { mediaMetadata ->
-            val coverSlotWidth by animateDpAsState(
-                if (showInlineLyrics && !mediaMetadata.thumbnailUrl.isNullOrBlank()) 60.dp else 0.dp,
-                tween(420), label = "compactCoverSlot",
-            )
+            val coverSlotWidth = if (showInlineLyrics && !mediaMetadata.thumbnailUrl.isNullOrBlank()) 60.dp else 0.dp
             Row(
                 Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 8.dp),
                 verticalAlignment = Alignment.CenterVertically,
@@ -917,22 +918,32 @@ fun BottomSheetPlayer(
                 Box(Modifier.width(coverSlotWidth).height(48.dp)) {
                 androidx.compose.animation.AnimatedVisibility(
                     visible = showInlineLyrics && !mediaMetadata.thumbnailUrl.isNullOrBlank(),
-                    enter = fadeIn(tween(420)), exit = fadeOut(tween(420)),
+                    enter = fadeIn(tween(320)), exit = fadeOut(tween(320)),
                 ) {
                     AsyncImage(
                         model = mediaMetadata.thumbnailUrl?.resize(960, 960),
                         contentDescription = null,
-                        modifier = Modifier.requiredSize(48.dp).sharedElement(
+                        modifier = Modifier.requiredSize(48.dp).sharedBounds(
                             rememberSharedContentState("sonet_cover"),
                             animatedVisibilityScope = this@AnimatedVisibility,
-                            boundsTransform = { _, _ -> tween(420) },
+                            enter = EnterTransition.None, exit = ExitTransition.None,
+                            boundsTransform = { _, _ -> tween(320) },
                             renderInOverlayDuringTransition = false,
                         ).clip(RoundedCornerShape(12.dp)),
                         contentScale = ContentScale.Crop,
                     )
                 }
                 }
-                Column(Modifier.weight(1f).padding(end = 12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Column(
+                    Modifier.weight(1f)
+                        .animateBounds(
+                            lookaheadScope = this@SharedTransitionLayout,
+                            boundsTransform = { _, _ -> tween(320) },
+                        )
+                        .skipToLookaheadSize { true }
+                        .padding(end = 12.dp),
+                    verticalArrangement = Arrangement.spacedBy(4.dp),
+                ) {
                     Text(
                         mediaMetadata.title,
                         style = MaterialTheme.typography.headlineMedium,
@@ -1290,7 +1301,7 @@ fun BottomSheetPlayer(
                         AnimatedContent(
                             targetState = showInlineLyrics,
                             label = "Lyrics",
-                            transitionSpec = { fadeIn(tween(420)) togetherWith fadeOut(tween(280)) },
+                            transitionSpec = { fadeIn(tween(320)) togetherWith fadeOut(tween(280)) },
                         ) { showLyrics ->
                             if (showLyrics) {
                                 InlineLyricsView(
@@ -1373,7 +1384,7 @@ fun BottomSheetPlayer(
                         AnimatedContent(
                             targetState = showInlineLyrics,
                             label = "Lyrics",
-                            transitionSpec = { fadeIn(tween(420)) togetherWith fadeOut(tween(280)) },
+                            transitionSpec = { fadeIn(tween(320)) togetherWith fadeOut(tween(280)) },
                         ) { showLyrics ->
                             if (showLyrics) {
                                 InlineLyricsView(
