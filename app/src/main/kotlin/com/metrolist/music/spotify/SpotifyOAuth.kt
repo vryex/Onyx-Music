@@ -27,7 +27,14 @@ internal class SpotifyOAuth : AutoCloseable {
         val deadline = System.nanoTime() + TimeUnit.MINUTES.toNanos(3)
         while (System.nanoTime() < deadline) {
             currentCoroutineContext().ensureActive()
-            val socket = try { server.accept() } catch (_: SocketTimeoutException) { continue }
+            val socket = try {
+                server.accept()
+            } catch (_: SocketTimeoutException) {
+                continue
+            } catch (error: IOException) {
+                currentCoroutineContext().ensureActive()
+                throw error
+            }
             try {
                 socket.use {
                     it.soTimeout = 2000
