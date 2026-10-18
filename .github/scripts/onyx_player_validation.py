@@ -106,6 +106,11 @@ time.sleep(3)
 adb('shell', 'input', 'keyevent', 'KEYCODE_MEDIA_PAUSE')
 tap_label(snapshot('10-mini-player'), 'sonet ui check 1')
 player = snapshot('11-player')
+for attempt in range(8):
+    if any('Minimize player' in n.get('content-desc', '') for n in player.iter('node')):
+        break
+    time.sleep(1)
+    player = snapshot('11-player-settled-' + str(attempt))
 assert any('Minimize player' in n.get('content-desc', '') for n in player.iter('node')), 'Expanded player header missing'
 assert any('Next track' in n.get('content-desc', '') for n in player.iter('node')), 'Transport missing'
 if not video_only:
