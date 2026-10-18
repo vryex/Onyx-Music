@@ -77,6 +77,8 @@ import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonObject
+import com.metrolist.innertube.pages.VideoSearchPage
 import timber.log.Timber
 import java.io.FilterInputStream
 import java.io.InputStream
@@ -354,6 +356,11 @@ object YouTube {
                 continuation = searchContinuation,
             )
         }
+
+    suspend fun searchVideos(query: String? = null, continuation: String? = null): Result<SearchResult> = runCatching {
+        val response = innerTube.search(WEB, query = query, continuation = continuation, setLogin = false).body<JsonObject>()
+        VideoSearchPage.parse(response)
+    }
 
     suspend fun searchContinuation(
         continuation: String,

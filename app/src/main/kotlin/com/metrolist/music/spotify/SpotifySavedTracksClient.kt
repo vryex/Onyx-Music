@@ -73,6 +73,7 @@ internal class SpotifySavedTracksClient(
         val visited = HashSet<String>()
         var processed = 0
         var skipped = 0
+        var expectedTotal = 0
         var next: String? = "https://api.spotify.com/v1/me/tracks?limit=50"
         while (next != null) {
             currentCoroutineContext().ensureActive()
@@ -91,9 +92,13 @@ internal class SpotifySavedTracksClient(
                 else if (!tracks.add(SpotifyTrack(title, artists, duration))) skipped++
                 processed++
             }
-            onProgress(processed, page["total"]?.jsonPrimitive?.intOrNull ?: processed)
+            val advertised = page["total"]?.jsonPrimitive?.intOrNull
+            if (advertised != null && advertised < 0) throw SpotifyImportException(SpotifyFailure.RESPONSE)
+            expectedTotal = maxOf(expectedTotal, advertised ?: processed)
+            onProgress(processed, maxOf(processed, expectedTotal))
             next = page["next"]?.jsonPrimitive?.contentOrNull?.takeIf(String::isNotBlank)
         }
+        if (processed < expectedTotal) throw SpotifyImportException(SpotifyFailure.INCOMPLETE_LIBRARY)
         if (tracks.isEmpty()) throw SpotifyImportException(SpotifyFailure.EMPTY_LIBRARY)
         SpotifySavedTracks(tracks.toList(), skipped)
     }

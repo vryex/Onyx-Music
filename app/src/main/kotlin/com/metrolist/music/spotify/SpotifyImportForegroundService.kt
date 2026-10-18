@@ -41,9 +41,9 @@ class SpotifyImportForegroundService : Service() {
     override fun onBind(intent: Intent?): IBinder? = null
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        if (intent?.action == ACTION_CANCEL) {
+        if (intent?.action == ACTION_CANCEL || intent?.action == ACTION_PAUSE) {
             serviceScope.launch {
-                manager.stop()
+                manager.stop(paused = intent.action == ACTION_PAUSE)
                 finish(manager.state.value)
             }
             return START_NOT_STICKY
@@ -135,8 +135,8 @@ class SpotifyImportForegroundService : Service() {
                 .addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP),
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
         val progress = snapshot.progress
-        val summary = strings.getString(R.string.spotify_import_notification_progress,
-            progress.processed, progress.total, progress.imported, snapshot.remaining.size)
+        val summary = strings.getString(R.string.spotify_import_progress,
+            progress.processed, progress.total, progress.imported, progress.already, snapshot.remaining.size)
         val title = strings.getString(when (snapshot.phase) {
             SpotifyImportPhase.COMPLETE -> R.string.spotify_import_notification_complete
             SpotifyImportPhase.CANCELLED -> R.string.spotify_import_cancelled_title
@@ -150,6 +150,10 @@ class SpotifyImportForegroundService : Service() {
             .apply {
                 if (snapshot.active) {
                     setProgress(progress.total, progress.processed, progress.total == 0)
+                    addAction(0, strings.getString(R.string.spotify_import_pause), PendingIntent.getService(
+                        this@SpotifyImportForegroundService, NOTIFICATION_ID + 1,
+                        Intent(this@SpotifyImportForegroundService, SpotifyImportForegroundService::class.java).setAction(ACTION_PAUSE),
+                        PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE))
                     addAction(0, strings.getString(R.string.spotify_import_cancel), PendingIntent.getService(
                         this@SpotifyImportForegroundService, NOTIFICATION_ID,
                         Intent(this@SpotifyImportForegroundService, SpotifyImportForegroundService::class.java).setAction(ACTION_CANCEL),
@@ -160,6 +164,7 @@ class SpotifyImportForegroundService : Service() {
 
     companion object {
         const val EXTRA_OPEN_IMPORT = "open_spotify_import"
+        const val ACTION_PAUSE = "com.metrolist.music.spotify.PAUSE_IMPORT"
         const val ACTION_CANCEL = "com.metrolist.music.spotify.CANCEL_IMPORT"
         const val ACTION_RESUME = "com.metrolist.music.spotify.RESUME_IMPORT"
         const val NOTIFICATION_ID = 8889

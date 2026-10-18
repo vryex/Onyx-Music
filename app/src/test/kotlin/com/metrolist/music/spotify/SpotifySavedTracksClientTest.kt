@@ -46,6 +46,33 @@ class SpotifySavedTracksClientTest {
         assertEquals(listOf(1 to 2, 2 to 2), progress)
     }
 
+    @Test fun truncatedLibraryCannotBePresentedAsACompleteTwentySongImport() = runBlocking {
+        val items = (0 until 20).joinToString(",") { index ->
+            """{"track":{"name":"Song $index","artists":[{"name":"Artist"}],"duration_ms":200000}}"""
+        }
+        val client = SpotifySavedTracksClient(transport = { SpotifyHttpResponse(200, """{"items":[$items],"next":null,"total":149}""") })
+        val error = runCatching { client.load("memory-token") { _, _ -> } }.exceptionOrNull()
+        assertEquals(SpotifyFailure.INCOMPLETE_LIBRARY, (error as SpotifyImportException).reason)
+    }
+
+    @Test fun multipleFullPagesAndFinalRemainderAreAllPrepared() = runBlocking {
+        var offset = 0
+        val client = SpotifySavedTracksClient(transport = {
+            val count = minOf(50, 129 - offset)
+            val items = (offset until offset + count).joinToString(",") { index ->
+                """{"track":{"name":"Song $index","artists":[{"name":"Artist"}],"duration_ms":200000}}"""
+            }
+            offset += count
+            val next = if (offset < 129) "\"https://api.spotify.com/v1/me/tracks?limit=50&offset=$offset\"" else "null"
+            SpotifyHttpResponse(200, """{"items":[$items],"next":$next,"total":129}""")
+        })
+        val progress = mutableListOf<Pair<Int, Int>>()
+        val result = client.load("memory-token") { loaded, total -> progress.add(loaded to total) }
+        assertEquals(129, result.tracks.size)
+        assertEquals(0, result.skipped)
+        assertEquals(listOf(50 to 129, 100 to 129, 129 to 129), progress)
+    }
+
     @Test fun foreignPaginationHostIsRejectedBeforeSendingToken() = runBlocking {
         var requests = 0
         val client = SpotifySavedTracksClient(transport = { requests++; SpotifyHttpResponse(200, page("First", "\"https://other.example/v1/me/tracks?offset=50\"")) })

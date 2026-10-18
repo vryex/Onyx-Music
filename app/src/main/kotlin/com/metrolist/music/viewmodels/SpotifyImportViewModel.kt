@@ -5,6 +5,7 @@ import android.net.Uri
 import android.provider.OpenableColumns
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.metrolist.music.db.MusicDatabase
 import com.metrolist.music.spotify.SpotifyCsvParser
 import com.metrolist.music.spotify.SpotifyFailure
 import com.metrolist.music.spotify.SpotifyImportException
@@ -25,6 +26,8 @@ import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.ByteArrayOutputStream
@@ -43,9 +46,11 @@ data class SpotifyImportState(
 class SpotifyImportViewModel @Inject constructor(
     @ApplicationContext private val context: Context,
     private val manager: SpotifyImportManager,
+    database: MusicDatabase,
 ) : ViewModel() {
     private val mutableState = MutableStateFlow(SpotifyImportState())
     val state = mutableState.asStateFlow()
+    val likedCount = database.likedSongsCount().stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0)
     private var job: Job? = null
     private var tracks: List<SpotifyTrack> = emptyList()
     private var previewActive = false
@@ -175,6 +180,10 @@ class SpotifyImportViewModel @Inject constructor(
                 manager.requestStop(paused = true, failure = SpotifyFailure.RESPONSE)
             }
         }
+    }
+
+    fun pause() {
+        manager.requestStop(paused = true)
     }
 
     fun cancel() {

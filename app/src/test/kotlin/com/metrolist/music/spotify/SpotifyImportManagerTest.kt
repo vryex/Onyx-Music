@@ -51,6 +51,45 @@ class SpotifyImportManagerTest {
         assertFalse(File(directory.root, "spotify-import-progress.json").readText().contains("Second"))
     }
 
+    @Test fun rejectionDiagnosticsSurviveCheckpointAndOldCheckpointsRemainReadable() {
+        val checkpoint = SpotifyImportCheckpoint(directory.root)
+        val initial = SpotifyImportSnapshot(id = "diagnostic", revision = 1, phase = SpotifyImportPhase.COMPLETE,
+            progress = SpotifyImportProgress(total = 2, processed = 2, imported = 1,
+                unmatchedTracks = listOf(second), unmatchedReasons = mapOf(second to SpotifyMatchFailure.DURATION)),
+            remaining = listOf(second))
+        checkpoint.begin(initial, queue)
+        assertEquals(SpotifyMatchFailure.DURATION, SpotifyImportCheckpoint(directory.root).load()!!.progress.unmatchedReasons[second])
+        val file = File(directory.root, "spotify-import-progress.json")
+        val legacy = org.json.JSONObject(file.readText()).apply { remove("reasons") }
+        file.writeText(legacy.toString())
+        assertTrue(SpotifyImportCheckpoint(directory.root).load()!!.progress.unmatchedReasons.isEmpty())
+    }
+
+    @Test fun retryProcessesOnlyPendingSongsAndKeepsGlobalCountsAfterProcessRestart() = runBlocking {
+        val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+        val checkpoint = SpotifyImportCheckpoint(directory.root)
+        checkpoint.begin(SpotifyImportSnapshot(id = "retry", revision = 1, phase = SpotifyImportPhase.COMPLETE,
+            progress = SpotifyImportProgress(total = 2, processed = 2, imported = 1, unmatchedTracks = listOf(second)),
+            remaining = listOf(second)), queue)
+        val received = CompletableDeferred<List<SpotifyTrack>>()
+        val manager = SpotifyImportManager(SpotifyImportCheckpoint(directory.root), { pending, progress ->
+            received.complete(pending)
+            progress(SpotifyImportProgress(total = 1, processed = 1, imported = 1, remainingTracks = emptyList()))
+        }, scope)
+        try {
+            manager.awaitRestored()
+            manager.startOrResume("retry-request")
+            assertEquals(listOf(second), withTimeout(3000) { received.await() })
+            withTimeout(3000) { while (manager.state.value.phase != SpotifyImportPhase.COMPLETE) delay(10) }
+            val progress = manager.state.value.progress
+            assertEquals(2, progress.total)
+            assertEquals(2, progress.processed)
+            assertEquals(2, progress.imported)
+            assertEquals(0, progress.already)
+            assertTrue(manager.state.value.remaining.isEmpty())
+        } finally { manager.stop(); scope.cancel() }
+    }
+
     @Test fun staleCheckpointCannotOverwriteCancellation() {
         val checkpoint = SpotifyImportCheckpoint(directory.root)
         val initial = SpotifyImportSnapshot(id = "attempt", revision = 1, phase = SpotifyImportPhase.RUNNING,

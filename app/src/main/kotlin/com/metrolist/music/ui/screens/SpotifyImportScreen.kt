@@ -49,6 +49,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.metrolist.music.LocalPlayerAwareWindowInsets
 import com.metrolist.music.R
+import com.metrolist.music.spotify.SpotifyMatchFailure
 import com.metrolist.music.spotify.SpotifyFailure
 import com.metrolist.music.viewmodels.SpotifyImportViewModel
 
@@ -56,6 +57,7 @@ import com.metrolist.music.viewmodels.SpotifyImportViewModel
 @Composable
 fun SpotifyImportScreen(navController: NavController, viewModel: SpotifyImportViewModel = hiltViewModel()) {
     val state by viewModel.state.collectAsState()
+    val likedCount by viewModel.likedCount.collectAsState()
     val context = LocalContext.current
     val acceptedMessage = stringResource(R.string.spotify_import_callback_success)
     val rejectedMessage = stringResource(R.string.spotify_import_callback_invalid)
@@ -126,11 +128,22 @@ fun SpotifyImportScreen(navController: NavController, viewModel: SpotifyImportVi
                     else -> R.string.spotify_import_running
                 }))
                 if (state.connecting && !state.authorizing) Text(stringResource(R.string.spotify_import_fetch_progress, state.loaded, state.loadTotal))
+                if (state.backgroundImport) TextButton(modifier = Modifier.testTag("sonet_spotify_pause"), onClick = viewModel::pause) {
+                    Text(stringResource(R.string.spotify_import_pause))
+                }
                 TextButton(modifier = Modifier.testTag("sonet_spotify_cancel"), onClick = viewModel::cancel) { Text(stringResource(R.string.spotify_import_cancel)) }
             } }
             if (state.progress.total > 0) item { Text(
                 stringResource(R.string.spotify_import_progress, state.progress.processed, state.progress.total, state.progress.imported, state.progress.already, state.pendingSongs ?: state.progress.unmatched.size),
                 modifier = Modifier.testTag("sonet_spotify_progress")) }
+            if (state.progress.imported + state.progress.already > 0) item {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(stringResource(R.string.spotify_import_liked_count, likedCount))
+                    TextButton(onClick = { navController.navigate("auto_playlist/liked") }) {
+                        Text(stringResource(R.string.liked_songs))
+                    }
+                }
+            }
             if (state.complete) item { Text(stringResource(if (state.pendingSongs == 0) R.string.spotify_import_complete else R.string.spotify_import_pending_complete)) }
             if (state.pendingSongs != null && state.pendingSongs!! > 0 && !state.busy) item {
                 Text(stringResource(R.string.spotify_import_pending_count, state.pendingSongs!!))
@@ -153,10 +166,25 @@ fun SpotifyImportScreen(navController: NavController, viewModel: SpotifyImportVi
                 SpotifyFailure.TIMEOUT -> R.string.spotify_import_timeout
                 SpotifyFailure.PORT_BUSY -> R.string.spotify_import_port_busy
                 SpotifyFailure.EMPTY_LIBRARY -> R.string.spotify_import_empty_library
+                SpotifyFailure.INCOMPLETE_LIBRARY -> R.string.spotify_import_incomplete_library
             })) } }
             if (state.progress.unmatched.isNotEmpty()) {
                 item { Text(stringResource(R.string.spotify_import_unmatched)) }
-                items(state.progress.unmatched) { Text(it) }
+                items(state.progress.unmatchedTracks) { track ->
+                    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                        Text("${track.title} — ${track.artists.joinToString()}")
+                        state.progress.unmatchedReasons[track]?.let { reason ->
+                            Text(stringResource(when (reason) {
+                                SpotifyMatchFailure.NO_RESULTS -> R.string.spotify_match_no_results
+                                SpotifyMatchFailure.TITLE -> R.string.spotify_match_title
+                                SpotifyMatchFailure.ARTIST -> R.string.spotify_match_artist
+                                SpotifyMatchFailure.CREDITS -> R.string.spotify_match_credits
+                                SpotifyMatchFailure.VERSION -> R.string.spotify_match_version
+                                SpotifyMatchFailure.DURATION -> R.string.spotify_match_duration
+                            }))
+                        }
+                    }
+                }
             }
         }
     }

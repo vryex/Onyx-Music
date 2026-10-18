@@ -6,20 +6,27 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.IOException
 import java.time.LocalDateTime
+import java.util.concurrent.ConcurrentHashMap
 
-enum class SpotifyFailure { FILE_TOO_LARGE, TOO_MANY_ROWS, INVALID_CSV, MISSING_COLUMNS, EMPTY_FILE, FILE_READ, NETWORK, RESPONSE, DENIED, AUTHORIZATION, FORBIDDEN, RATE_LIMIT, TIMEOUT, PORT_BUSY, EMPTY_LIBRARY }
+enum class SpotifyFailure { FILE_TOO_LARGE, TOO_MANY_ROWS, INVALID_CSV, MISSING_COLUMNS, EMPTY_FILE, FILE_READ, NETWORK, RESPONSE, DENIED, AUTHORIZATION, FORBIDDEN, RATE_LIMIT, TIMEOUT, PORT_BUSY, EMPTY_LIBRARY, INCOMPLETE_LIBRARY }
 class SpotifyImportException(val reason: SpotifyFailure) : IOException(reason.name)
 
 data class SpotifyImportProgress(
     val processed: Int = 0, val total: Int = 0, val imported: Int = 0, val already: Int = 0,
     val unmatched: List<String> = emptyList(), val unmatchedTracks: List<SpotifyTrack> = emptyList(),
     val remainingTracks: List<SpotifyTrack>? = null,
+    val unmatchedReasons: Map<SpotifyTrack, SpotifyMatchFailure> = emptyMap(),
 )
 
 internal class SpotifyImportRepository(private val database: MusicDatabase, private val resolver: SpotifyTrackResolver = SpotifyTrackResolver()) {
     suspend fun import(tracks: List<SpotifyTrack>, onProgress: (SpotifyImportProgress) -> Unit) = withContext(Dispatchers.IO) {
+        val reasons = ConcurrentHashMap<SpotifyTrack, SpotifyMatchFailure>()
         SpotifyImportPipeline(
-            resolve = resolver::resolve,
+            resolve = { track: SpotifyTrack ->
+                val result = resolver.resolveDetailed(track)
+                result.failure?.let { reasons[track] = it }
+                result.song
+            },
             store = { candidate ->
                 var result = SpotifyStoreResult.ALREADY
                 database.withTransaction {
@@ -34,6 +41,10 @@ internal class SpotifyImportRepository(private val database: MusicDatabase, priv
                 }
                 result
             },
-        ).import(tracks, onProgress)
+        ).import(tracks) { progress ->
+            onProgress(progress.copy(unmatchedReasons = progress.unmatchedTracks.mapNotNull { track ->
+                reasons[track]?.let { track to it }
+            }.toMap()))
+        }
     }
 }

@@ -1089,4 +1089,13 @@
     <string name="spotify_import_paused">The import paused. Resume to continue with pending songs. Songs already added remain in your library.</string>
     <string name="spotify_import_background_help">Importing continues when you leave this screen or lock your phone. The notification shows progress and lets you stop. If Android interrupts the import, reopen this screen to resume pending songs. After force-stopping Sonet, you must reopen it and resume manually.</string>
     <string name="spotify_import_notification_denied">Notifications are disabled. Importing can continue in the background; return here to check progress or stop it.</string>
+    <string name="spotify_match_no_results">Search returned no song or video candidates.</string>
+    <string name="spotify_match_title">Results have a different title or recording version.</string>
+    <string name="spotify_match_artist">No result has reliable artist credits.</string>
+    <string name="spotify_match_credits">Guest credits differ from the Spotify recording.</string>
+    <string name="spotify_match_version">Results describe a different performance or recording version.</string>
+    <string name="spotify_match_duration">A candidate was found, but its duration is missing or differs too much.</string>
+    <string name="spotify_import_pause">Pause import</string>
+    <string name="spotify_import_liked_count">Total favorites saved on this device: %1$d. Your library filters can hide videos or explicit songs.</string>
+    <string name="spotify_import_incomplete_library">Spotify returned only part of your library. No partial import was prepared. Reconnect to read all saved songs.</string>
 </resources>

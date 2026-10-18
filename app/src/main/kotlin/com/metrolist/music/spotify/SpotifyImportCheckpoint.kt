@@ -56,6 +56,9 @@ internal class SpotifyImportCheckpoint(directory: File) {
             .put("locale", snapshot.localeTag).put("processed", progress.processed).put("total", progress.total)
             .put("imported", progress.imported).put("already", progress.already)
             .put("remaining", indexed(snapshot.remaining)).put("unmatched", indexed(progress.unmatchedTracks))
+            .put("reasons", JSONObject().apply { progress.unmatchedReasons.forEach { (track, reason) ->
+                put(requireNotNull(indices[track]).toString(), reason.name)
+            } })
             .put("failure", snapshot.failure?.name ?: JSONObject.NULL)
         write(progressFile, data)
         savedRevision = snapshot.revision
@@ -88,7 +91,12 @@ internal class SpotifyImportCheckpoint(directory: File) {
             progress = SpotifyImportProgress(processed = saved.getInt("processed"), total = saved.getInt("total"),
                 imported = saved.getInt("imported"), already = saved.getInt("already"),
                 unmatched = unmatched.map { it.title + " — " + it.artists.joinToString() }, unmatchedTracks = unmatched,
-                remainingTracks = remaining), remaining = remaining,
+                remainingTracks = remaining, unmatchedReasons = unmatched.mapNotNull { track ->
+                    saved.optJSONObject("reasons")?.optString(requireNotNull(indices[track]).toString())
+                        ?.takeIf(String::isNotBlank)?.let { name ->
+                            SpotifyMatchFailure.entries.find { it.name == name }?.let { track to it }
+                        }
+                }.toMap()), remaining = remaining,
             failure = saved.optString("failure").takeIf { it.isNotEmpty() && it != "null" }?.let(SpotifyFailure::valueOf))
     }
 

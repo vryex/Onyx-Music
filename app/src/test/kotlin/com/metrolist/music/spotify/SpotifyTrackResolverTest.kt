@@ -66,6 +66,45 @@ class SpotifyTrackResolverTest {
         assertNull(SpotifyTrackResolver(search).resolve(SpotifyTrack("Song", listOf("Artist"), 200)))
     }
 
+    @Test fun videoContinuationCanRecoverARecordingPastTheFirstPage() = runBlocking {
+        val search = FakeSearch { _, videos -> SpotifySearchPage(emptyList(), if (videos) "video-next" else null) }
+        search.following = SpotifySearchPage(listOf(song("video", "Artist - Song (Official Video)", "Uploader", 212)))
+        assertEquals("video", SpotifyTrackResolver(search).resolve(SpotifyTrack("Song", listOf("Artist"), 200))?.id)
+        assertTrue(search.calls.contains("continuation:video-next"))
+    }
+
+    @Test fun generalYouTubeFallbackFindsUploadsOutsideTheMusicCatalogue() = runBlocking {
+        val search = object : SpotifySongSearch {
+            override suspend fun search(query: String, videos: Boolean) = SpotifySearchPage(emptyList())
+            override suspend fun generalVideos(query: String) = SpotifySearchPage(emptyList(), "web:next")
+            override suspend fun continuation(token: String): SpotifySearchPage {
+                assertEquals("web:next", token)
+                return SpotifySearchPage(listOf(song("general", "Artist - Song (Official Video)", "Uploader", 210)))
+            }
+        }
+        assertEquals("general", SpotifyTrackResolver(search).resolve(SpotifyTrack("Song", listOf("Artist"), 200))?.id)
+    }
+
+    @Test fun jointArtistQueryRecoversResultsWithoutWeakeningArtistChecks() = runBlocking {
+        val search = FakeSearch { query, _ ->
+            SpotifySearchPage(if (query == "Song Artist Guest") listOf(song().copy(artists = listOf(Artist("Artist & Guest", null)))) else emptyList())
+        }
+        assertNotNull(SpotifyTrackResolver(search).resolve(SpotifyTrack("Song", listOf("Artist", "Guest"), 200)))
+        assertTrue(search.calls.contains("song:Song Artist Guest"))
+    }
+
+    @Test fun searchBudgetAndContinuationCyclesAreBoundedAndFailuresAreExplained() = runBlocking {
+        val search = FakeSearch { _, _ -> SpotifySearchPage(listOf(song(duration = 400)), "cycle") }
+        search.following = SpotifySearchPage(listOf(song(duration = 400)), "cycle")
+        val result = SpotifyTrackResolver(search).resolveDetailed(SpotifyTrack("Song", listOf("Artist", "Guest"), 200))
+        assertNull(result.song)
+        assertEquals(SpotifyMatchFailure.DURATION, result.failure)
+        assertTrue(search.calls.size <= 16)
+        assertEquals(1, search.calls.count { it == "continuation:cycle" })
+        val empty = FakeSearch { _, _ -> SpotifySearchPage(emptyList()) }
+        assertEquals(SpotifyMatchFailure.NO_RESULTS, SpotifyTrackResolver(empty).resolveDetailed(SpotifyTrack("Song", listOf("Artist"), 200)).failure)
+    }
+
     @Test fun transientSearchFailuresRetryButCancellationDoesNotBecomeUnmatched() = runBlocking {
         var attempts = 0
         val search = FakeSearch { _, _ -> attempts++; if (attempts < 3) throw IOException("offline") else SpotifySearchPage(listOf(song())) }
