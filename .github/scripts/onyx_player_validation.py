@@ -1,4 +1,5 @@
 """Exercise the release player's UI using disposable emulator-only library rows."""
+import sys
 import atexit
 import json
 import subprocess
@@ -9,7 +10,8 @@ import subprocess
 import time
 from pathlib import Path
 
-helpers = runpy.run_path('.github/scripts/onyx_smoke.py')
+video_only = '--video-only' in sys.argv
+helpers = runpy.run_path('.github/scripts/onyx_smoke.py', init_globals={'VIDEO_PROBE_ONLY': video_only})
 adb = helpers['adb']
 snapshot = helpers['snapshot']
 base_tap_label = helpers['tap_label']
@@ -81,19 +83,20 @@ adb('shell', 'svc', 'data', 'disable')
 adb('shell', 'am', 'start', '-W', '-n', activity)
 time.sleep(3)
 home = snapshot('07-seeded-home')
-for attempt in range(8):
-    if any(
-        label in n.get('text', '').lower()
-        for n in home.iter('node')
-        for label in ('recently played', 'escuchado recientemente')
-    ):
-        break
-    time.sleep(1)
-    home = snapshot('07-recently-played-' + str(attempt))
-else:
-    raise AssertionError('Recently played did not show seeded listening history')
-home = scroll_to_label(home, 'sonet ui check', '07-recent-title')
-assert any('Sonet UI check' in n.get('text', '') for n in home.iter('node')), 'Recently played song title missing'
+if not video_only:
+    for attempt in range(8):
+        if any(
+            label in n.get('text', '').lower()
+            for n in home.iter('node')
+            for label in ('recently played', 'escuchado recientemente')
+        ):
+            break
+        time.sleep(1)
+        home = snapshot('07-recently-played-' + str(attempt))
+    else:
+        raise AssertionError('Recently played did not show seeded listening history')
+    home = scroll_to_label(home, 'sonet ui check', '07-recent-title')
+    assert any('Sonet UI check' in n.get('text', '') for n in home.iter('node')), 'Recently played song title missing'
 adb('shell', 'svc', 'wifi', 'enable')
 adb('shell', 'svc', 'data', 'enable')
 tap_label(home, 'library')
@@ -105,127 +108,130 @@ tap_label(snapshot('10-mini-player'), 'sonet ui check 1')
 player = snapshot('11-player')
 assert any('Minimize player' in n.get('content-desc', '') for n in player.iter('node')), 'Expanded player header missing'
 assert any('Next track' in n.get('content-desc', '') for n in player.iter('node')), 'Transport missing'
-tap_label(player, 'repeat')
-tap_label(snapshot('12-repeat'), 'sleep timer')
-tap_label(snapshot('13-sleep-timer'), 'cancel')
-tap_label(snapshot('13-timer-dismissed'), 'sleep timer')
-tap_label(snapshot('13-timer-start'), 'ok')
-active_timer = snapshot('13-timer-active')
-assert any(re.match(r'^(29:[0-5]\d|30:00)$', n.get('text', '')) for n in active_timer.iter('node')), 'Active timer countdown missing'
-tap_label(active_timer, 'sleep timer')
-cleared_timer = snapshot('13-timer-cleared')
-assert not any(re.match(r'^(29:[0-5]\d|30:00)$', n.get('text', '')) for n in cleared_timer.iter('node')), 'Timer did not clear'
-# Exercise the 480dp landscape width that previously squeezed the transport.
-adb('shell', 'wm', 'size', '1080x1260')
-adb('shell', 'settings', 'put', 'system', 'user_rotation', '1')
-time.sleep(3)
-landscape = snapshot('14-player-landscape')
-if not any('Previous track' in n.get('content-desc', '') for n in landscape.iter('node')):
-    tap_label(landscape, 'sonet ui check 1')
-    landscape = snapshot('14-player-landscape-expanded')
-width, height = map(int, re.findall(r'\d+', adb('shell', 'wm', 'size').decode().splitlines()[-1]))
-# Mini player exposes Next, so require Previous as well to prove expansion.
-for control in ['Previous track', 'Next track']:
-    nodes = [n for n in landscape.iter('node') if control in n.get('content-desc', '')]
-    assert nodes, 'Expanded landscape transport missing: ' + control
-    bounds = [int(v) for v in re.findall(r'\d+', nodes[0].get('bounds', ''))]
-    assert len(bounds) == 4 and 0 <= bounds[0] < bounds[2] <= height and 0 <= bounds[1] < bounds[3] <= width, 'Landscape control outside viewport: ' + control
-def visible_bounds(root, description):
-    result = []
-    for n in root.iter('node'):
-        if description in n.get('content-desc', ''):
-            bounds = [int(v) for v in re.findall(r'\d+', n.get('bounds', ''))]
-            if len(bounds) == 4 and bounds[2] > bounds[0] and bounds[3] - bounds[1] >= 40:
-                result.append(bounds)
-    return result
+if not video_only:
+    tap_label(player, 'repeat')
+    tap_label(snapshot('12-repeat'), 'sleep timer')
+    tap_label(snapshot('13-sleep-timer'), 'cancel')
+    tap_label(snapshot('13-timer-dismissed'), 'sleep timer')
+    tap_label(snapshot('13-timer-start'), 'ok')
+    active_timer = snapshot('13-timer-active')
+    assert any(re.match(r'^(29:[0-5]\d|30:00)$', n.get('text', '')) for n in active_timer.iter('node')), 'Active timer countdown missing'
+    tap_label(active_timer, 'sleep timer')
+    cleared_timer = snapshot('13-timer-cleared')
+    assert not any(re.match(r'^(29:[0-5]\d|30:00)$', n.get('text', '')) for n in cleared_timer.iter('node')), 'Timer did not clear'
+    # Exercise the 480dp landscape width that previously squeezed the transport.
+    adb('shell', 'wm', 'size', '1080x1260')
+    adb('shell', 'settings', 'put', 'system', 'user_rotation', '1')
+    time.sleep(3)
+    landscape = snapshot('14-player-landscape')
+    if not any('Previous track' in n.get('content-desc', '') for n in landscape.iter('node')):
+        tap_label(landscape, 'sonet ui check 1')
+        landscape = snapshot('14-player-landscape-expanded')
+    width, height = map(int, re.findall(r'\d+', adb('shell', 'wm', 'size').decode().splitlines()[-1]))
+    # Mini player exposes Next, so require Previous as well to prove expansion.
+    for control in ['Previous track', 'Next track']:
+        nodes = [n for n in landscape.iter('node') if control in n.get('content-desc', '')]
+        assert nodes, 'Expanded landscape transport missing: ' + control
+        bounds = [int(v) for v in re.findall(r'\d+', nodes[0].get('bounds', ''))]
+        assert len(bounds) == 4 and 0 <= bounds[0] < bounds[2] <= height and 0 <= bounds[1] < bounds[3] <= width, 'Landscape control outside viewport: ' + control
+    def visible_bounds(root, description):
+        result = []
+        for n in root.iter('node'):
+            if description in n.get('content-desc', ''):
+                bounds = [int(v) for v in re.findall(r'\d+', n.get('bounds', ''))]
+                if len(bounds) == 4 and bounds[2] > bounds[0] and bounds[3] - bounds[1] >= 40:
+                    result.append(bounds)
+        return result
 
-for attempt in range(5):
-    if visible_bounds(landscape, 'Sleep timer'):
-        break
-    assert attempt < 4, 'Landscape timer must remain accessible by scrolling its controls'
-    adb('shell', 'input', 'swipe', str(int(height * .8)), str(int(width * .5)),
-        str(int(height * .8)), str(int(width * .25)), '350')
-    time.sleep(.5)
-    landscape = snapshot('14-landscape-utilities-' + str(attempt))
-for timer in visible_bounds(landscape, 'Sleep timer'):
-    for menu in visible_bounds(landscape, 'More options'):
-        assert max(timer[0], menu[0]) >= min(timer[2], menu[2]) or max(timer[1], menu[1]) >= min(timer[3], menu[3]), 'Landscape timer overlaps player menu'
-snapshot('14-landscape-utilities-verified')
-adb('shell', 'wm', 'size', 'reset')
-adb('shell', 'settings', 'put', 'system', 'user_rotation', '0')
-time.sleep(2)
-portrait = snapshot('15-player-portrait')
-if not any('Minimize player' in n.get('content-desc', '') for n in portrait.iter('node')):
-    tap_label(portrait, 'sonet ui check 1')
-    portrait = snapshot('15-player-portrait-expanded')
-tap_label(portrait, 'lyrics')
-lyrics_screen = snapshot('16-lyrics')
+    for attempt in range(5):
+        if visible_bounds(landscape, 'Sleep timer'):
+            break
+        assert attempt < 4, 'Landscape timer must remain accessible by scrolling its controls'
+        adb('shell', 'input', 'swipe', str(int(height * .8)), str(int(width * .5)),
+            str(int(height * .8)), str(int(width * .25)), '350')
+        time.sleep(.5)
+        landscape = snapshot('14-landscape-utilities-' + str(attempt))
+    for timer in visible_bounds(landscape, 'Sleep timer'):
+        for menu in visible_bounds(landscape, 'More options'):
+            assert max(timer[0], menu[0]) >= min(timer[2], menu[2]) or max(timer[1], menu[1]) >= min(timer[3], menu[3]), 'Landscape timer overlaps player menu'
+    snapshot('14-landscape-utilities-verified')
+    adb('shell', 'wm', 'size', 'reset')
+    adb('shell', 'settings', 'put', 'system', 'user_rotation', '0')
+    time.sleep(2)
+    portrait = snapshot('15-player-portrait')
+    if not any('Minimize player' in n.get('content-desc', '') for n in portrait.iter('node')):
+        tap_label(portrait, 'sonet ui check 1')
+        portrait = snapshot('15-player-portrait-expanded')
+    tap_label(portrait, 'lyrics')
+    lyrics_screen = snapshot('16-lyrics')
 
-def control_point(root, description):
-    nodes = [n for n in root.iter('node') if n.get('content-desc', '').lower() == description]
-    assert nodes, 'Missing transition control: ' + description
-    b = [int(v) for v in re.findall(r'\d+', nodes[0].get('bounds', ''))]
-    return str((b[0] + b[2]) // 2), str((b[1] + b[3]) // 2)
+    def control_point(root, description):
+        nodes = [n for n in root.iter('node') if n.get('content-desc', '').lower() == description]
+        assert nodes, 'Missing transition control: ' + description
+        b = [int(v) for v in re.findall(r'\d+', nodes[0].get('bounds', ''))]
+        return str((b[0] + b[2]) // 2), str((b[1] + b[3]) // 2)
 
-def check_metadata_row(root):
-    titles = [n for n in root.iter('node') if n.get('text') == 'Sonet UI check 1']
-    # Home behind the sheet can expose the same title; inspect the player's row.
-    title = min(titles, key=lambda n: abs(
-        sum(int(v) for v in re.findall(r'\d+', n.get('bounds', ''))[1::2]) / 2
-        - int(control_point(root, 'fullscreen lyrics')[1])))
-    title_bounds = [int(v) for v in re.findall(r'\d+', title.get('bounds', ''))]
-    button_y = int(control_point(root, 'fullscreen lyrics')[1])
-    assert title_bounds[1] - 40 <= button_y <= title_bounds[3] + 80, 'Title detached from metadata row'
+    def check_metadata_row(root):
+        titles = [n for n in root.iter('node') if n.get('text') == 'Sonet UI check 1']
+        # Home behind the sheet can expose the same title; inspect the player's row.
+        title = min(titles, key=lambda n: abs(
+            sum(int(v) for v in re.findall(r'\d+', n.get('bounds', ''))[1::2]) / 2
+            - int(control_point(root, 'fullscreen lyrics')[1])))
+        title_bounds = [int(v) for v in re.findall(r'\d+', title.get('bounds', ''))]
+        button_y = int(control_point(root, 'fullscreen lyrics')[1])
+        assert title_bounds[1] - 40 <= button_y <= title_bounds[3] + 80, 'Title detached from metadata row'
 
-def check_visible_lyrics(root):
-    visible = []
-    for node in root.iter('node'):
-        if 'Local timing test line' not in node.get('text', ''):
-            continue
-        b = [int(v) for v in re.findall(r'\d+', node.get('bounds', ''))]
-        if len(b) == 4 and b[2] - b[0] > 100 and b[3] > b[1]:
-            visible.append(b)
-    assert visible, 'Loaded lyrics have no visible width/height'
+    def check_visible_lyrics(root):
+        visible = []
+        for node in root.iter('node'):
+            if 'Local timing test line' not in node.get('text', ''):
+                continue
+            b = [int(v) for v in re.findall(r'\d+', node.get('bounds', ''))]
+            if len(b) == 4 and b[2] - b[0] > 100 and b[3] > b[1]:
+                visible.append(b)
+        assert visible, 'Loaded lyrics have no visible width/height'
 
-check_visible_lyrics(lyrics_screen)
-fullscreen_normal = control_point(lyrics_screen, 'fullscreen lyrics')
-toggle_lyrics = control_point(lyrics_screen, 'lyrics')
-check_metadata_row(lyrics_screen)
-tap_label(lyrics_screen, 'fullscreen lyrics')
-fullscreen_screen = snapshot('16-fullscreen')
-check_metadata_row(fullscreen_screen)
-check_visible_lyrics(fullscreen_screen)
-fullscreen_expanded = control_point(fullscreen_screen, 'fullscreen lyrics')
-tap_label(fullscreen_screen, 'fullscreen lyrics')
+    check_visible_lyrics(lyrics_screen)
+    fullscreen_normal = control_point(lyrics_screen, 'fullscreen lyrics')
+    toggle_lyrics = control_point(lyrics_screen, 'lyrics')
+    check_metadata_row(lyrics_screen)
+    tap_label(lyrics_screen, 'fullscreen lyrics')
+    fullscreen_screen = snapshot('16-fullscreen')
+    check_metadata_row(fullscreen_screen)
+    check_visible_lyrics(fullscreen_screen)
+    fullscreen_expanded = control_point(fullscreen_screen, 'fullscreen lyrics')
+    tap_label(fullscreen_screen, 'fullscreen lyrics')
 
-# Measure repeated mode changes with loaded local lyrics; no network/stream timing.
-# Keep raw frame data and a recording so jank isn't hidden by a successful build.
-recording = subprocess.Popen(['adb', 'shell', 'screenrecord', '--time-limit', '45', '/sdcard/sonet-transitions.mp4'], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-adb('shell', 'dumpsys', 'gfxinfo', package, 'reset')
-for cycle in range(5):
-    for step, label in enumerate(['lyrics', 'lyrics', 'fullscreen lyrics', 'fullscreen lyrics']):
-        # Coordinates move during fullscreen layout. Query the settled control
-        # rather than replaying stale positions against a software-rendered UI.
-        screen = snapshot(f'16-transition-{cycle}-{step}')
-        tap_label(screen, label)
-raw = adb('shell', 'dumpsys', 'gfxinfo', package, 'framestats').decode(errors='replace')
-(out / 'lyrics-transition-gfxinfo.txt').write_text(raw)
-metrics = {name: re.search(pattern, raw).group(1) if re.search(pattern, raw) else None for name, pattern in {
-    'frames': r'Total frames rendered:\s*(\d+)',
-    'janky_frames': r'Janky frames:\s*([^\n]+)',
-    'p90_ms': r'90th percentile:\s*(\d+)ms',
-}.items()}
-print('TRANSITION PROFILE (software emulator, not phone FPS):', json.dumps(metrics))
-recording.wait(timeout=15)
-adb('pull', '/sdcard/sonet-transitions.mp4', str(out / 'lyrics-transitions.mp4'), check=False)
-settled = snapshot('16-after-transition-stress')
-check_metadata_row(settled)
-check_visible_lyrics(settled)
-tap_label(settled, 'lyrics tools')
-snapshot('17-lyrics-tools')
-adb('shell', 'input', 'keyevent', 'KEYCODE_BACK')
-tap_label(snapshot('18-return-player'), 'lyrics')
-video_header = snapshot('18-video-toggle')
+    # Measure repeated mode changes with loaded local lyrics; no network/stream timing.
+    # Keep raw frame data and a recording so jank isn't hidden by a successful build.
+    recording = subprocess.Popen(['adb', 'shell', 'screenrecord', '--time-limit', '45', '/sdcard/sonet-transitions.mp4'], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    adb('shell', 'dumpsys', 'gfxinfo', package, 'reset')
+    for cycle in range(5):
+        for step, label in enumerate(['lyrics', 'lyrics', 'fullscreen lyrics', 'fullscreen lyrics']):
+            # Coordinates move during fullscreen layout. Query the settled control
+            # rather than replaying stale positions against a software-rendered UI.
+            screen = snapshot(f'16-transition-{cycle}-{step}')
+            tap_label(screen, label)
+    raw = adb('shell', 'dumpsys', 'gfxinfo', package, 'framestats').decode(errors='replace')
+    (out / 'lyrics-transition-gfxinfo.txt').write_text(raw)
+    metrics = {name: re.search(pattern, raw).group(1) if re.search(pattern, raw) else None for name, pattern in {
+        'frames': r'Total frames rendered:\s*(\d+)',
+        'janky_frames': r'Janky frames:\s*([^\n]+)',
+        'p90_ms': r'90th percentile:\s*(\d+)ms',
+    }.items()}
+    print('TRANSITION PROFILE (software emulator, not phone FPS):', json.dumps(metrics))
+    recording.wait(timeout=15)
+    adb('pull', '/sdcard/sonet-transitions.mp4', str(out / 'lyrics-transitions.mp4'), check=False)
+    settled = snapshot('16-after-transition-stress')
+    check_metadata_row(settled)
+    check_visible_lyrics(settled)
+    tap_label(settled, 'lyrics tools')
+    snapshot('17-lyrics-tools')
+    adb('shell', 'input', 'keyevent', 'KEYCODE_BACK')
+    tap_label(snapshot('18-return-player'), 'lyrics')
+    video_header = snapshot('18-video-toggle')
+else:
+    video_header = player
 adb('shell', 'input', 'keyevent', 'KEYCODE_MEDIA_PLAY')
 tap_label(video_header, 'video')
 # Reproduce video -> audio-only -> video. The cover must come back without

@@ -106,7 +106,7 @@ object InnerTubeXPlayer {
         val stream = requireNotNull(bundle().extractor.extract(
             videoId = videoId,
             hints = ContentHints(wantVideo = true, maxVideoHeight = 720)
-                .withStreamCapabilities(allowHls = false, allowSabr = false, allowBoundedRange = true),
+                .withStreamCapabilities(allowHls = true, allowSabr = false, allowBoundedRange = true),
             audioQuality = InnerTubeXAudioQuality.AUTO,
         )) { "No playable video stream" }
         check(!stream.videoUrl.isNullOrBlank()) { "Missing video track" }

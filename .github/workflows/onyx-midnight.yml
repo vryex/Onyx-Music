@@ -48,6 +48,11 @@ jobs:
       - name: Regression tests and required debug build
         run: |
           bash ./gradlew :app:testFossDebugUnitTest :innertube:testDebugUnitTest :app:assembleFossDebug --console=plain --continue --max-workers=2 -Pkotlin.compiler.execution.strategy=in-process
+      - name: Upload debug APK for native video probe
+        uses: actions/upload-artifact@v4
+        with:
+          name: Sonet-debug-validation
+          path: app/build/outputs/apk/**/debug/*.apk
       - name: Optimized release build
         run: bash ./gradlew :app:assembleIzzyRelease --console=plain --continue --max-workers=2 -Pkotlin.compiler.execution.strategy=in-process
       - name: Sign and verify APK

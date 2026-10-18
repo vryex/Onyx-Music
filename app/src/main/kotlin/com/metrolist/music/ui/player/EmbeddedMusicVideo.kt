@@ -46,13 +46,15 @@ import androidx.media3.datasource.DataSource
 import androidx.media3.datasource.DefaultHttpDataSource
 import androidx.media3.exoplayer.DefaultLoadControl
 import androidx.media3.exoplayer.ExoPlayer
-import androidx.media3.exoplayer.source.ProgressiveMediaSource
+import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
 import coil3.compose.AsyncImage
 import com.metrolist.music.R
 import com.metrolist.music.ui.component.SonetLoadingIndicator
 import com.metrolist.music.utils.InnerTubeXPlayer
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.withContext
@@ -86,7 +88,8 @@ fun EmbeddedMusicVideo(
             .build().apply {
                 volume = 0f
                 trackSelectionParameters = trackSelectionParameters.buildUpon()
-                    .setTrackTypeDisabled(C.TRACK_TYPE_AUDIO, true).build()
+                    .setTrackTypeDisabled(C.TRACK_TYPE_AUDIO, true)
+                    .setMaxVideoSize(1280, 720).build()
             }
     }
     DisposableEffect(player, lifecycleOwner) {
@@ -131,14 +134,18 @@ fun EmbeddedMusicVideo(
                     BoundedVideoDataSource(factory, requireNotNull(stream.videoContentLengthBytes), stream.rangeChunkSizeBytes)
                 }
             } else factory
-            val source = ProgressiveMediaSource.Factory(videoFactory).createMediaSource(
+            val source = DefaultMediaSourceFactory(videoFactory).createMediaSource(
                 MediaItem.Builder().setUri(requireNotNull(stream.videoUrl))
-                    .setMimeType(stream.videoMimeType?.substringBefore(';')).build(),
+                    .setMimeType((stream.videoMimeType ?: stream.mimeType)?.substringBefore(';')).build(),
             )
             player.setMediaSource(source, latestPosition().coerceAtLeast(0L))
             player.prepare()
         } catch (cancelled: CancellationException) {
-            throw cancelled
+            currentCoroutineContext().ensureActive()
+            // The extractor may invalidate its session without cancelling this UI job.
+            android.util.Log.w("SonetVideo", "Video extraction session invalidated")
+            failed = true
+            latestUnavailable()
         } catch (error: Exception) {
             // Log only categories; signed URLs and authorization headers stay private.
             val reason = (error as? com.metrolist.innertubex.extraction.StreamResolveException)?.reason?.name.orEmpty()
