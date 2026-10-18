@@ -34,6 +34,7 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyColumn
@@ -227,7 +228,9 @@ fun ArtistScreen(
             if (artistPage == null && !showLocal) {
                 item(key = "shimmer") {
                     if (viewModel.connectionError != null) {
-                        YouTubeConnectionError(viewModel.connectionError!!, viewModel::fetchArtistsFromYTM)
+                        Column(Modifier.statusBarsPadding().padding(top = 64.dp)) {
+                            YouTubeConnectionError(viewModel.connectionError!!, viewModel::fetchArtistsFromYTM)
+                        }
                     } else ShimmerHost {
                         Column(Modifier.fillMaxWidth().padding(20.dp),
                             horizontalAlignment = Alignment.CenterHorizontally,
@@ -246,7 +249,9 @@ fun ArtistScreen(
             } else {
                 viewModel.connectionError?.let { detail ->
                     item(key = "youtube_connection_error") {
-                        YouTubeConnectionError(detail, viewModel::fetchArtistsFromYTM)
+                        Column(Modifier.statusBarsPadding().padding(top = 64.dp)) {
+                            YouTubeConnectionError(detail, viewModel::fetchArtistsFromYTM)
+                        }
                     }
                 }
                 item(key = "header") {
