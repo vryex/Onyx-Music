@@ -24,7 +24,6 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.conflate
 import kotlinx.coroutines.launch
 import java.util.Locale
 import java.util.UUID
@@ -76,7 +75,7 @@ class SpotifyImportForegroundService : Service() {
                     return@launch
                 }
                 observer = serviceScope.launch {
-                    manager.state.conflate().collect { snapshot ->
+                    manager.state.collect { snapshot ->
                         if (snapshot.localeTag.isNotBlank()) localeTag = snapshot.localeTag
                         if (!snapshot.active) {
                             finish(snapshot)

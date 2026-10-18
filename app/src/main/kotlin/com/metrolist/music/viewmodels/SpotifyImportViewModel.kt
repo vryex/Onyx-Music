@@ -171,6 +171,7 @@ class SpotifyImportViewModel @Inject constructor(
                 manager.requestStop(paused = true)
                 throw cancelled
             } catch (_: Exception) {
+                mutableState.update { it.copy(error = SpotifyFailure.RESPONSE) }
                 manager.requestStop(paused = true, failure = SpotifyFailure.RESPONSE)
             }
         }
