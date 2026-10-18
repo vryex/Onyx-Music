@@ -200,12 +200,14 @@ tap_label(fullscreen_screen, 'fullscreen lyrics')
 
 # Measure repeated mode changes with loaded local lyrics; no network/stream timing.
 # Keep raw frame data and a recording so jank isn't hidden by a successful build.
-recording = subprocess.Popen(['adb', 'shell', 'screenrecord', '--time-limit', '12', '/sdcard/sonet-transitions.mp4'], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+recording = subprocess.Popen(['adb', 'shell', 'screenrecord', '--time-limit', '45', '/sdcard/sonet-transitions.mp4'], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 adb('shell', 'dumpsys', 'gfxinfo', package, 'reset')
-for _ in range(5):
-    for point in [toggle_lyrics, toggle_lyrics, fullscreen_normal, fullscreen_expanded]:
-        adb('shell', 'input', 'tap', *point)
-        time.sleep(.45)
+for cycle in range(5):
+    for step, label in enumerate(['lyrics', 'lyrics', 'fullscreen lyrics', 'fullscreen lyrics']):
+        # Coordinates move during fullscreen layout. Query the settled control
+        # rather than replaying stale positions against a software-rendered UI.
+        screen = snapshot(f'16-transition-{cycle}-{step}')
+        tap_label(screen, label)
 raw = adb('shell', 'dumpsys', 'gfxinfo', package, 'framestats').decode(errors='replace')
 (out / 'lyrics-transition-gfxinfo.txt').write_text(raw)
 metrics = {name: re.search(pattern, raw).group(1) if re.search(pattern, raw) else None for name, pattern in {
