@@ -1,5 +1,7 @@
 """Exercise the release player's UI using disposable emulator-only library rows."""
 import atexit
+import json
+import subprocess
 import re
 import runpy
 import sqlite3
@@ -55,6 +57,7 @@ for i, video in enumerate(['dQw4w9WgXcQ', 'jNQXAC9IVRw']):
     insert('song', {'id': video, 'title': 'Sonet UI check ' + str(i + 1), 'duration': 180,
                     'isVideo': 1, 'liked': 1, 'likedDate': 1770000000000, 'inLibrary': 1770000000000,
                     'thumbnailUrl': 'https://i.ytimg.com/vi/' + video + '/hqdefault.jpg'})
+    insert('lyrics', {'id': video, 'lyrics': '\n'.join(f'[{i // 60:02d}:{i % 60:02d}.00]Local timing test line {i}' for i in range(180)), 'provider': 'Local validation'})
     insert('event', {'id': i + 1, 'songId': video, 'timestamp': 1770000000000 + i * 1000, 'playTime': 41000})
 insert('artist', {'id': 'onyx-ui-check', 'name': 'Sonet Studio', 'lastUpdateTime': 1770000000000})
 for i, video in enumerate(['dQw4w9WgXcQ', 'jNQXAC9IVRw']):
@@ -152,7 +155,50 @@ if not any('Minimize player' in n.get('content-desc', '') for n in portrait.iter
     tap_label(portrait, 'sonet ui check 1')
     portrait = snapshot('15-player-portrait-expanded')
 tap_label(portrait, 'lyrics')
-tap_label(snapshot('16-lyrics'), 'lyrics tools')
+lyrics_screen = snapshot('16-lyrics')
+
+def control_point(root, description):
+    nodes = [n for n in root.iter('node') if n.get('content-desc', '').lower() == description]
+    assert nodes, 'Missing transition control: ' + description
+    b = [int(v) for v in re.findall(r'\d+', nodes[0].get('bounds', ''))]
+    return str((b[0] + b[2]) // 2), str((b[1] + b[3]) // 2)
+
+def check_metadata_row(root):
+    title = next(n for n in root.iter('node') if n.get('text') == 'Sonet UI check 1')
+    title_bounds = [int(v) for v in re.findall(r'\d+', title.get('bounds', ''))]
+    button_y = int(control_point(root, 'fullscreen lyrics')[1])
+    assert title_bounds[1] - 40 <= button_y <= title_bounds[3] + 80, 'Title detached from metadata row'
+
+fullscreen_normal = control_point(lyrics_screen, 'fullscreen lyrics')
+toggle_lyrics = control_point(lyrics_screen, 'lyrics')
+check_metadata_row(lyrics_screen)
+tap_label(lyrics_screen, 'fullscreen lyrics')
+fullscreen_screen = snapshot('16-fullscreen')
+check_metadata_row(fullscreen_screen)
+fullscreen_expanded = control_point(fullscreen_screen, 'fullscreen lyrics')
+tap_label(fullscreen_screen, 'fullscreen lyrics')
+
+# Measure repeated mode changes with loaded local lyrics; no network/stream timing.
+# Keep raw frame data and a recording so jank isn't hidden by a successful build.
+recording = subprocess.Popen(['adb', 'shell', 'screenrecord', '--time-limit', '12', '/sdcard/sonet-transitions.mp4'], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+adb('shell', 'dumpsys', 'gfxinfo', package, 'reset')
+for _ in range(5):
+    for point in [toggle_lyrics, toggle_lyrics, fullscreen_normal, fullscreen_expanded]:
+        adb('shell', 'input', 'tap', *point)
+        time.sleep(.45)
+raw = adb('shell', 'dumpsys', 'gfxinfo', package, 'framestats').decode(errors='replace')
+(out / 'lyrics-transition-gfxinfo.txt').write_text(raw)
+metrics = {name: re.search(pattern, raw).group(1) if re.search(pattern, raw) else None for name, pattern in {
+    'frames': r'Total frames rendered:\s*(\d+)',
+    'janky_frames': r'Janky frames:\s*([^\n]+)',
+    'p90_ms': r'90th percentile:\s*(\d+)ms',
+}.items()}
+print('TRANSITION PROFILE (software emulator, not phone FPS):', json.dumps(metrics))
+recording.wait(timeout=15)
+adb('pull', '/sdcard/sonet-transitions.mp4', str(out / 'lyrics-transitions.mp4'), check=False)
+settled = snapshot('16-after-transition-stress')
+check_metadata_row(settled)
+tap_label(settled, 'lyrics tools')
 snapshot('17-lyrics-tools')
 adb('shell', 'input', 'keyevent', 'KEYCODE_BACK')
 tap_label(snapshot('18-return-player'), 'lyrics')
