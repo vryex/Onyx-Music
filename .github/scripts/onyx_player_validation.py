@@ -274,4 +274,4 @@ log = adb('logcat', '-d').decode(errors='replace')
 assert 'FATAL EXCEPTION' not in log or 'Process: ' + package not in log, 'App crash; inspect player-logcat'
 assert adb('shell', 'pidof', package).strip(), 'App stopped'
 (out / 'gfxinfo.txt').write_bytes(adb('shell', 'dumpsys', 'gfxinfo', package))
-print('PASS: expanded/mini player, repeat, sleep timer, rotation and lyrics tools exercised')
+print('PASS: native video frames and video-to-audio cover restoration' if video_only else 'PASS: expanded/mini player, repeat, sleep timer, rotation and lyrics tools exercised')
