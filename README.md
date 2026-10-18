@@ -9,7 +9,7 @@
 Aplicación de música para Android, personalizada y desarrollada como una versión modificada de [Metrolist](https://github.com/MetrolistGroup/Metrolist).
 
 **Creado y personalizado por Vryex**  
-[Instagram: @whois.brxn_](https://www.instagram.com/whois.brxn_/)
+[Instagram: @vryex_](https://www.instagram.com/vryex_/)
 
 [Características](#características-de-sonet) · [Cambios](ONYX_CHANGELOG.md) · [Créditos](CREDITS.md) · [Licencia](LICENSE)
 
@@ -34,7 +34,6 @@ Estas son **adaptaciones y mejoras de esta versión** sobre la base original, no
 - **Biblioteca y listas:** presentación simplificada, títulos y espacios mejorados, lista de «Tus me gusta» con un degradado basado en su contenido.
 - **Letras y ajustes:** interfaz simplificada, traducciones propias y reorganización de los ajustes visibles sin suprimir los componentes internos que siguen utilizándose.
 - **Optimización visual:** reutilización del extractor de colores de baja resolución y su caché, evitando aplicar desenfoques costosos a las listas.
-- **Modo portada inmersiva:** un toque en la portada oculta los controles inferiores para destacar la imagen; otro toque los devuelve sin interrumpir la reproducción.
 - **Reproducción de video experimental:** integración de visualización con portada de respaldo cuando el contenido no pueda mostrarse. La disponibilidad depende de la fuente y del dispositivo.
 
 Algunas funciones —como reproducción de música, biblioteca, descargas, proveedores de letras y reproducción en segundo plano— proceden de la base de código original o de sus colaboradores y se mantienen con sus respectivos derechos.
