@@ -71,7 +71,21 @@ def validate_page_actions():
     snapshot('23-local-artist-unsubscribed')
     unsubscribed_color = ImageStat.Stat(Image.open(out / '23-local-artist-unsubscribed.png').convert('RGB').crop(patch)).mean
     assert max(abs(a - b) for a, b in zip(subscribed_color, unsubscribed_color)) > 10, 'Subscribed artist did not gain its banner fill'
-    print('PASS: page action visibility and local artist subscription palette')
+    adb('shell', 'input', 'keyevent', 'KEYCODE_BACK')
+    tap_label(snapshot('24-home-return'), 'library')
+    library = snapshot('24-spotify-entry')
+    entry = next((n for n in library.iter('node') if n.get('resource-id', '') == 'sonet_spotify_entry'), None)
+    assert entry is not None, 'Library Spotify import entry missing'
+    x1, y1, x2, y2 = map(int, re.findall(r'\d+', entry.get('bounds', '')))
+    adb('shell', 'input', 'tap', str((x1 + x2) // 2), str((y1 + y2) // 2))
+    time.sleep(2)
+    spotify = snapshot('24-spotify-setup')
+    assert any(n.get('resource-id', '') == 'sonet_spotify_import' for n in spotify.iter('node')), 'Spotify setup screen missing'
+    assert any(n.get('resource-id', '') == 'sonet_spotify_client_id' for n in spotify.iter('node')), 'Spotify Client ID setup missing'
+    spotify = scroll_to_label(spotify, 'connect my account', '24-spotify-connect')
+    connect = next((n for n in spotify.iter('node') if n.get('resource-id', '') == 'sonet_spotify_connect'), None)
+    assert connect is not None and connect.get('enabled') == 'false', 'Spotify connection must require configuration'
+    print('PASS: page action visibility, artist subscription palette, and Spotify configuration UI')
 
 
 def save_runtime_log():
@@ -148,7 +162,16 @@ adb('shell', 'svc', 'wifi', 'enable')
 adb('shell', 'svc', 'data', 'enable')
 tap_label(home, 'library')
 tap_label(scroll_to_label(snapshot('08-seeded-library'), 'liked', '08-find-liked'), 'liked')
-tap_label(scroll_to_label(snapshot('09-liked-songs'), 'sonet ui check 1', '09-find-song'), 'sonet ui check 1')
+liked_songs = snapshot('09-liked-songs')
+if page_actions_only:
+    badges = [n for n in liked_songs.iter('node') if n.get('resource-id', '') == 'sonet_favorite_badge']
+    assert badges, 'Favorite badges missing from liked songs'
+    pixels = Image.open(out / '09-liked-songs.png').convert('RGB')
+    for badge in badges:
+        bounds = list(map(int, re.findall(r'\d+', badge.get('bounds', ''))))
+        bright = [p for p in pixels.crop(tuple(bounds)).getdata() if min(p) > 120]
+        assert len(bright) > 10 and sum(max(p) - min(p) < 12 for p in bright) / len(bright) > .95, 'Favorite heart is colored instead of white'
+tap_label(scroll_to_label(liked_songs, 'sonet ui check 1', '09-find-song'), 'sonet ui check 1')
 time.sleep(3)
 adb('shell', 'input', 'keyevent', 'KEYCODE_MEDIA_PAUSE')
 tap_label(snapshot('10-mini-player'), 'sonet ui check 1')
@@ -161,6 +184,10 @@ for attempt in range(8):
 assert any('Minimize player' in n.get('content-desc', '') for n in player.iter('node')), 'Expanded player header missing'
 assert any('Next track' in n.get('content-desc', '') for n in player.iter('node')), 'Transport missing'
 if page_actions_only:
+    next_control = next(n for n in player.iter('node') if n.get('content-desc', '') == 'Next track')
+    x1, y1, x2, y2 = map(int, re.findall(r'\d+', next_control.get('bounds', '')))
+    player_height = Image.open(out / '11-player.png').height
+    assert (y1 + y2) / 2 < player_height * .80, 'Portrait transport controls are still too low'
     validate_page_actions()
     assert adb('shell', 'pidof', package).strip(), 'App stopped'
     sys.exit(0)

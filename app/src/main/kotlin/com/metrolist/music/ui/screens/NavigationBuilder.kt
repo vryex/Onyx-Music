@@ -93,6 +93,10 @@ fun NavGraphBuilder.navigationBuilder(
         )
     }
 
+    composable("spotify_import") {
+        SpotifyImportScreen(navController)
+    }
+
     composable(Screens.Library.route) {
         LibraryScreen()
     }

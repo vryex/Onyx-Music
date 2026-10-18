@@ -243,7 +243,6 @@ fun OnyxQuickAccessItem(item: YTItem, isPinned: Boolean, modifier: Modifier = Mo
         .then(
             if (artistTint != null) Modifier.background(artistTint)
             else Modifier.background(MaterialTheme.colorScheme.surface)
-                .border(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = if (isActive) .5f else .16f), RoundedCornerShape(16.dp))
         )
         .padding(8.dp), verticalAlignment = Alignment.CenterVertically) {
         ItemThumbnail(item.thumbnail, isActive, isPlaying, RoundedCornerShape(8.dp), Modifier.size(56.dp))
@@ -257,12 +256,12 @@ fun OnyxQuickAccessItem(item: YTItem, isPinned: Boolean, modifier: Modifier = Mo
 @Composable
 fun OnyxCollectionCard(title: String, subtitle: String, icon: Int, onClick: (() -> Unit)? = null, modifier: Modifier = Modifier) {
     Column(
-        modifier.onyxGlass(RoundedCornerShape(16.dp))
+        modifier.onyxGlass(RoundedCornerShape(16.dp), showBorder = false)
             .then(if (onClick != null) Modifier.clickable(role = Role.Button, onClick = onClick) else Modifier).padding(18.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-            Box(Modifier.size(42.dp).onyxGlass(RoundedCornerShape(24.dp), emphasized = true), contentAlignment = Alignment.Center) {
+            Box(Modifier.size(42.dp).onyxGlass(RoundedCornerShape(24.dp), emphasized = true, showBorder = false), contentAlignment = Alignment.Center) {
                 Icon(painterResource(icon), null, Modifier.size(22.dp))
             }
             Icon(painterResource(R.drawable.arrow_forward), null, Modifier.size(16.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)

@@ -49,6 +49,7 @@ import com.metrolist.music.R
 fun Modifier.onyxGlass(
     shape: Shape = RoundedCornerShape(16.dp),
     emphasized: Boolean = false,
+    showBorder: Boolean = true,
 ): Modifier {
     return clip(shape)
         .background(if (emphasized) Color(0xFF242424) else Color(0xFF141414))
@@ -56,7 +57,7 @@ fun Modifier.onyxGlass(
             val innerLight = Brush.verticalGradient(listOf(Color.White.copy(alpha = 0.045f), Color.Transparent))
             onDrawBehind { drawRect(innerLight) }
         }
-        .border(1.dp, GlassEdge, shape)
+        .then(if (showBorder) Modifier.border(1.dp, GlassEdge, shape) else Modifier)
 }
 
 @Composable

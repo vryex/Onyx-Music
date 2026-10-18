@@ -60,6 +60,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.testTagsAsResourceId
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
@@ -433,7 +436,7 @@ fun GridItem(
                     // Home artist cards reuse the artist-profile palette, not costly blur.
                     Modifier.clip(cardShape).background(artistCardTint)
                 } else {
-                    Modifier.onyxGlass(cardShape)
+                    Modifier.onyxGlass(cardShape, showBorder = false)
                 },
             )
             .padding(10.dp)
@@ -675,7 +678,7 @@ fun ArtistListItem(
             Icon(
                 painter = painterResource(R.drawable.favorite),
                 contentDescription = null,
-                tint = MaterialTheme.colorScheme.error,
+                tint = Color.White,
                 modifier = Modifier
                     .size(18.dp)
                     .padding(end = 2.dp),
@@ -1918,8 +1921,9 @@ object Icon {
         Icon(
             painter = painterResource(R.drawable.favorite),
             contentDescription = null,
-            tint = MaterialTheme.colorScheme.error,
+            tint = Color.White,
             modifier = Modifier
+                .semantics { testTagsAsResourceId = true }.testTag("sonet_favorite_badge")
                 .size(18.dp)
                 .padding(end = 2.dp)
         )

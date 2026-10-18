@@ -5,6 +5,7 @@
 
 package com.metrolist.music.ui.menu
 
+import androidx.compose.ui.graphics.Color
 import android.annotation.SuppressLint
 import android.content.Intent
 import android.content.res.Configuration
@@ -266,7 +267,7 @@ fun YouTubeSongMenu(
             ) {
                 Icon(
                     painter = painterResource(if (isFavorite) R.drawable.favorite else R.drawable.favorite_border),
-                    tint = if (isFavorite) MaterialTheme.colorScheme.error else LocalContentColor.current,
+                    tint = if (isFavorite) Color.White else LocalContentColor.current,
                     contentDescription = null,
                 )
             }

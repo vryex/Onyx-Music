@@ -56,6 +56,9 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.testTagsAsResourceId
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.LocalLocale
@@ -484,7 +487,7 @@ fun LibraryMixScreen(
                 }
                 Column(
                     modifier = Modifier.weight(1.15f)
-                        .onyxGlass(RoundedCornerShape(16.dp)),
+                        .onyxGlass(RoundedCornerShape(16.dp), showBorder = false),
                 ) {
                     if (showDownloadedPlaylist) LibraryCollectionFeature(
                         title = downloadPlaylist.playlist.name, icon = R.drawable.offline,
@@ -504,6 +507,14 @@ fun LibraryMixScreen(
                     )
                 }
             }
+            LibraryCollectionFeature(
+                title = stringResource(R.string.spotify_import_title),
+                icon = R.drawable.library_music,
+                onClick = { navController.navigate("spotify_import") },
+                modifier = Modifier.fillMaxWidth()
+                    .onyxGlass(RoundedCornerShape(16.dp), showBorder = false)
+                    .semantics { testTagsAsResourceId = true }.testTag("sonet_spotify_entry"),
+            )
             Text(
                 text = stringResource(R.string.from_your_library),
                 style = MaterialTheme.typography.titleMedium,

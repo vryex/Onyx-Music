@@ -25,12 +25,16 @@ import androidx.compose.material3.NavigationRail
 import androidx.compose.material3.NavigationRailItem
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.text.font.FontWeight
 import com.metrolist.music.ui.theme.onyxGlass
 import androidx.compose.foundation.selection.selectable
-import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.FastOutSlowInEasing
@@ -165,9 +169,14 @@ fun AppNavigationBar(
     onSearchLongClick: (() -> Unit)? = null,
     onHomeLongHold: (() -> Unit)? = null,
 ) {
-    val navigationScrim = remember {
-        Brush.verticalGradient(0f to Color(0xEB000000), 1f to Color(0xFF000000))
+    val selectedIndex = navigationItems.indexOfFirst {
+        isRouteSelected(currentRoute, it.route, navigationItems)
     }
+    val selectionPosition = animateFloatAsState(
+        targetValue = selectedIndex.coerceAtLeast(0).toFloat(),
+        animationSpec = tween(300, easing = FastOutSlowInEasing),
+        label = "dock selection position",
+    )
     val haptics = LocalHapticFeedback.current
     val viewConfiguration = LocalViewConfiguration.current
 
@@ -176,7 +185,22 @@ fun AppNavigationBar(
             .fillMaxWidth()
             .padding(horizontal = 24.dp, vertical = if (slimNav) 0.dp else 3.dp)
             .onyxGlass(RoundedCornerShape(50))
-            .padding(horizontal = 5.dp, vertical = 2.dp),
+            .padding(horizontal = 5.dp, vertical = 2.dp)
+            .drawBehind {
+                if (selectedIndex >= 0 && navigationItems.isNotEmpty()) {
+                    val gap = 3.dp.toPx()
+                    val itemWidth = (size.width - gap * (navigationItems.size - 1)) / navigationItems.size
+                    val position = if (layoutDirection == LayoutDirection.Rtl)
+                        navigationItems.lastIndex - selectionPosition.value
+                    else selectionPosition.value
+                    drawRoundRect(
+                        color = Color.White,
+                        topLeft = Offset(position * (itemWidth + gap), 0f),
+                        size = Size(itemWidth, size.height),
+                        cornerRadius = CornerRadius(size.height / 2),
+                    )
+                }
+            },
         horizontalArrangement = Arrangement.spacedBy(3.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -208,16 +232,11 @@ fun AppNavigationBar(
                     }
                 }
             }
-            val highlight by animateColorAsState(
-                if (selected) MaterialTheme.colorScheme.onSurface else Color.Transparent,
-                tween(180), label = "dock selection",
-            )
-            val tint = if (selected) MaterialTheme.colorScheme.surface else MaterialTheme.colorScheme.onSurfaceVariant
+            val tint = if (selected) Color.Black else MaterialTheme.colorScheme.onSurfaceVariant
             Column(
                 modifier = Modifier
                     .weight(1f)
                     .clip(RoundedCornerShape(50))
-                    .background(highlight)
                     .selectable(
                         selected = selected,
                         role = Role.Tab,

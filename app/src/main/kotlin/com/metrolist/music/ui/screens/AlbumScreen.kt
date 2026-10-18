@@ -5,6 +5,7 @@
 
 package com.metrolist.music.ui.screens
 
+import androidx.compose.ui.graphics.Color
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.combinedClickable
@@ -334,7 +335,7 @@ fun AlbumScreen(
                                     contentDescription = null,
                                     tint =
                                         if (albumWithSongs.album.bookmarkedAt != null) {
-                                            MaterialTheme.colorScheme.error
+                                            Color.White
                                         } else {
                                             MaterialTheme.colorScheme.onSurfaceVariant
                                         },

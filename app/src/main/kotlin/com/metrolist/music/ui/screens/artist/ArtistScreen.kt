@@ -655,7 +655,7 @@ fun ArtistScreen(
                                     Modifier
                                         .fillMaxWidth()
                                         .padding(horizontal = 20.dp, vertical = 20.dp)
-                                        .onyxGlass(RoundedCornerShape(16.dp))
+                                        .onyxGlass(RoundedCornerShape(16.dp), showBorder = false)
                                         .padding(20.dp),
                             ) {
                                 if (showArtistDescription && (!description.isNullOrEmpty() || !descriptionRuns.isNullOrEmpty())) {

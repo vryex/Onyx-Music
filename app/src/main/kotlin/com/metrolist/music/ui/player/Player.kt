@@ -1353,11 +1353,14 @@ fun BottomSheetPlayer(
                 }
             }
 
-            else -> {
+            else -> BoxWithConstraints(Modifier.fillMaxSize()) {
+                // Spend spare portrait height on breathing room below the controls.
+                val controlsLift = if (isFullScreen) 0.dp else
+                    ((maxHeight - 600.dp) / 3).coerceIn(0.dp, 40.dp)
                 val bottomPadding by animateDpAsState(
                     targetValue = if (isFullScreen)
                         WindowInsets.systemBars.asPaddingValues().calculateBottomPadding() + 16.dp
-                        else queueSheetState.collapsedBound,
+                        else queueSheetState.collapsedBound + controlsLift,
                     animationSpec = tween(320),
                     label = "bottomPadding",
                 )
