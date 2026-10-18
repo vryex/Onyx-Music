@@ -28,7 +28,11 @@ def tap_label(root, label):
     raise AssertionError('Missing visible control after accessibility settled: ' + label)
 
 def save_runtime_log():
-    (out / 'player-logcat.txt').write_bytes(adb('logcat', '-d', check=False))
+    raw = adb('logcat', '-d', check=False)
+    (out / 'player-logcat.txt').write_bytes(raw)
+    for line in raw.decode(errors='replace').splitlines():
+        if 'SonetVideo' in line:
+            print(line)
 atexit.register(save_runtime_log)
 
 adb('root')
@@ -55,7 +59,7 @@ def insert(table, values):
 
 for i, video in enumerate(['dQw4w9WgXcQ', 'jNQXAC9IVRw']):
     insert('song', {'id': video, 'title': 'Sonet UI check ' + str(i + 1), 'duration': 180,
-                    'isVideo': 1, 'liked': 1, 'likedDate': 1770000000000, 'inLibrary': 1770000000000,
+                    'isVideo': 1 if i == 0 else 0, 'liked': 1, 'likedDate': 1770000000000, 'inLibrary': 1770000000000,
                     'thumbnailUrl': 'https://i.ytimg.com/vi/' + video + '/hqdefault.jpg'})
     insert('lyrics', {'id': video, 'lyrics': '\n'.join(f'[{i // 60:02d}:{i % 60:02d}.00]Local timing test line {i}' for i in range(180)), 'provider': 'Local validation'})
     insert('event', {'id': i + 1, 'songId': video, 'timestamp': 1770000000000 + i * 1000, 'playTime': 41000})
@@ -222,6 +226,29 @@ tap_label(snapshot('18-return-player'), 'lyrics')
 video_header = snapshot('18-video-toggle')
 adb('shell', 'input', 'keyevent', 'KEYCODE_MEDIA_PLAY')
 tap_label(video_header, 'video')
+# Reproduce video -> audio-only -> video. The cover must come back without
+# requiring a hidden Video toggle to be switched off on a different song.
+time.sleep(1)
+tap_label(snapshot('19-switch-from-video'), 'minimize player')
+tap_label(snapshot('19-audio-library'), 'sonet ui check 2')
+time.sleep(2)
+adb('shell', 'input', 'keyevent', 'KEYCODE_MEDIA_PAUSE')
+tap_label(snapshot('19-audio-mini'), 'sonet ui check 2')
+audio_only = snapshot('19-audio-only-cover')
+assert not any(n.get('content-desc', '') in ('Video', 'Video loading', 'Video ready', 'Video playing') for n in audio_only.iter('node')), 'Video mode leaked into audio-only track'
+from PIL import Image, ImageStat
+cover = Image.open(out / '19-audio-only-cover.png').convert('RGB')
+w, h = cover.size
+region = cover.crop((int(w * .12), int(h * .24), int(w * .88), int(h * .40)))
+assert max(ImageStat.Stat(region).stddev) > 8, 'Audio-only cover stayed blank after leaving video mode'
+tap_label(audio_only, 'minimize player')
+tap_label(snapshot('19-return-video-library'), 'sonet ui check 1')
+time.sleep(2)
+tap_label(snapshot('19-return-video-mini'), 'sonet ui check 1')
+returned = snapshot('19-video-option-reset')
+assert not any(n.get('content-desc', '') in ('Video loading', 'Video ready', 'Video playing') for n in returned.iter('node')), 'Video selection was not reset on track change'
+adb('shell', 'input', 'keyevent', 'KEYCODE_MEDIA_PLAY')
+tap_label(returned, 'video')
 video_result = None
 for attempt in range(40):
     video = snapshot('19-video-' + str(attempt))

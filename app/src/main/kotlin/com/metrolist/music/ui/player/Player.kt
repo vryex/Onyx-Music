@@ -346,7 +346,7 @@ fun BottomSheetPlayer(
     val instantArtworkPainter = rememberAsyncImagePainter(
         model = mediaMetadata?.thumbnailUrl?.resize(120, 120),
     )
-    var showVideo by rememberSaveable { mutableStateOf(false) }
+    var showVideo by rememberSaveable(mediaMetadata?.id) { mutableStateOf(false) }
     val currentSong by playerConnection.currentSong.collectAsStateWithLifecycle(initialValue = null)
     val automix by playerConnection.service.automixItems.collectAsStateWithLifecycle()
     val repeatMode by playerConnection.repeatMode.collectAsStateWithLifecycle()
@@ -378,8 +378,10 @@ fun BottomSheetPlayer(
     val castIsPlaying by castHandler?.castIsPlaying?.collectAsStateWithLifecycle() ?: remember { mutableStateOf(false) }
 
     val canShowVideo = !isCasting && !isListenTogetherGuest &&
-        (mediaMetadata?.isVideoSong == true || currentSong?.song?.isVideo == true) &&
+        (mediaMetadata?.isVideoSong == true || (currentSong?.song?.id == mediaMetadata?.id && currentSong?.song?.isVideo == true)) &&
         mediaMetadata?.id?.matches(Regex("[A-Za-z0-9_-]{11}")) == true
+    val videoModeActive = showVideo && canShowVideo
+    LaunchedEffect(canShowVideo) { if (!canShowVideo) showVideo = false }
     val onVideoUnavailable: () -> Unit = {
         Toast.makeText(context, R.string.onyx_video_unavailable, Toast.LENGTH_SHORT).show()
     }
@@ -860,7 +862,7 @@ fun BottomSheetPlayer(
                         placeholder = instantArtworkPainter,
                         mix = lyricsMix,
                         placement = artworkPlacement,
-                        visibleInCoverMode = !showVideo && !hidePlayerThumbnail,
+                        visibleInCoverMode = !videoModeActive && !hidePlayerThumbnail,
                     )
                 }
             }
@@ -1290,7 +1292,7 @@ fun BottomSheetPlayer(
                                     playbackActive = !state.isCollapsed && !state.isDismissed,
                                     positionProvider = { effectivePosition },
                                 )
-                            } else if (showVideo && canShowVideo && state.isExpanded) {
+                            } else if (videoModeActive && state.isExpanded) {
                                 EmbeddedMusicVideo(
                                     videoId = mediaMetadata!!.id,
                                     artworkUrl = mediaMetadata?.thumbnailUrl,
@@ -1348,7 +1350,7 @@ fun BottomSheetPlayer(
                         onCollapse = { state.collapseSoft() },
                         onEqualizer = { com.metrolist.music.utils.openSystemEqualizer(context, playerConnection.player.audioSessionId) },
                         onVideo = if (canShowVideo) ({ showVideo = !showVideo }) else null,
-                        videoSelected = showVideo && canShowVideo,
+                        videoSelected = videoModeActive,
                         showCast = true,
                         playbackSource = displayedSource,
                         modifier = Modifier.windowInsetsPadding(WindowInsets.systemBars.only(WindowInsetsSides.Top)),
@@ -1375,7 +1377,7 @@ fun BottomSheetPlayer(
                             )
                         }
                         if (!showInlineLyrics) {
-                            if (showVideo && canShowVideo && state.isExpanded) {
+                            if (videoModeActive && state.isExpanded) {
                                 EmbeddedMusicVideo(
                                     videoId = mediaMetadata!!.id,
                                     artworkUrl = mediaMetadata?.thumbnailUrl,

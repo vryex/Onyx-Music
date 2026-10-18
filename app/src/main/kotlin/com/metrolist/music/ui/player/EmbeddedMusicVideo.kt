@@ -42,6 +42,7 @@ import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
 import androidx.media3.common.VideoSize
 import androidx.media3.common.util.UnstableApi
+import androidx.media3.datasource.DataSource
 import androidx.media3.datasource.DefaultHttpDataSource
 import androidx.media3.exoplayer.DefaultLoadControl
 import androidx.media3.exoplayer.ExoPlayer
@@ -97,6 +98,7 @@ fun EmbeddedMusicVideo(
                 }
             }
             override fun onPlayerError(error: PlaybackException) {
+                android.util.Log.w("SonetVideo", "Video decoder failed: " + error.errorCodeName)
                 failed = true
                 advancing = false
                 latestUnavailable()
@@ -122,7 +124,14 @@ fun EmbeddedMusicVideo(
             val factory = DefaultHttpDataSource.Factory()
                 .setDefaultRequestProperties(stream.headers)
                 .setConnectTimeoutMs(15_000).setReadTimeoutMs(15_000)
-            val source = ProgressiveMediaSource.Factory(factory).createMediaSource(
+            android.util.Log.i("SonetVideo", "Video stream resolved: client=" + stream.clientName +
+                ", height=" + stream.videoHeight + ", bounded=" + (stream.requireBoundedRange || stream.useRangeChunks))
+            val videoFactory = if (stream.requireBoundedRange || stream.useRangeChunks) {
+                DataSource.Factory {
+                    BoundedVideoDataSource(factory, requireNotNull(stream.videoContentLengthBytes), stream.rangeChunkSizeBytes)
+                }
+            } else factory
+            val source = ProgressiveMediaSource.Factory(videoFactory).createMediaSource(
                 MediaItem.Builder().setUri(requireNotNull(stream.videoUrl))
                     .setMimeType(stream.videoMimeType?.substringBefore(';')).build(),
             )
@@ -130,7 +139,10 @@ fun EmbeddedMusicVideo(
             player.prepare()
         } catch (cancelled: CancellationException) {
             throw cancelled
-        } catch (_: Exception) {
+        } catch (error: Exception) {
+            // Log only categories; signed URLs and authorization headers stay private.
+            val reason = (error as? com.metrolist.innertubex.extraction.StreamResolveException)?.reason?.name.orEmpty()
+            android.util.Log.w("SonetVideo", "Video resolve failed: " + error.javaClass.simpleName + " " + reason)
             failed = true
             latestUnavailable()
         }
