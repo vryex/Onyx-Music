@@ -106,6 +106,31 @@ class SpotifyImportPipelineTest {
         assertEquals(tracks.drop(1), last.remainingTracks)
     }
 
+    @Test fun quickPassScansEveryTrackBeforeDeepFallbackAndKeepsUnmatchedForRetry() = runBlocking {
+        val seenQuick = mutableListOf<Int>()
+        val seenDeep = mutableListOf<Int>()
+        val input = tracks.take(6)
+        var last = SpotifyImportProgress()
+        SpotifyImportPipeline(
+            resolve = { track: SpotifyTrack ->
+                seenQuick.add(index(track))
+                if (index(track) % 2 == 0) index(track) else null
+            },
+            fallbackResolve = { track: SpotifyTrack ->
+                assertEquals(input.size, seenQuick.size)
+                seenDeep.add(index(track))
+                if (index(track) == 1) 1 else null
+            },
+            store = { _: Int -> SpotifyStoreResult.IMPORTED },
+        ).import(input) { last = it }
+        assertEquals(input.size, last.scanned)
+        assertEquals(input.size, last.processed)
+        assertEquals(4, last.imported)
+        assertEquals(listOf(input[3], input[5]), last.unmatchedTracks)
+        assertEquals(listOf(input[3], input[5]), last.remainingTracks)
+        assertEquals(listOf(1, 3, 5), seenDeep.sorted())
+    }
+
     @Test fun fullImportCountsDuplicatesAsAlreadyAndKeepsUnmatchedInOriginalOrder() = runBlocking {
         val stored = HashSet<Int>()
         val input = listOf(tracks[2], tracks[0], tracks[2], tracks[1], tracks[3])

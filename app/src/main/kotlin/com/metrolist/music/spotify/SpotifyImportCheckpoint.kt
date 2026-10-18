@@ -53,7 +53,7 @@ internal class SpotifyImportCheckpoint(directory: File) {
         val data = JSONObject().put("version", 1).put("id", snapshot.id).put("revision", snapshot.revision)
             .put("requestId", snapshot.requestId).put("phase", snapshot.phase.name).put("fileName", snapshot.fileName)
             .put("spotifySource", snapshot.spotifySource).put("skippedRows", snapshot.skippedRows)
-            .put("locale", snapshot.localeTag).put("processed", progress.processed).put("total", progress.total)
+            .put("locale", snapshot.localeTag).put("processed", progress.processed).put("scanned", progress.scanned).put("total", progress.total)
             .put("imported", progress.imported).put("already", progress.already)
             .put("remaining", indexed(snapshot.remaining)).put("unmatched", indexed(progress.unmatchedTracks))
             .put("reasons", JSONObject().apply { progress.unmatchedReasons.forEach { (track, reason) ->
@@ -88,7 +88,7 @@ internal class SpotifyImportCheckpoint(directory: File) {
             phase = if (phase == SpotifyImportPhase.RUNNING || phase == SpotifyImportPhase.PREPARED) SpotifyImportPhase.PAUSED else phase,
             fileName = saved.getString("fileName"), spotifySource = saved.getBoolean("spotifySource"),
             skippedRows = saved.getInt("skippedRows"), localeTag = saved.getString("locale"),
-            progress = SpotifyImportProgress(processed = saved.getInt("processed"), total = saved.getInt("total"),
+            progress = SpotifyImportProgress(processed = saved.getInt("processed"), scanned = saved.optInt("scanned", saved.getInt("processed")), total = saved.getInt("total"),
                 imported = saved.getInt("imported"), already = saved.getInt("already"),
                 unmatched = unmatched.map { it.title + " — " + it.artists.joinToString() }, unmatchedTracks = unmatched,
                 remainingTracks = remaining, unmatchedReasons = unmatched.mapNotNull { track ->

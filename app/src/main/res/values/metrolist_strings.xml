@@ -1098,4 +1098,5 @@
     <string name="spotify_import_pause">Pause import</string>
     <string name="spotify_import_liked_count">Total favorites saved on this device: %1$d. Your library filters can hide videos or explicit songs.</string>
     <string name="spotify_import_incomplete_library">Spotify returned only part of your library. No partial import was prepared. Reconnect to read all saved songs.</string>
+    <string name="spotify_import_scanned">Fast search checked %1$d / %2$d songs; difficult tracks will be retried afterward.</string>
 </resources>

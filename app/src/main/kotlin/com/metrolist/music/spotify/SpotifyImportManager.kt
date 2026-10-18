@@ -91,7 +91,9 @@ class SpotifyImportManager internal constructor(
                         progress = progress.copy(total = previous.progress.total,
                             processed = previous.progress.imported + previous.progress.already + progress.processed,
                             imported = previous.progress.imported + progress.imported,
-                            already = previous.progress.already + progress.already, remainingTracks = remaining), remaining = remaining)
+                            already = previous.progress.already + progress.already,
+                            scanned = maxOf(previous.progress.scanned, previous.progress.processed + progress.scanned),
+                            remainingTracks = remaining), remaining = remaining)
                 }
                 val now = System.nanoTime()
                 if (now - lastWrite >= 1_000_000_000L) {

@@ -105,6 +105,17 @@ class SpotifyTrackResolverTest {
         assertEquals(SpotifyMatchFailure.NO_RESULTS, SpotifyTrackResolver(empty).resolveDetailed(SpotifyTrack("Song", listOf("Artist"), 200)).failure)
     }
 
+    @Test fun quickScanAvoidsSlowFallbackAndDeepRetryCanStillRecoverMissingTrack() = runBlocking {
+        val search = FakeSearch { _, videos ->
+            if (videos) SpotifySearchPage(listOf(song(id = "found-in-video"))) else SpotifySearchPage(emptyList())
+        }
+        val resolver = SpotifyTrackResolver(search)
+        val source = SpotifyTrack("Song", listOf("Artist"), 200)
+        assertNull(resolver.resolveDetailed(source, quickOnly = true).song)
+        assertEquals(listOf("song:Song Artist"), search.calls)
+        assertEquals("found-in-video", resolver.resolve(source)?.id)
+    }
+
     @Test fun transientSearchFailuresRetryButCancellationDoesNotBecomeUnmatched() = runBlocking {
         var attempts = 0
         val search = FakeSearch { _, _ -> attempts++; if (attempts < 3) throw IOException("offline") else SpotifySearchPage(listOf(song())) }

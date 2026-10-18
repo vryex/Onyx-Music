@@ -3,6 +3,8 @@ package com.metrolist.music.spotify
 import com.metrolist.innertube.YouTube
 import com.metrolist.innertube.models.SongItem
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.TimeoutCancellationException
+import kotlinx.coroutines.withTimeout
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.ensureActive
@@ -44,7 +46,7 @@ internal class SpotifyTrackResolver(
 ) {
     suspend fun resolve(track: SpotifyTrack): SongItem? = resolveDetailed(track).song
 
-    suspend fun resolveDetailed(track: SpotifyTrack): SpotifyResolution {
+    suspend fun resolveDetailed(track: SpotifyTrack, quickOnly: Boolean = false): SpotifyResolution {
         if (track.artists.isEmpty() || track.title.isBlank()) return SpotifyResolution(failure = SpotifyMatchFailure.TITLE)
         val failures = mutableSetOf<SpotifyMatchFailure>()
         val visited = mutableSetOf<String>()
@@ -82,6 +84,7 @@ internal class SpotifyTrackResolver(
         first?.let { best(it, false) }?.let { return SpotifyResolution(song = it) }
         val secondary = if (SpotifyImportRules.normalized(cleaned) != SpotifyImportRules.normalized(original)) query(cleaned, false) else null
         secondary?.let { best(it, false) }?.let { return SpotifyResolution(song = it) }
+        if (quickOnly) return SpotifyResolution(failure = failures.maxByOrNull { it.ordinal } ?: SpotifyMatchFailure.NO_RESULTS)
         for (page in listOfNotNull(secondary, first)) {
             following(page, false)?.let { return SpotifyResolution(song = it) }
         }
@@ -119,7 +122,12 @@ internal class SpotifyTrackResolver(
     private suspend fun <T> retry(block: suspend () -> T): T {
         repeat(3) { attempt ->
             currentCoroutineContext().ensureActive()
-            try { return block() }
+            try { return withTimeout(10_000L) { block() } }
+            catch (error: TimeoutCancellationException) {
+                currentCoroutineContext().ensureActive()
+                if (attempt == 2) throw SpotifyImportException(SpotifyFailure.NETWORK)
+                wait((attempt + 1) * 1500L)
+            }
             catch (error: CancellationException) { throw error }
             catch (_: Exception) {
                 currentCoroutineContext().ensureActive()

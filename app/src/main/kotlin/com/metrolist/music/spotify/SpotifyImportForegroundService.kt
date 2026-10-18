@@ -135,8 +135,10 @@ class SpotifyImportForegroundService : Service() {
                 .addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP),
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
         val progress = snapshot.progress
+        val scanSummary = if (progress.scanned > progress.processed)
+            " · " + strings.getString(R.string.spotify_import_scanned, progress.scanned, progress.total) else ""
         val summary = strings.getString(R.string.spotify_import_progress,
-            progress.processed, progress.total, progress.imported, progress.already, snapshot.remaining.size)
+            progress.processed, progress.total, progress.imported, progress.already, snapshot.remaining.size) + scanSummary
         val title = strings.getString(when (snapshot.phase) {
             SpotifyImportPhase.COMPLETE -> R.string.spotify_import_notification_complete
             SpotifyImportPhase.CANCELLED -> R.string.spotify_import_cancelled_title
@@ -149,7 +151,7 @@ class SpotifyImportForegroundService : Service() {
             .setCategory(NotificationCompat.CATEGORY_PROGRESS).setPriority(NotificationCompat.PRIORITY_LOW)
             .apply {
                 if (snapshot.active) {
-                    setProgress(progress.total, progress.processed, progress.total == 0)
+                    setProgress(progress.total, maxOf(progress.processed, progress.scanned), progress.total == 0)
                     addAction(0, strings.getString(R.string.spotify_import_pause), PendingIntent.getService(
                         this@SpotifyImportForegroundService, NOTIFICATION_ID + 1,
                         Intent(this@SpotifyImportForegroundService, SpotifyImportForegroundService::class.java).setAction(ACTION_PAUSE),

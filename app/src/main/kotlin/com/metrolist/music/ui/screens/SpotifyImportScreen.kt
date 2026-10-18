@@ -133,9 +133,13 @@ fun SpotifyImportScreen(navController: NavController, viewModel: SpotifyImportVi
                 }
                 TextButton(modifier = Modifier.testTag("sonet_spotify_cancel"), onClick = viewModel::cancel) { Text(stringResource(R.string.spotify_import_cancel)) }
             } }
-            if (state.progress.total > 0) item { Text(
-                stringResource(R.string.spotify_import_progress, state.progress.processed, state.progress.total, state.progress.imported, state.progress.already, state.pendingSongs ?: state.progress.unmatched.size),
-                modifier = Modifier.testTag("sonet_spotify_progress")) }
+            if (state.progress.total > 0) item { Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                Text(stringResource(R.string.spotify_import_progress, state.progress.processed, state.progress.total, state.progress.imported, state.progress.already, state.pendingSongs ?: state.progress.unmatched.size),
+                    modifier = Modifier.testTag("sonet_spotify_progress"))
+                if (state.progress.scanned > state.progress.processed) Text(
+                    stringResource(R.string.spotify_import_scanned, state.progress.scanned, state.progress.total),
+                    modifier = Modifier.testTag("sonet_spotify_scanned"))
+            } }
             if (state.progress.imported + state.progress.already > 0) item {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text(stringResource(R.string.spotify_import_liked_count, likedCount))

@@ -15,6 +15,7 @@ data class SpotifyImportProgress(
     val processed: Int = 0, val total: Int = 0, val imported: Int = 0, val already: Int = 0,
     val unmatched: List<String> = emptyList(), val unmatchedTracks: List<SpotifyTrack> = emptyList(),
     val remainingTracks: List<SpotifyTrack>? = null,
+    val scanned: Int = 0,
     val unmatchedReasons: Map<SpotifyTrack, SpotifyMatchFailure> = emptyMap(),
 )
 
@@ -22,7 +23,8 @@ internal class SpotifyImportRepository(private val database: MusicDatabase, priv
     suspend fun import(tracks: List<SpotifyTrack>, onProgress: (SpotifyImportProgress) -> Unit) = withContext(Dispatchers.IO) {
         val reasons = ConcurrentHashMap<SpotifyTrack, SpotifyMatchFailure>()
         SpotifyImportPipeline(
-            resolve = { track: SpotifyTrack ->
+            resolve = { track: SpotifyTrack -> resolver.resolveDetailed(track, quickOnly = true).song },
+            fallbackResolve = { track: SpotifyTrack ->
                 val result = resolver.resolveDetailed(track)
                 result.failure?.let { reasons[track] = it }
                 result.song

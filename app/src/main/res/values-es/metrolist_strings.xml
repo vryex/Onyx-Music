@@ -972,4 +972,7 @@
     <string name="spotify_import_paused">La importación se ha pausado. Continúa con las canciones pendientes. Las canciones ya añadidas permanecen en tu biblioteca.</string>
     <string name="spotify_import_background_help">La importación continúa al salir de esta pantalla o bloquear el teléfono. La notificación muestra el progreso y permite detenerla. Si Android la interrumpe, vuelve a esta pantalla para continuar con las pendientes. Si fuerzas la detención de Sonet, debes abrirla y continuar manualmente.</string>
     <string name="spotify_import_notification_denied">Las notificaciones están desactivadas. La importación puede continuar en segundo plano; vuelve aquí para ver el progreso o detenerla.</string>
+    <string name="spotify_import_scanned">Búsqueda rápida: revisadas %1$d / %2$d canciones. Las difíciles se buscarán después.</string>
+    <string name="spotify_import_pause">Pausar importación</string>
+    <string name="spotify_import_liked_count">Total de favoritos guardados en este dispositivo: %1$d. Los filtros de biblioteca pueden ocultar videos o canciones explícitas.</string>
 </resources>
