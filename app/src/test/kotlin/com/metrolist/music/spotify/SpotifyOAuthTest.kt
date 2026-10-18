@@ -87,6 +87,45 @@ class SpotifyOAuthTest {
         }
     }
 
+    @Test fun delayedBrowserHeadersStillReceiveTheWholeResponseBeforeCodeIsReleased() = runBlocking {
+        SpotifyOAuth("Éxito. Vuelve a Sonet.", "Invalid.").use { oauth ->
+            val state = oauth.authorizationUrl().toHttpUrl().queryParameter("state")
+            val result = async(Dispatchers.IO) { oauth.awaitCode() }
+            val response = withContext(Dispatchers.IO) {
+                Socket("127.0.0.1", 8888).use { socket ->
+                    socket.soTimeout = 6000
+                    socket.getOutputStream().write("GET /callback?state=$state&code=accepted HTTP/1.1\r\nHost: local\r\n".toByteArray())
+                    delay(2200)
+                    assertFalse(result.isCompleted)
+                    socket.getOutputStream().write("User-Agent: browser\r\n\r\n".toByteArray())
+                    socket.getInputStream().readBytes().toString(Charsets.UTF_8)
+                }
+            }
+            assertEquals("Éxito. Vuelve a Sonet.", response.substringAfter("\r\n\r\n"))
+            assertEquals("accepted", result.await())
+        }
+    }
+
+    @Test fun truncatedAndOversizedHeadersDoNotPoisonTheNextCallback() = runBlocking {
+        SpotifyOAuth("Return.", "Invalid.").use { oauth ->
+            val state = oauth.authorizationUrl().toHttpUrl().queryParameter("state")
+            val result = async(Dispatchers.IO) { oauth.awaitCode() }
+            withContext(Dispatchers.IO) {
+                for (request in listOf("GET /callback?state=$state&code=incomplete HTTP/1.1\r\nHost: local", "x".repeat(9000))) {
+                    Socket("127.0.0.1", 8888).use { socket ->
+                        socket.soTimeout = 4000
+                        socket.getOutputStream().write(request.toByteArray())
+                        socket.shutdownOutput()
+                        runCatching { socket.getInputStream().readBytes() }
+                    }
+                }
+            }
+            assertFalse(result.isCompleted)
+            assertTrue(withContext(Dispatchers.IO) { send("state=$state&code=recovered") }.startsWith("HTTP/1.1 200"))
+            assertEquals("recovered", result.await())
+        }
+    }
+
     @Test fun metadataCompletionKeepsGraceThenReleasesPort() = runBlocking {
         SpotifyOAuth("Return.", "Invalid.", completionGraceMillis = 500, callbackLifetimeMillis = 5000).use { oauth ->
             val state = oauth.authorizationUrl().toHttpUrl().queryParameter("state")

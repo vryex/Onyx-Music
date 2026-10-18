@@ -14,6 +14,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import okhttp3.HttpUrl.Companion.toHttpUrl
 import java.io.IOException
+import java.io.BufferedInputStream
 import java.net.InetAddress
 import java.net.BindException
 import java.net.InetSocketAddress
@@ -113,8 +114,8 @@ internal class SpotifyOAuth(
             if (server.isClosed) socket.close()
             try {
                 socket.use {
-                    it.soTimeout = 2000
-                    val input = it.getInputStream()
+                    it.soTimeout = 5000
+                    val input = BufferedInputStream(it.getInputStream())
                     val bytes = ArrayList<Byte>()
                     var lineComplete = false
                     while (bytes.size < 8192) {
