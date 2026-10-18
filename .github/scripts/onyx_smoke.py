@@ -87,6 +87,17 @@ if globals().get('VIDEO_PROBE_ONLY', False):
         assert any('try again' in n.get('text', '').lower() for n in offline.iter('node')), 'Blocked Home has no retry action'
         assert adb('shell', 'pidof', PACKAGE).strip(), 'App stopped during offline Home recovery'
         print('PASS: blocked YouTube requests exit Home loading and show an actionable connection diagnostic')
+        for page, url in [
+            ('search', 'https://music.youtube.com/search?q=SonetNetworkCheck'),
+            ('artist', 'https://music.youtube.com/channel/UC-sonet-network-check'),
+        ]:
+            adb('shell', 'am', 'start', '-W', '-a', 'android.intent.action.VIEW', '-d', url, '-n', ACTIVITY)
+            time.sleep(28)
+            failed_page = snapshot('00-offline-' + page + '-recovery')
+            assert any('Could not load this YouTube page.' in n.get('text', '') for n in failed_page.iter('node')), page + ' did not display its request error'
+            assert any('YouTube connection detail:' in n.get('text', '') for n in failed_page.iter('node')), page + ' lost its request diagnostic'
+            assert any('try again' in n.get('text', '').lower() for n in failed_page.iter('node')), page + ' has no retry action'
+        print('PASS: stalled search and artist pages exit loading and offer retry')
     finally:
         adb('shell', 'iptables', '-D', *rule, check=False)
         adb('shell', 'ip6tables', '-D', *rule, check=False)

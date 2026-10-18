@@ -113,4 +113,32 @@ class YouTubeRequestsTest {
         assertEquals(listOf("base"), pages)
         assertTrue(job.isCancelled)
     }
+    @Test fun loadingNextPageCancelsInitialMetadataWithoutErasingNewSongs() = runBlocking {
+        val enrichmentStarted = CompletableDeferred<Unit>()
+        val releaseMetadata = CompletableDeferred<Unit>()
+        var visible = listOf<String>()
+        val firstPage = launch {
+            loadYouTubePage(fetch = { Result.success(listOf("first")) }, publish = { visible = it },
+                enrich = { enrichmentStarted.complete(Unit); releaseMetadata.await(); listOf("enriched first") },
+                onFailure = { fail("Initial request succeeded") })
+        }
+        enrichmentStarted.await()
+        firstPage.cancelAndJoin()
+        visible = visible + "second page"
+        releaseMetadata.complete(Unit)
+        yield()
+        assertEquals(listOf("first", "second page"), visible)
+    }
+
+    @Test fun cancellationWrappedByAnApiResultDoesNotRunFallback() = runBlocking {
+        var fallbackCalls = 0
+        try {
+            publicSearchFallback<String>(primary = { Result.failure(CancellationException("screen closed")) },
+                fallback = { fallbackCalls++; Result.success("stale result") })
+            fail("Cancellation must propagate")
+        } catch (_: CancellationException) {
+            assertEquals(0, fallbackCalls)
+        }
+    }
+
 }

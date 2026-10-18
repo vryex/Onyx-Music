@@ -174,7 +174,7 @@ object YouTube {
         primary = { searchMusicSummary(query, recordSearchHistory) },
         fallback = {
             searchVideos(query).map { result ->
-                SearchSummaryPage(listOf(SearchSummary("Videos", result.items)))
+                SearchSummaryPage(listOf(SearchSummary("Videos", result.items)), isVideoFallback = true)
             }
         },
     )

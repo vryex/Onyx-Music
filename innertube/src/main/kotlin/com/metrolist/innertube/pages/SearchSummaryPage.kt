@@ -21,6 +21,7 @@ data class SearchSummary(
 
 data class SearchSummaryPage(
     val summaries: List<SearchSummary>,
+    val isVideoFallback: Boolean = false,
 ) {
     fun filterExplicit(enabled: Boolean) =
         if (enabled) {
@@ -34,6 +35,7 @@ data class SearchSummaryPage(
                             },
                     )
                 },
+                isVideoFallback = isVideoFallback,
             )
         } else {
             this
@@ -51,6 +53,7 @@ data class SearchSummaryPage(
                             },
                     )
                 },
+                isVideoFallback = isVideoFallback,
             )
         } else {
             this
@@ -68,6 +71,7 @@ data class SearchSummaryPage(
                             },
                     )
                 },
+                isVideoFallback = isVideoFallback,
             )
         } else {
             this

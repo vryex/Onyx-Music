@@ -107,17 +107,22 @@ constructor(
     private fun publishSummary(page: SearchSummaryPage) {
         summaryPage = page
         if (filter.value == YouTube.SearchFilter.FILTER_EPISODE) {
+            if (page.isVideoFallback) {
+                connectionError = "HTTP 403"
+                return
+            }
             val episodes = page.summaries.firstOrNull { it.title == "Episodes" }?.items.orEmpty()
             viewStateMap[YouTube.SearchFilter.FILTER_EPISODE.value] = ItemsPage(episodes, null)
         }
     }
 
     private suspend fun loadSummaryPage() {
-        summaryPage?.let { publishSummary(it); return }
+        summaryPage?.takeUnless { filter.value == YouTube.SearchFilter.FILTER_EPISODE && it.isVideoFallback }
+            ?.let { publishSummary(it); return }
         loadYouTubePage(
             fetch = {
                 YouTube.searchSummary(query, recordSearchHistory = !context.dataStore.get(PauseSearchHistoryKey, false))
-                    .map { page -> page.copy(summaries = page.summaries.map { it.copy(items = filterItems(it.items)) }) }
+                    .map { page -> page.copy(summaries = page.summaries.map { it.copy(items = filterItems(it.items)) }.filter { it.items.isNotEmpty() }) }
             },
             publish = ::publishSummary,
             enrich = { page ->
@@ -169,6 +174,7 @@ constructor(
         val selected = filter.value ?: return
         val previous = viewStateMap[selected.value] ?: return
         val continuation = previous.continuation ?: return
+        requestJob?.cancel()
         moreJob = viewModelScope.launch {
             connectionError = null
             continuationFailed = false
@@ -182,7 +188,7 @@ constructor(
                         viewStateMap[selected.value] = ItemsPage((previous.items + it.items).distinctBy { item -> item.id }, it.continuation)
                     }
                 },
-                enrich = { it.copy(items = resolveSearchMetadata(it.items)) },
+                enrich = { it },
                 onFailure = { continuationFailed = true; requestFailed(it) },
             )
         }

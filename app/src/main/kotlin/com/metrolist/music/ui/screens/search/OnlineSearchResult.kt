@@ -224,10 +224,10 @@ fun OnlineSearchResult(
 
     LaunchedEffect(lazyListState) {
         snapshotFlow {
-            lazyListState.layoutInfo.visibleItemsInfo.any { it.key == "loading" }
-        }.collect { shouldLoadMore ->
-            if (!shouldLoadMore) return@collect
-            viewModel.loadMore()
+            val token = viewModel.filter.value?.value?.let { viewModel.viewStateMap[it]?.continuation }
+            lazyListState.layoutInfo.visibleItemsInfo.any { it.key == "loading" } to token
+        }.collect { (visible, continuation) ->
+            if (visible && continuation != null) viewModel.loadMore()
         }
     }
 
