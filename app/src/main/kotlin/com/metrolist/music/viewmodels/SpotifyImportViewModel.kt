@@ -87,6 +87,7 @@ class SpotifyImportViewModel @Inject constructor(
     fun connect(acceptedMessage: String, rejectedMessage: String, openBrowser: (String) -> Unit) {
         if (job?.isActive == true || manager.state.value.active) return
         oauth?.close(); oauth = null
+        com.metrolist.music.utils.YouTubeConnectionDiagnostics.clear("import")
         sourceLoading = true
         mutableState.value = state.value.copy(busy = true, loading = true, connecting = true, authorizing = true,
             cancelled = false, error = null, loaded = 0, loadTotal = 0)
@@ -120,6 +121,7 @@ class SpotifyImportViewModel @Inject constructor(
 
     fun chooseFile(uri: Uri) {
         if (job?.isActive == true || manager.state.value.active) return
+        com.metrolist.music.utils.YouTubeConnectionDiagnostics.clear("import")
         sourceLoading = true
         mutableState.value = state.value.copy(busy = true, loading = true, cancelled = false, error = null)
         job = viewModelScope.launch {
