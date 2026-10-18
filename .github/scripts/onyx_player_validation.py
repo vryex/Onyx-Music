@@ -81,6 +81,10 @@ def validate_page_actions():
     time.sleep(2)
     spotify = snapshot('24-spotify-setup')
     assert any(n.get('resource-id', '') == 'sonet_spotify_import' for n in spotify.iter('node')), 'Spotify setup screen missing'
+    connect = next((n for n in spotify.iter('node') if n.get('resource-id', '') == 'sonet_spotify_connect'), None)
+    assert connect is not None and connect.get('enabled') == 'true', 'Direct Spotify connection missing or disabled'
+    assert any('Connect Spotify' in n.get('text', '') for n in connect.iter('node')), 'Connect Spotify must be the primary action'
+
     choose = next((n for n in spotify.iter('node') if n.get('resource-id', '') == 'sonet_spotify_choose_file'), None)
     assert choose is not None and choose.get('enabled') == 'true', 'CSV picker missing'
     assert not any('client id' in n.get('text', '').lower() for n in spotify.iter('node')), 'Technical Spotify setup remains'
@@ -106,12 +110,12 @@ def validate_page_actions():
     adb('shell', 'cmd', 'locale', 'set-app-locales', package, '--user', '0', '--locales', 'es')
     time.sleep(3)
     spanish = snapshot('24-spotify-spanish')
-    assert any('Elegir archivo' in n.get('text', '') for n in spanish.iter('node')), 'Spanish Spotify translation missing'
+    assert any('Conectar Spotify' in n.get('text', '') for n in spanish.iter('node')), 'Spanish direct connection translation missing'
     adb('shell', 'cmd', 'locale', 'set-app-locales', package, '--user', '0', '--locales', 'en')
     time.sleep(3)
     english = snapshot('24-spotify-english')
-    assert any('Choose CSV file' in n.get('text', '') for n in english.iter('node')), 'English Spotify translation did not return'
-    print('PASS: page actions, artist palette, CSV picker/preview, and Spanish/English app locales')
+    assert any('Connect Spotify' in n.get('text', '') for n in english.iter('node')), 'English direct connection translation did not return'
+    print('PASS: page actions, artist palette, direct Spotify connection UI, CSV picker/preview, and Spanish/English app locales')
 
 
 def save_runtime_log():

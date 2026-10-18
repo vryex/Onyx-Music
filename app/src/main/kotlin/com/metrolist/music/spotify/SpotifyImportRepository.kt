@@ -13,7 +13,7 @@ import kotlinx.coroutines.withContext
 import java.io.IOException
 import java.time.LocalDateTime
 
-enum class SpotifyFailure { FILE_TOO_LARGE, TOO_MANY_ROWS, INVALID_CSV, MISSING_COLUMNS, EMPTY_FILE, FILE_READ, NETWORK, RESPONSE }
+enum class SpotifyFailure { FILE_TOO_LARGE, TOO_MANY_ROWS, INVALID_CSV, MISSING_COLUMNS, EMPTY_FILE, FILE_READ, NETWORK, RESPONSE, DENIED, AUTHORIZATION, FORBIDDEN, RATE_LIMIT, TIMEOUT, PORT_BUSY, EMPTY_LIBRARY }
 class SpotifyImportException(val reason: SpotifyFailure) : IOException(reason.name)
 
 data class SpotifyImportProgress(

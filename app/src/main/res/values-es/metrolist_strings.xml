@@ -916,7 +916,7 @@
     <string name="sonet_recently_heard">Escuchado recientemente</string>
     <string name="spotify_import_title">Importar desde Spotify</string>
     <string name="spotify_import_back">Atrás</string>
-    <string name="spotify_import_description">Trae tus favoritos de Spotify a Sonet con un archivo CSV. Elige el archivo, revisa las canciones e impórtalas. Las coincidencias se añaden a tus Me gusta y a tu biblioteca local; tu cuenta de Spotify no cambia.</string>
+    <string name="spotify_import_description">Conecta Spotify para traer tus canciones favoritas a Sonet. Revisa la lista y añade las coincidencias a tus Me gusta y a tu biblioteca local. Tu cuenta de Spotify no cambia.</string>
     <string name="spotify_import_export_help">Cómo exportar</string>
     <string name="spotify_import_export_steps">1. Exporta tus canciones favoritas de Spotify como CSV con la herramienta de exportación que prefieras.\n2. Conserva las columnas de título y artista. La duración es opcional y ayuda a identificar la grabación correcta.\n3. Elige aquí el archivo, revísalo y pulsa Importar canciones.\n\nSonet admite los formatos CSV habituales de Spotify, incluidos los archivos de Exportify. No necesitas configurar ninguna cuenta en Sonet.</string>
     <string name="spotify_import_help_done">Entendido</string>
@@ -945,4 +945,19 @@
     <string name="sonet_video_ready">Video listo</string>
     <string name="sonet_video_loading">Cargando video</string>
     <string name="sonet_video_immersive">Video ampliado</string>
+    <string name="spotify_import_connect">Conectar Spotify</string>
+    <string name="spotify_import_csv_fallback">¿Ya tienes una exportación? También puedes importar un archivo CSV.</string>
+    <string name="spotify_import_spotify_library">Tus canciones favoritas de Spotify</string>
+    <string name="spotify_import_callback_success">Ya puedes volver a Sonet.</string>
+    <string name="spotify_import_callback_invalid">La respuesta de autorización no es válida. Vuelve a Sonet e inténtalo de nuevo.</string>
+    <string name="spotify_import_authorizing">Autoriza el acceso en tu navegador y vuelve a Sonet. Esperando hasta tres minutos…</string>
+    <string name="spotify_import_fetching">Leyendo tus canciones favoritas de Spotify…</string>
+    <string name="spotify_import_fetch_progress">Leídas %1$d / %2$d canciones</string>
+    <string name="spotify_import_denied">Se ha rechazado el acceso a Spotify. Puedes volver a conectar o elegir un archivo CSV.</string>
+    <string name="spotify_import_authorization_error">La autorización de Spotify ha caducado o ha fallado. Vuelve a conectar para reintentarlo.</string>
+    <string name="spotify_import_forbidden">Spotify ha denegado el acceso. Puede que tu cuenta deba añadirse a los usuarios permitidos de esta aplicación de Spotify y que su propietario necesite Premium. También puedes usar un archivo CSV.</string>
+    <string name="spotify_import_rate_limit">Spotify está ocupado. Espera un poco y vuelve a conectar o elige un archivo CSV.</string>
+    <string name="spotify_import_timeout">Se ha agotado el tiempo para autorizar. Vuelve a conectar y regresa del navegador después de permitir el acceso.</string>
+    <string name="spotify_import_port_busy">Otra aplicación está usando la conexión de acceso. Ciérrala y vuelve a intentarlo o elige un archivo CSV.</string>
+    <string name="spotify_import_empty_library">No se han encontrado canciones favoritas compatibles en tu biblioteca de Spotify. Guarda canciones en Spotify o elige un archivo CSV.</string>
 </resources>

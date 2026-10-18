@@ -1033,7 +1033,7 @@
     <string name="sonet_recently_heard">Recently played</string>
     <string name="spotify_import_title">Import from Spotify</string>
     <string name="spotify_import_back">Back</string>
-    <string name="spotify_import_description">Bring your Spotify favorites into Sonet with a CSV file. Choose the file, review the songs, then import. Matches are added to your local liked songs and library; your Spotify account stays unchanged.</string>
+    <string name="spotify_import_description">Connect Spotify to bring your liked songs into Sonet. Review the list, then import matching songs into your local likes and library. Your Spotify account stays unchanged.</string>
     <string name="spotify_import_export_help">How to export</string>
     <string name="spotify_import_export_steps">1. Export your Spotify liked songs as a CSV using your preferred export tool.\n2. Keep the song title and artist columns. Duration is optional and helps identify the right recording.\n3. Choose the file here, review it, and tap Import songs.\n\nSonet accepts common Spotify CSV exports, including Exportify files. No account setup is needed in Sonet.</string>
     <string name="spotify_import_help_done">Got it</string>
@@ -1062,4 +1062,19 @@
     <string name="sonet_video_ready">Video ready</string>
     <string name="sonet_video_loading">Video loading</string>
     <string name="sonet_video_immersive">Video immersive</string>
+    <string name="spotify_import_connect">Connect Spotify</string>
+    <string name="spotify_import_csv_fallback">Already have an export? You can also import a CSV file.</string>
+    <string name="spotify_import_spotify_library">Your Spotify liked songs</string>
+    <string name="spotify_import_callback_success">You can return to Sonet now.</string>
+    <string name="spotify_import_callback_invalid">Invalid authorization callback. Return to Sonet and try again.</string>
+    <string name="spotify_import_authorizing">Approve access in your browser, then return to Sonet. Waiting up to three minutes…</string>
+    <string name="spotify_import_fetching">Reading your Spotify liked songs…</string>
+    <string name="spotify_import_fetch_progress">Read %1$d / %2$d songs</string>
+    <string name="spotify_import_denied">Spotify access was declined. You can connect again or choose a CSV file.</string>
+    <string name="spotify_import_authorization_error">Spotify authorization expired or failed. Connect again to retry.</string>
+    <string name="spotify_import_forbidden">Spotify denied access. Your account may need to be added to this Spotify app’s allowed users, and its owner may need Premium. You can use a CSV file instead.</string>
+    <string name="spotify_import_rate_limit">Spotify is busy. Wait a little, then connect again, or choose a CSV file.</string>
+    <string name="spotify_import_timeout">Authorization timed out. Connect again and return from the browser after approving access.</string>
+    <string name="spotify_import_port_busy">Another app is using the sign-in connection. Close it and try again, or choose a CSV file.</string>
+    <string name="spotify_import_empty_library">No supported liked songs were found in your Spotify library. Save some songs in Spotify or choose a CSV file.</string>
 </resources>

@@ -1,5 +1,10 @@
 package com.metrolist.music.ui.screens
 
+import android.content.Intent
+import android.net.Uri
+import androidx.browser.customtabs.CustomTabsIntent
+import androidx.compose.ui.platform.LocalContext
+
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
@@ -44,6 +49,9 @@ import com.metrolist.music.viewmodels.SpotifyImportViewModel
 @Composable
 fun SpotifyImportScreen(navController: NavController, viewModel: SpotifyImportViewModel = hiltViewModel()) {
     val state by viewModel.state.collectAsState()
+    val context = LocalContext.current
+    val acceptedMessage = stringResource(R.string.spotify_import_callback_success)
+    val rejectedMessage = stringResource(R.string.spotify_import_callback_invalid)
     var showHelp by rememberSaveable { mutableStateOf(false) }
     val picker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri -> uri?.let(viewModel::chooseFile) }
     if (showHelp) AlertDialog(onDismissRequest = { showHelp = false },
@@ -60,16 +68,23 @@ fun SpotifyImportScreen(navController: NavController, viewModel: SpotifyImportVi
             .windowInsetsPadding(LocalPlayerAwareWindowInsets.current.only(WindowInsetsSides.Bottom)),
             contentPadding = PaddingValues(20.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
             item { Text(stringResource(R.string.spotify_import_description)) }
+            item { Button(modifier = Modifier.testTag("sonet_spotify_connect"), enabled = !state.busy, onClick = {
+                viewModel.connect(acceptedMessage, rejectedMessage) { url ->
+                    try { CustomTabsIntent.Builder().build().launchUrl(context, Uri.parse(url)) }
+                    catch (_: android.content.ActivityNotFoundException) { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url))) }
+                }
+            }) { Text(stringResource(R.string.spotify_import_connect)) } }
+            item { Text(stringResource(R.string.spotify_import_csv_fallback)) }
             item { TextButton(modifier = Modifier.testTag("sonet_spotify_export_help"), onClick = { showHelp = true }) {
                 Text(stringResource(R.string.spotify_import_export_help))
             } }
-            item { Button(modifier = Modifier.testTag("sonet_spotify_choose_file"), enabled = !state.busy,
+            item { TextButton(modifier = Modifier.testTag("sonet_spotify_choose_file"), enabled = !state.busy,
                 onClick = { picker.launch(arrayOf("text/csv", "text/comma-separated-values", "application/csv", "text/plain", "application/octet-stream", "*/*")) }) {
                 Text(stringResource(R.string.spotify_import_choose_file))
             } }
             if (state.validSongs > 0) {
                 item { Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text(if (state.fileName.isBlank()) stringResource(R.string.spotify_import_selected_file) else state.fileName)
+                    Text(if (state.spotifySource) stringResource(R.string.spotify_import_spotify_library) else if (state.fileName.isBlank()) stringResource(R.string.spotify_import_selected_file) else state.fileName)
                     Text(stringResource(R.string.spotify_import_preview, state.validSongs, state.skippedRows))
                     state.preview.forEach { Text(it) }
                 } }
@@ -79,7 +94,13 @@ fun SpotifyImportScreen(navController: NavController, viewModel: SpotifyImportVi
             }
             if (state.busy) item { Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
-                Text(stringResource(if (state.loading) R.string.spotify_import_reading else R.string.spotify_import_running))
+                Text(stringResource(when {
+                    state.authorizing -> R.string.spotify_import_authorizing
+                    state.connecting -> R.string.spotify_import_fetching
+                    state.loading -> R.string.spotify_import_reading
+                    else -> R.string.spotify_import_running
+                }))
+                if (state.connecting && !state.authorizing) Text(stringResource(R.string.spotify_import_fetch_progress, state.loaded, state.loadTotal))
                 TextButton(onClick = viewModel::cancel) { Text(stringResource(R.string.spotify_import_cancel)) }
             } }
             if (state.progress.total > 0) item { Text(
@@ -96,6 +117,13 @@ fun SpotifyImportScreen(navController: NavController, viewModel: SpotifyImportVi
                 SpotifyFailure.FILE_READ -> R.string.spotify_import_file_read_error
                 SpotifyFailure.NETWORK -> R.string.spotify_import_network
                 SpotifyFailure.RESPONSE -> R.string.spotify_import_error
+                SpotifyFailure.DENIED -> R.string.spotify_import_denied
+                SpotifyFailure.AUTHORIZATION -> R.string.spotify_import_authorization_error
+                SpotifyFailure.FORBIDDEN -> R.string.spotify_import_forbidden
+                SpotifyFailure.RATE_LIMIT -> R.string.spotify_import_rate_limit
+                SpotifyFailure.TIMEOUT -> R.string.spotify_import_timeout
+                SpotifyFailure.PORT_BUSY -> R.string.spotify_import_port_busy
+                SpotifyFailure.EMPTY_LIBRARY -> R.string.spotify_import_empty_library
             })) } }
             if (state.progress.unmatched.isNotEmpty()) {
                 item { Text(stringResource(R.string.spotify_import_unmatched)) }
