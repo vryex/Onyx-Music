@@ -23,6 +23,8 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+      - name: Install image assertion dependency
+        run: python3 -m pip install --user --break-system-packages "Pillow>=10,<13"
       - name: Wait for the release artifact
         id: release
         env:
