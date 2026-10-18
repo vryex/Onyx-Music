@@ -818,6 +818,13 @@ fun BottomSheetPlayer(
     val artworkPlacement = remember { PlayerArtworkPlacement() }
     var hasShownLyrics by remember { mutableStateOf(false) }
     LaunchedEffect(showInlineLyrics) { if (showInlineLyrics) hasShownLyrics = true }
+    LaunchedEffect(state.isExpanded) {
+        if (state.isExpanded && !hasShownLyrics) {
+            // Prepare after the sheet settles, outside the cover-to-lyrics flight.
+            delay(500)
+            hasShownLyrics = true
+        }
+    }
     BottomSheet(
         state = state,
         backgroundFollowsContent = true,
