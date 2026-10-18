@@ -31,6 +31,16 @@ def tap_label(root, label):
         root = snapshot('wait-' + re.sub(r'[^a-z0-9]+', '-', label) + '-' + str(attempt))
     raise AssertionError('Missing visible control after accessibility settled: ' + label)
 
+def csv_picker_snapshot(prefix):
+    # DocumentsUI can take several seconds to replace the app on a cold emulator.
+    for attempt in range(20):
+        root = snapshot(prefix + '-' + str(attempt))
+        if any('documentsui' in n.get('package', '') for n in root.iter('node')):
+            return root
+        time.sleep(.5)
+    raise AssertionError('CSV document picker did not open')
+
+
 def validate_spotify_background(root):
     # Disposable local CSV only: no real Spotify account is connected by CI.
     fixture = out / 'sonet-background-test.csv'
@@ -41,9 +51,10 @@ def validate_spotify_background(root):
     root = scroll_to_label(root, 'choose csv file', '25-find-picker')
     tap_label(root, 'choose csv file')
     time.sleep(1)
-    picker = snapshot('25-background-picker')
+    picker = csv_picker_snapshot('25-background-picker')
     if not any('sonet-background-test.csv' in n.get('text', '') for n in picker.iter('node')):
-        adb('shell', 'input', 'tap', '70', '150')
+        tap_label(picker, 'show roots')
+        time.sleep(1)
         tap_label(snapshot('25-background-locations'), 'downloads')
         picker = snapshot('25-background-downloads')
     tap_label(picker, 'sonet-background-test.csv')
@@ -161,10 +172,11 @@ def validate_page_actions():
     x1, y1, x2, y2 = map(int, re.findall(r'\d+', choose.get('bounds', '')))
     adb('shell', 'input', 'tap', str((x1+x2)//2), str((y1+y2)//2))
     time.sleep(2)
-    picker = snapshot('24-csv-picker')
+    picker = csv_picker_snapshot('24-csv-picker')
     if not any('sonet-spotify-test.csv' in n.get('text', '') for n in picker.iter('node')):
         # DocumentsUI navigation drawer exposes Downloads across emulator versions.
-        adb('shell', 'input', 'tap', '70', '150')
+        tap_label(picker, 'show roots')
+        time.sleep(1)
         picker = snapshot('24-csv-locations')
         tap_label(picker, 'downloads')
         picker = snapshot('24-csv-downloads')
