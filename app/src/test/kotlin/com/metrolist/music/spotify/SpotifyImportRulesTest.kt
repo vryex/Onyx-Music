@@ -12,6 +12,25 @@ class SpotifyImportRulesTest {
         assertFalse(SpotifyImportRules.matches(track, "U-Bahn Ride", listOf("1tbsp & Unrelated"), 200))
     }
 
+    @Test fun jointCreditsRecognizeKnownArtistsWithoutSplittingRealNames() {
+        val source = SpotifyTrack("Song", listOf("Lead", "Guest"), 200)
+        for (separator in listOf(" & ", " and ", " x ", ", ", " y ")) {
+            assertTrue(separator, SpotifyImportRules.matches(source, "Song", listOf("Lead${separator}Guest"), 200))
+            assertFalse(separator, SpotifyImportRules.matches(source, "Song", listOf("Lead${separator}Stranger"), 200))
+        }
+        assertTrue(SpotifyImportRules.matches(source.copy(title = "Song (feat. Guest)"), "Song", listOf("Lead & Guest"), 200))
+        assertFalse(SpotifyImportRules.matches(SpotifyTrack("Song", listOf("Tyler, The Creator"), 200), "Song", listOf("Tyler"), 200))
+        assertTrue(SpotifyImportRules.matches(SpotifyTrack("Song", listOf("Earth, Wind & Fire"), 200), "Song", listOf("Earth, Wind & Fire - Topic"), 200))
+    }
+
+    @Test fun singleVersionCleanupPreservesRecordingDifferences() {
+        val source = SpotifyTrack("Song (Single Version)", listOf("Artist"), 200)
+        assertTrue(SpotifyImportRules.matches(source, "Song (Official Audio)", listOf("Artist"), 200))
+        for (version in listOf("Live", "Radio Edit", "Remix", "Acoustic", "Extended", "Sped Up", "Cover")) {
+            assertFalse(version, SpotifyImportRules.matches(source, "Song ($version)", listOf("Artist"), 200))
+        }
+    }
+
     @Test fun singleVersionLabelDoesNotHideTheSameRecording() {
         val track = SpotifyTrack("Under Your Control - Single version", listOf("Seppuku"), 200)
         assertTrue(SpotifyImportRules.matches(track, "Under Your Control", listOf("Seppuku"), 201))
