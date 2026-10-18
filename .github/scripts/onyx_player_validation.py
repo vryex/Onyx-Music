@@ -164,17 +164,33 @@ def control_point(root, description):
     return str((b[0] + b[2]) // 2), str((b[1] + b[3]) // 2)
 
 def check_metadata_row(root):
-    title = next(n for n in root.iter('node') if n.get('text') == 'Sonet UI check 1')
+    titles = [n for n in root.iter('node') if n.get('text') == 'Sonet UI check 1']
+    # Home behind the sheet can expose the same title; inspect the player's row.
+    title = min(titles, key=lambda n: abs(
+        sum(int(v) for v in re.findall(r'\d+', n.get('bounds', ''))[1::2]) / 2
+        - int(control_point(root, 'fullscreen lyrics')[1])))
     title_bounds = [int(v) for v in re.findall(r'\d+', title.get('bounds', ''))]
     button_y = int(control_point(root, 'fullscreen lyrics')[1])
     assert title_bounds[1] - 40 <= button_y <= title_bounds[3] + 80, 'Title detached from metadata row'
 
+def check_visible_lyrics(root):
+    visible = []
+    for node in root.iter('node'):
+        if 'Local timing test line' not in node.get('text', ''):
+            continue
+        b = [int(v) for v in re.findall(r'\d+', node.get('bounds', ''))]
+        if len(b) == 4 and b[2] - b[0] > 100 and b[3] > b[1]:
+            visible.append(b)
+    assert visible, 'Loaded lyrics have no visible width/height'
+
+check_visible_lyrics(lyrics_screen)
 fullscreen_normal = control_point(lyrics_screen, 'fullscreen lyrics')
 toggle_lyrics = control_point(lyrics_screen, 'lyrics')
 check_metadata_row(lyrics_screen)
 tap_label(lyrics_screen, 'fullscreen lyrics')
 fullscreen_screen = snapshot('16-fullscreen')
 check_metadata_row(fullscreen_screen)
+check_visible_lyrics(fullscreen_screen)
 fullscreen_expanded = control_point(fullscreen_screen, 'fullscreen lyrics')
 tap_label(fullscreen_screen, 'fullscreen lyrics')
 
@@ -198,6 +214,7 @@ recording.wait(timeout=15)
 adb('pull', '/sdcard/sonet-transitions.mp4', str(out / 'lyrics-transitions.mp4'), check=False)
 settled = snapshot('16-after-transition-stress')
 check_metadata_row(settled)
+check_visible_lyrics(settled)
 tap_label(settled, 'lyrics tools')
 snapshot('17-lyrics-tools')
 adb('shell', 'input', 'keyevent', 'KEYCODE_BACK')

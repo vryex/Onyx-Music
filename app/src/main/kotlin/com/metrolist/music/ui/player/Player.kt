@@ -1357,7 +1357,9 @@ fun BottomSheetPlayer(
                     )
                     Box(
                         contentAlignment = Alignment.Center,
-                        modifier = Modifier.weight(1f),
+                        // matchParentSize children don't contribute to Box measurement.
+                        // Keep the pane wide even when Thumbnail leaves composition.
+                        modifier = Modifier.fillMaxWidth().weight(1f),
                     ) {
                         // Remember lambdas to prevent unnecessary recomposition
                         val currentSliderPosition by rememberUpdatedState(sliderPosition)
