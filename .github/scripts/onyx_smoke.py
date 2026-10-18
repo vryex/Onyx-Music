@@ -69,19 +69,27 @@ adb('shell', 'am', 'start', '-W', '-n', ACTIVITY)
 time.sleep(10)
 assert adb('shell', 'pidof', PACKAGE).strip(), 'App terminated during launch'
 if globals().get('VIDEO_PROBE_ONLY', False):
-    # Verify the reported endless Home skeleton on a genuinely offline emulator.
-    adb('shell', 'svc', 'wifi', 'disable')
-    adb('shell', 'svc', 'data', 'disable')
-    adb('shell', 'am', 'force-stop', PACKAGE)
-    adb('shell', 'am', 'start', '-W', '-n', ACTIVITY)
-    time.sleep(28)
-    offline = snapshot('00-offline-home-recovery')
-    assert any('YouTube connection detail:' in n.get('text', '') for n in offline.iter('node')), 'Offline Home did not leave its loading skeleton with a diagnostic'
-    assert any('try again' in n.get('text', '').lower() for n in offline.iter('node')), 'Offline Home has no retry action'
-    assert adb('shell', 'pidof', PACKAGE).strip(), 'App stopped during offline Home recovery'
-    print('PASS: offline Home exits loading and shows an actionable connection diagnostic')
-    adb('shell', 'svc', 'wifi', 'enable')
-    adb('shell', 'svc', 'data', 'enable')
+    # Emulator radio commands do not always disable its virtual default network.
+    # Drop only this disposable app UID's packets to exercise a stalled request.
+    adb('root')
+    adb('wait-for-device')
+    package_info = adb('shell', 'cmd', 'package', 'list', 'packages', '-U', PACKAGE).decode()
+    uid = re.search(r'uid:(\d+)', package_info).group(1)
+    rule = ['OUTPUT', '-m', 'owner', '--uid-owner', uid, '-j', 'DROP']
+    adb('shell', 'iptables', '-I', *rule)
+    adb('shell', 'ip6tables', '-I', *rule, check=False)
+    try:
+        adb('shell', 'am', 'force-stop', PACKAGE)
+        adb('shell', 'am', 'start', '-W', '-n', ACTIVITY)
+        time.sleep(28)
+        offline = snapshot('00-offline-home-recovery')
+        assert any('YouTube connection detail:' in n.get('text', '') for n in offline.iter('node')), 'Blocked Home did not leave its loading skeleton with a diagnostic'
+        assert any('try again' in n.get('text', '').lower() for n in offline.iter('node')), 'Blocked Home has no retry action'
+        assert adb('shell', 'pidof', PACKAGE).strip(), 'App stopped during offline Home recovery'
+        print('PASS: blocked YouTube requests exit Home loading and show an actionable connection diagnostic')
+    finally:
+        adb('shell', 'iptables', '-D', *rule, check=False)
+        adb('shell', 'ip6tables', '-D', *rule, check=False)
     adb('shell', 'am', 'force-stop', PACKAGE)
     adb('shell', 'am', 'start', '-W', '-n', ACTIVITY)
     time.sleep(3)
