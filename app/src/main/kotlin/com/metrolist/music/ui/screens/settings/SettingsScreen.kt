@@ -132,10 +132,7 @@ fun SettingsScreen(navController: NavController, latestVersionName: String) {
                 LocalPlayerAwareWindowInsets.current.only(WindowInsetsSides.Top)
             )
         )
-        com.metrolist.music.ui.theme.OnyxPageHeader(
-            stringResource(R.string.settings), subtitle = stringResource(R.string.app_name)
-        )
-        Spacer(Modifier.height(16.dp))
+        Spacer(Modifier.height(8.dp))
         Material3SettingsGroup(
             title = stringResource(R.string.settings_section_player_content),
             items = listOf(

@@ -3,6 +3,10 @@ package com.metrolist.music.ui.theme
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.Canvas
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.drawscope.Stroke
+import kotlin.math.sin
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -39,31 +43,57 @@ fun OnyxLaunchIntro() {
     val reveal = remember { Animatable(0f) }
     val veil = remember { Animatable(1f) }
     LaunchedEffect(Unit) {
-        reveal.animateTo(1f, tween(480, easing = FastOutSlowInEasing))
+        reveal.animateTo(1f, tween(720, easing = FastOutSlowInEasing))
         veil.animateTo(0f, tween(260))
         finished = true
     }
     Box(
-        Modifier.fillMaxSize().graphicsLayer { alpha = veil.value }.background(MidnightCanvas),
+        Modifier.fillMaxSize().graphicsLayer { alpha = veil.value }.background(Color.Black),
         contentAlignment = Alignment.Center,
     ) {
+        Canvas(Modifier.fillMaxSize()) {
+            val progress = reveal.value
+            val center = Offset(size.width / 2f, size.height / 2f - 42.dp.toPx())
+            for (index in 0..2) {
+                val wave = (progress - index * .13f).coerceAtLeast(0f)
+                drawCircle(
+                    color = Color.White.copy(alpha = (1f - wave) * .16f * progress),
+                    radius = 28.dp.toPx() + size.maxDimension * .62f * wave,
+                    center = center,
+                    style = Stroke(width = 1.dp.toPx()),
+                )
+            }
+            val width = size.width * .34f * progress
+            for (index in 0..18) {
+                val x = center.x - width / 2f + width * index / 18f
+                val envelope = sin(index / 18f * kotlin.math.PI).toFloat()
+                val height = (4f + 15f * envelope *
+                    kotlin.math.abs(sin(index * .84f + progress * 5f))) * density * progress
+                drawLine(Color.White.copy(alpha = .30f * progress),
+                    Offset(x, center.y + 126.dp.toPx() - height / 2f),
+                    Offset(x, center.y + 126.dp.toPx() + height / 2f),
+                    strokeWidth = 2.dp.toPx(), cap = androidx.compose.ui.graphics.StrokeCap.Round)
+            }
+        }
         Column(
             Modifier.graphicsLayer {
                 alpha = reveal.value
                 translationY = (1f - reveal.value) * 16.dp.toPx()
-                scaleX = .96f + .04f * reveal.value
+                scaleX = .88f + .12f * reveal.value
                 scaleY = scaleX
             },
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(24.dp),
         ) {
-            Icon(painterResource(R.drawable.sonet_mark), null, Modifier.size(64.dp), tint = FrostGlow)
+            Icon(painterResource(R.drawable.sonet_mark), null,
+                Modifier.size(64.dp).graphicsLayer { rotationZ = (1f - reveal.value) * -14f },
+                tint = Color.White)
             Text(
                 stringResource(R.string.app_name),
                 style = MaterialTheme.typography.displayLarge.merge(TextStyle(
                     fontWeight = FontWeight.Medium,
                     letterSpacing = (-1).sp,
-                    brush = Brush.linearGradient(listOf(Color(0xFFE59CFF), Color(0xFFBA9CFF), Color(0xFF9CB2FF))),
+                    color = Color.White,
                 )),
             )
         }

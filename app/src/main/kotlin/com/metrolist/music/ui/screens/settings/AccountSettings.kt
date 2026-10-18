@@ -108,7 +108,7 @@ fun AccountSettings(
 
     Column(
         modifier = Modifier
-            .background(MaterialTheme.colorScheme.surfaceContainer)
+            .background(androidx.compose.ui.graphics.Color(0xFF101010))
             .padding(16.dp)
             .verticalScroll(rememberScrollState())
     ) {
@@ -118,6 +118,8 @@ fun AccountSettings(
                 .padding(start = 8.dp, end = 8.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
+            Icon(painterResource(R.drawable.sonet_mark), null, Modifier.size(24.dp))
+            Spacer(Modifier.width(8.dp))
             Text(
                 text = stringResource(id = R.string.app_name),
                 style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Medium),

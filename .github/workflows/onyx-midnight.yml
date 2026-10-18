@@ -47,7 +47,6 @@ jobs:
           keytool -genkeypair -keystore "$HOME/.android/debug.keystore" -storepass android -keypass android -alias androiddebugkey -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Onyx CI Debug,O=Onyx,C=MX" -noprompt
       - name: Regression tests and required debug build
         run: |
-          node .github/scripts/onyx_video_check.cjs
           bash ./gradlew :app:testFossDebugUnitTest :innertube:testDebugUnitTest :app:assembleFossDebug --console=plain --continue --max-workers=2 -Pkotlin.compiler.execution.strategy=in-process
       - name: Optimized release build
         run: bash ./gradlew :app:assembleIzzyRelease --console=plain --continue --max-workers=2 -Pkotlin.compiler.execution.strategy=in-process

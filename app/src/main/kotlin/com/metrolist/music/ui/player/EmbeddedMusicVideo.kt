@@ -1,26 +1,22 @@
 package com.metrolist.music.ui.player
 
-import android.content.Intent
-import android.annotation.SuppressLint
-import android.webkit.ConsoleMessage
-import android.webkit.WebChromeClient
-import android.webkit.WebResourceError
-import android.webkit.WebResourceRequest
-import android.webkit.WebSettings
-import android.webkit.WebView
-import android.webkit.WebViewClient
+import android.view.TextureView
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.key
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
@@ -29,22 +25,39 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.layout.ContentScale
-import coil3.compose.AsyncImage
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.repeatOnLifecycle
+import androidx.media3.common.C
+import androidx.media3.common.MediaItem
+import androidx.media3.common.PlaybackException
+import androidx.media3.common.Player
+import androidx.media3.common.VideoSize
+import androidx.media3.common.util.UnstableApi
+import androidx.media3.datasource.DefaultHttpDataSource
+import androidx.media3.exoplayer.DefaultLoadControl
+import androidx.media3.exoplayer.ExoPlayer
+import androidx.media3.exoplayer.source.ProgressiveMediaSource
+import coil3.compose.AsyncImage
+import com.metrolist.music.R
+import com.metrolist.music.ui.component.SonetLoadingIndicator
+import com.metrolist.music.utils.InnerTubeXPlayer
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
+import kotlinx.coroutines.withContext
 
-/** Created only on explicit video selection; the service remains the audio/transport owner. */
-@SuppressLint("SetJavaScriptEnabled")
+/** The service owns audio; this foreground-only player decodes the muted video track. */
+@androidx.annotation.OptIn(UnstableApi::class)
 @Composable
 fun EmbeddedMusicVideo(
     videoId: String,
@@ -60,115 +73,109 @@ fun EmbeddedMusicVideo(
     val latestPlaying by rememberUpdatedState(playingProvider)
     val latestSpeed by rememberUpdatedState(speedProvider)
     val latestUnavailable by rememberUpdatedState(onUnavailable)
-    var ready by remember(videoId) { mutableStateOf(false) }
-    var playing by remember(videoId) { mutableStateOf(false) }
-    var failed by remember(videoId) { mutableStateOf(false) }
-    // A valid, project-owned HTTPS origin supplies YouTube with an actual HTTP Referer.
-    // A synthetic package-name host can make embedded playback fail with error 153.
-    val origin = "https://xero-scripts-repo.github.io"
-    val coverUrl = artworkUrl?.takeUnless { it.isBlank() }
-        ?: "https://i.ytimg.com/vi/$videoId/hqdefault.jpg"
-    val script = remember(context) { context.assets.open("onyx_video.js").bufferedReader().use { it.readText() } }
-    val webView = remember(videoId, coverUrl, context) {
-        require(videoId.matches(Regex("[A-Za-z0-9_-]{11}")))
-        WebView(context).apply {
-            // Keep the Compose artwork visible until the in-WebView poster is ready.
-            setBackgroundColor(android.graphics.Color.TRANSPARENT)
-            settings.javaScriptEnabled = true
-            settings.domStorageEnabled = true
-            settings.mediaPlaybackRequiresUserGesture = false
-            settings.allowFileAccess = false
-            settings.allowContentAccess = false
-            settings.mixedContentMode = WebSettings.MIXED_CONTENT_NEVER_ALLOW
-            webViewClient = object : WebViewClient() {
-                override fun onReceivedError(view: WebView, request: WebResourceRequest, error: WebResourceError) {
-                    if (request.isForMainFrame && !failed) {
-                        failed = true
-                        view.post { latestUnavailable() }
-                    }
-                }
-                override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {
-                    if (!request.isForMainFrame) return false
-                    val host = request.url.host.orEmpty()
-                    if (request.hasGesture() && request.url.scheme == "https" &&
-                        (host == "youtube.com" || host.endsWith(".youtube.com") || host == "youtu.be")) {
-                        runCatching { context.startActivity(Intent(Intent.ACTION_VIEW, request.url).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) }
-                    }
-                    return true
-                }
+    var attempt by remember(videoId) { mutableIntStateOf(0) }
+    var rendered by remember(videoId, attempt) { mutableStateOf(false) }
+    var advancing by remember(videoId, attempt) { mutableStateOf(false) }
+    var failed by remember(videoId, attempt) { mutableStateOf(false) }
+    var ratio by remember(videoId) { mutableStateOf(16f / 9f) }
+    val player = remember(context, videoId, attempt) {
+        ExoPlayer.Builder(context)
+            .setLoadControl(DefaultLoadControl.Builder()
+                .setBufferDurationsMs(2_000, 12_000, 500, 1_000).build())
+            .build().apply {
+                volume = 0f
+                trackSelectionParameters = trackSelectionParameters.buildUpon()
+                    .setTrackTypeDisabled(C.TRACK_TYPE_AUDIO, true).build()
             }
-            webChromeClient = object : WebChromeClient() {
-                override fun onConsoleMessage(message: ConsoleMessage): Boolean {
-                    if (!message.sourceId().startsWith(origin)) return false
-                    when {
-                        message.message() == "ONYX_VIDEO_READY" -> ready = true
-                        message.message() == "ONYX_VIDEO_PLAYING" -> playing = true
-                        message.message() == "ONYX_VIDEO_WAITING" -> playing = false
-                        message.message().startsWith("ONYX_VIDEO_ERROR:") -> if (!failed) {
-                            android.util.Log.w("OnyxVideo", "Embedded video rejected: " + message.message())
-                            failed = true
-                            post { latestUnavailable() }
-                        }
-                    }
-                    return true
-                }
-            }
-            // Place the poster IN the WebView: YouTube's hardware-backed iframe can paint
-            // above Compose siblings on certain Android/WebView versions.
-            val poster = android.text.TextUtils.htmlEncode(coverUrl)
-            val fallback = "https://i.ytimg.com/vi/$videoId/hqdefault.jpg"
-            val html = """<!doctype html><html><head><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="referrer" content="origin-when-cross-origin"><style>html,body{width:100%;height:100%;margin:0;overflow:hidden;background:transparent}#player{width:100%;height:100%;background:#161616}#onyx-poster{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:99;pointer-events:none;background:#161616}</style></head><body><div id="player"></div><img id="onyx-poster" src="$poster" onerror="this.onerror=null;this.src='$fallback'"><script>var ONYX_VIDEO_ID='$videoId';var ONYX_ORIGIN='$origin';$script</script></body></html>"""
-            loadDataWithBaseURL("$origin/", html, "text/html", "UTF-8", null)
-        }
     }
-    DisposableEffect(webView, lifecycleOwner) {
-        val observer = LifecycleEventObserver { _, event ->
-            when (event) {
-                Lifecycle.Event.ON_STOP -> { webView.evaluateJavascript("onyxPause()", null); webView.onPause() }
-                Lifecycle.Event.ON_START -> webView.onResume()
-                else -> Unit
+    DisposableEffect(player, lifecycleOwner) {
+        val listener = object : Player.Listener {
+            override fun onRenderedFirstFrame() { rendered = true }
+            override fun onVideoSizeChanged(videoSize: VideoSize) {
+                if (videoSize.width > 0 && videoSize.height > 0) {
+                    ratio = videoSize.width * videoSize.pixelWidthHeightRatio / videoSize.height
+                }
+            }
+            override fun onPlayerError(error: PlaybackException) {
+                failed = true
+                advancing = false
+                latestUnavailable()
             }
         }
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_STOP) {
+                player.pause()
+                advancing = false
+            }
+        }
+        player.addListener(listener)
         lifecycleOwner.lifecycle.addObserver(observer)
         onDispose {
             lifecycleOwner.lifecycle.removeObserver(observer)
-            webView.stopLoading()
-            webView.loadUrl("about:blank")
-            webView.removeAllViews()
-            webView.destroy()
+            player.removeListener(listener)
+            player.release()
         }
     }
-    LaunchedEffect(webView, lifecycleOwner) {
+    LaunchedEffect(player, videoId) {
+        try {
+            val stream = withContext(Dispatchers.IO) { InnerTubeXPlayer.videoStreamForPlayback(videoId) }
+            val factory = DefaultHttpDataSource.Factory()
+                .setDefaultRequestProperties(stream.headers)
+                .setConnectTimeoutMs(15_000).setReadTimeoutMs(15_000)
+            val source = ProgressiveMediaSource.Factory(factory).createMediaSource(
+                MediaItem.Builder().setUri(requireNotNull(stream.videoUrl))
+                    .setMimeType(stream.videoMimeType?.substringBefore(';')).build(),
+            )
+            player.setMediaSource(source, latestPosition().coerceAtLeast(0L))
+            player.prepare()
+        } catch (cancelled: CancellationException) {
+            throw cancelled
+        } catch (_: Exception) {
+            failed = true
+            latestUnavailable()
+        }
+    }
+    LaunchedEffect(player, lifecycleOwner) {
         lifecycleOwner.lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
-            var loadingTicks = 0
-            while (isActive && !failed) {
-                if (!ready && ++loadingTicks > 40) {
-                    failed = true
-                    latestUnavailable()
-                    break
+            var previousPosition = -1L
+            while (isActive) {
+                if (!failed) {
+                    val target = latestPosition().coerceAtLeast(0L)
+                    // Don't repeatedly seek a buffering decoder; that starves its first frame.
+                    videoSeekTarget(player.currentPosition, target, player.playbackState == Player.STATE_READY)
+                        ?.let(player::seekTo)
+                    val speed = latestSpeed().takeIf { it.isFinite() && it > 0f } ?: 1f
+                    if (player.playbackParameters.speed != speed) player.setPlaybackSpeed(speed)
+                    player.playWhenReady = latestPlaying()
+                    val current = player.currentPosition
+                    advancing = rendered && player.isPlaying && previousPosition >= 0L && current > previousPosition
+                    previousPosition = current
                 }
-                val seconds = latestPosition().coerceAtLeast(0L) / 1000.0
-                val speed = latestSpeed().takeIf { it.isFinite() && it > 0f } ?: 1f
-                webView.evaluateJavascript("onyxSync($seconds,${latestPlaying()},$speed)", null)
-                delay(500)
+                delay(350)
             }
         }
     }
+    val status = if (failed) "Video unavailable" else if (advancing) "Video playing" else if (rendered) "Video ready" else "Video loading"
     Box(Modifier.fillMaxWidth().padding(24.dp), contentAlignment = Alignment.Center) {
-        key(videoId) {
-            val videoStatus = if (playing) "Video playing" else if (ready) "Video ready" else "Video loading"
-            Box(Modifier.fillMaxWidth().aspectRatio(1f).clip(RoundedCornerShape(24.dp))
-                .background(Color(0xFF161616))) {
-                // Compose fallback covers the brief initial page-load period.
-                AsyncImage(coverUrl, null, contentScale = ContentScale.Crop,
-                    modifier = Modifier.fillMaxSize())
-                // The native HTML poster sits ABOVE the iframe until real playback advances,
-                // preventing a black YouTube surface from hiding the cover art.
-                AndroidView(
-                    factory = { webView },
-                    update = { it.contentDescription = videoStatus },
-                    modifier = Modifier.fillMaxSize().semantics { contentDescription = videoStatus },
-                )
+        Box(Modifier.fillMaxWidth().aspectRatio(ratio.coerceIn(.5f, 2.4f))
+            .clip(RoundedCornerShape(20.dp)).background(Color.Black)
+            .semantics { contentDescription = status }) {
+            AndroidView(
+                factory = { TextureView(it) },
+                update = { player.setVideoTextureView(it) },
+                onRelease = { player.clearVideoTextureView(it) },
+                modifier = Modifier.fillMaxSize(),
+            )
+            if (!rendered || failed) {
+                AsyncImage(artworkUrl, null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
+                Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = .55f)), contentAlignment = Alignment.Center) {
+                    if (failed) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Text(stringResource(R.string.onyx_video_unavailable), color = Color.White)
+                            TextButton(onClick = { attempt++ }) { Text(stringResource(R.string.retry), color = Color.White) }
+                        }
+                    } else SonetLoadingIndicator()
+                }
             }
         }
     }

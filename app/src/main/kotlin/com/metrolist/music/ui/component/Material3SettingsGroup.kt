@@ -57,31 +57,17 @@ fun Material3SettingsGroup(
                 text = it,
                 style = MaterialTheme.typography.labelLarge,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(bottom = 8.dp, top = 8.dp)
+                modifier = Modifier.padding(start = 8.dp, bottom = 6.dp, top = 14.dp)
             )
         }
 
-        // Settings items
-        Column(
-            modifier = Modifier.fillMaxWidth().onyxGlass(RoundedCornerShape(16.dp)),
-            verticalArrangement = Arrangement.spacedBy(0.dp)
-        ) {
+        Column(Modifier.fillMaxWidth()) {
             items.forEachIndexed { index, item ->
-                val shape = RoundedCornerShape(16.dp)
-
-                Card(
-                    modifier = Modifier
-                        .fillMaxWidth(),
-                    shape = shape,
-                    colors = CardDefaults.cardColors(containerColor = Color.Transparent),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
-                ) {
-                    Material3SettingsItemRow(item = item)
-                    if (index < items.lastIndex) androidx.compose.material3.HorizontalDivider(
-                        modifier = Modifier.padding(horizontal = 20.dp),
-                        color = MaterialTheme.colorScheme.outlineVariant,
-                    )
-                }
+                Material3SettingsItemRow(item = item)
+                if (index < items.lastIndex) androidx.compose.material3.HorizontalDivider(
+                    modifier = Modifier.padding(start = 52.dp, end = 8.dp),
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.07f),
+                )
             }
         }
     }
@@ -101,7 +87,8 @@ private fun Material3SettingsItemRow(
                 enabled = item.enabled && item.onClick != null,
                 onClick = { item.onClick?.invoke() }
             )
-            .padding(horizontal = 20.dp, vertical = 16.dp),
+            .clip(RoundedCornerShape(14.dp))
+            .padding(horizontal = 8.dp, vertical = 18.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         // Custom leading content or Icon with background
@@ -110,14 +97,7 @@ private fun Material3SettingsItemRow(
             Spacer(modifier = Modifier.width(16.dp))
         } else if (item.icon != null) {
             Box(
-                modifier = Modifier
-                    .size(32.dp)
-                    .clip(RoundedCornerShape(24.dp))
-                    .background(
-                        MaterialTheme.colorScheme.primary.copy(
-                            alpha = if (item.isHighlighted) 0.15f else 0.1f
-                        )
-                    ),
+                modifier = Modifier.size(28.dp),
                 contentAlignment = Alignment.Center
             ) {
                 if (item.showBadge) {
@@ -164,7 +144,7 @@ private fun Material3SettingsItemRow(
         ) {
             // Title content
             ProvideTextStyle(
-                MaterialTheme.typography.titleMedium.copy(
+                MaterialTheme.typography.bodyLarge.copy(
                     color = if (!item.enabled) 
                         MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
                     else
@@ -194,6 +174,15 @@ private fun Material3SettingsItemRow(
         item.trailingContent?.let { trailing ->
             Spacer(modifier = Modifier.width(8.dp))
             trailing()
+        }
+        if (item.trailingContent == null && item.onClick != null) {
+            Spacer(Modifier.width(12.dp))
+            Icon(
+                painter = androidx.compose.ui.res.painterResource(com.metrolist.music.R.drawable.arrow_forward),
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.32f),
+                modifier = Modifier.size(18.dp),
+            )
         }
     }
 }

@@ -220,20 +220,17 @@ snapshot('17-lyrics-tools')
 adb('shell', 'input', 'keyevent', 'KEYCODE_BACK')
 tap_label(snapshot('18-return-player'), 'lyrics')
 video_header = snapshot('18-video-toggle')
+adb('shell', 'input', 'keyevent', 'KEYCODE_MEDIA_PLAY')
 tap_label(video_header, 'video')
 video_result = None
-for attempt in range(26):
+for attempt in range(40):
     video = snapshot('19-video-' + str(attempt))
     descriptions = [n.get('content-desc', '') for n in video.iter('node')]
-    native_player_ready = any(n.get('text') == 'YouTube Video Player' for n in video.iter('node'))
-    if native_player_ready or any('Video playing' in d or 'Video ready' in d for d in descriptions):
-        video_result = 'Embedded video initialized'
-        break
-    if not any(d == 'Video' for d in descriptions) and any('Minimize player' in d for d in descriptions):
-        video_result = 'YouTube unavailable: cover fallback preserved audio player'
+    if any('Video playing' in d for d in descriptions):
+        video_result = 'Native video rendered and playback advanced'
         break
     time.sleep(1)
-assert video_result is not None, 'Video did not initialize or return to the cover after timeout'
+assert video_result is not None, 'Known public clip never rendered advancing video; READY/cover fallback does not pass'
 (out / 'video-result.txt').write_text(video_result)
 print('VIDEO:', video_result)
 

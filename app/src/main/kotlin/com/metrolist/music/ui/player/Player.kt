@@ -347,7 +347,6 @@ fun BottomSheetPlayer(
         model = mediaMetadata?.thumbnailUrl?.resize(120, 120),
     )
     var showVideo by rememberSaveable { mutableStateOf(false) }
-    var videoUnavailable by remember(mediaMetadata?.id) { mutableStateOf(false) }
     val currentSong by playerConnection.currentSong.collectAsStateWithLifecycle(initialValue = null)
     val automix by playerConnection.service.automixItems.collectAsStateWithLifecycle()
     val repeatMode by playerConnection.repeatMode.collectAsStateWithLifecycle()
@@ -378,11 +377,10 @@ fun BottomSheetPlayer(
     val castDuration by castHandler?.castDuration?.collectAsStateWithLifecycle() ?: remember { mutableLongStateOf(0L) }
     val castIsPlaying by castHandler?.castIsPlaying?.collectAsStateWithLifecycle() ?: remember { mutableStateOf(false) }
 
-    val canShowVideo = !videoUnavailable && !isCasting && !isListenTogetherGuest &&
+    val canShowVideo = !isCasting && !isListenTogetherGuest &&
         (mediaMetadata?.isVideoSong == true || currentSong?.song?.isVideo == true) &&
         mediaMetadata?.id?.matches(Regex("[A-Za-z0-9_-]{11}")) == true
     val onVideoUnavailable: () -> Unit = {
-        videoUnavailable = true
         Toast.makeText(context, R.string.onyx_video_unavailable, Toast.LENGTH_SHORT).show()
     }
     val focusRequester = remember { FocusRequester() }
