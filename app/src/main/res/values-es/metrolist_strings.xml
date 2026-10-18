@@ -924,12 +924,12 @@
     <string name="spotify_import_selected_file">Archivo seleccionado</string>
     <string name="spotify_import_preview">%1$d canciones listas · %2$d filas no válidas o duplicadas omitidas</string>
     <string name="spotify_import_start">Importar canciones</string>
-    <string name="spotify_import_retry">Importar de nuevo / reintentar pendientes</string>
+    <string name="spotify_import_retry">Reintentar pendientes</string>
     <string name="spotify_import_reading">Leyendo tu archivo…</string>
     <string name="spotify_import_running">Buscando coincidencias y añadiendo canciones a tu biblioteca local…</string>
     <string name="spotify_import_cancel">Cancelar</string>
     <string name="spotify_import_progress">Procesadas %1$d / %2$d · Importadas %3$d · Ya disponibles %4$d · Sin coincidencia %5$d</string>
-    <string name="spotify_import_complete">Importación completada. Se han conservado las canciones existentes. Puedes volver a importar sin duplicarlas.</string>
+    <string name="spotify_import_complete">Todas las canciones de esta importación se añadieron o ya estaban en tu biblioteca.</string>
     <string name="spotify_import_cancelled">Importación detenida. Las canciones ya importadas permanecen en tu biblioteca.</string>
     <string name="spotify_import_file_too_large">El archivo es demasiado grande. Elige un CSV de menos de 10 MiB.</string>
     <string name="spotify_import_too_many_rows">El archivo tiene más de 20.000 filas. Divídelo en archivos más pequeños e inténtalo de nuevo.</string>
@@ -939,7 +939,7 @@
     <string name="spotify_import_file_read_error">No se ha podido abrir el archivo. Vuelve a elegirlo desde tu dispositivo.</string>
     <string name="spotify_import_network">La conexión ha fallado tras varios intentos. Comprueba tu conexión y vuelve a importar.</string>
     <string name="spotify_import_error">No se ha podido continuar la importación. Inténtalo de nuevo. Las canciones ya importadas se conservan.</string>
-    <string name="spotify_import_unmatched">Canciones sin coincidencia: se omiten las grabaciones no disponibles o ambiguas. Vuelve a importar para reintentarlo.</string>
+    <string name="spotify_import_unmatched">Canciones pendientes: aún no hay una coincidencia fiable. Sonet también busca videos y títulos alternativos. Pulsa Reintentar pendientes para buscarlas de nuevo.</string>
     <string name="sonet_video_unavailable">Video no disponible</string>
     <string name="sonet_video_playing">Video reproduciéndose</string>
     <string name="sonet_video_ready">Video listo</string>
@@ -960,4 +960,6 @@
     <string name="spotify_import_timeout">Se ha agotado el tiempo para autorizar. Vuelve a conectar y regresa del navegador después de permitir el acceso.</string>
     <string name="spotify_import_port_busy">Otra aplicación está usando la conexión de acceso. Ciérrala y vuelve a intentarlo o elige un archivo CSV.</string>
     <string name="spotify_import_empty_library">No se han encontrado canciones favoritas compatibles en tu biblioteca de Spotify. Guarda canciones en Spotify o elige un archivo CSV.</string>
+    <string name="spotify_import_pending_complete">La búsqueda terminó. Algunas canciones aún necesitan una coincidencia; quedan pendientes para reintentarlas.</string>
+    <string name="spotify_import_pending_count">%1$d canciones pendientes. Al reintentar solo se buscan estas canciones.</string>
 </resources>

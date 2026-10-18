@@ -88,12 +88,14 @@ fun SpotifyImportScreen(navController: NavController, viewModel: SpotifyImportVi
                     Text(stringResource(R.string.spotify_import_preview, state.validSongs, state.skippedRows))
                     state.preview.forEach { Text(it) }
                 } }
-                item { Button(modifier = Modifier.testTag("sonet_spotify_import_button"), enabled = !state.busy, onClick = viewModel::import) {
+                item { Button(modifier = Modifier.testTag("sonet_spotify_import_button"), enabled = !state.busy && state.pendingSongs != 0, onClick = viewModel::import) {
                     Text(stringResource(if (state.complete || state.cancelled || state.error != null) R.string.spotify_import_retry else R.string.spotify_import_start))
                 } }
             }
             if (state.busy) item { Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+                if (!state.loading && state.progress.total > 0) {
+                    LinearProgressIndicator(progress = { state.progress.processed.toFloat() / state.progress.total }, modifier = Modifier.fillMaxWidth())
+                } else LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
                 Text(stringResource(when {
                     state.authorizing -> R.string.spotify_import_authorizing
                     state.connecting -> R.string.spotify_import_fetching
@@ -106,7 +108,10 @@ fun SpotifyImportScreen(navController: NavController, viewModel: SpotifyImportVi
             if (state.progress.total > 0) item { Text(
                 stringResource(R.string.spotify_import_progress, state.progress.processed, state.progress.total, state.progress.imported, state.progress.already, state.progress.unmatched.size),
                 modifier = Modifier.testTag("sonet_spotify_progress")) }
-            if (state.complete) item { Text(stringResource(R.string.spotify_import_complete)) }
+            if (state.complete) item { Text(stringResource(if (state.pendingSongs == 0) R.string.spotify_import_complete else R.string.spotify_import_pending_complete)) }
+            if (state.pendingSongs != null && state.pendingSongs!! > 0 && !state.busy) item {
+                Text(stringResource(R.string.spotify_import_pending_count, state.pendingSongs!!))
+            }
             if (state.cancelled) item { Text(stringResource(R.string.spotify_import_cancelled)) }
             state.error?.let { error -> item { Text(stringResource(when (error) {
                 SpotifyFailure.FILE_TOO_LARGE -> R.string.spotify_import_file_too_large

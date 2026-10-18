@@ -1,9 +1,17 @@
 package com.metrolist.music.spotify
 
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.ensureActive
-import kotlinx.coroutines.withContext
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
 import okhttp3.HttpUrl.Companion.toHttpUrl
 import java.io.IOException
 import java.net.InetAddress
@@ -20,7 +28,13 @@ internal object SpotifyConnectionConfig {
     const val REDIRECT = "http://127.0.0.1:8888/callback"
 }
 
-internal class SpotifyOAuth(private val acceptedMessage: String, private val rejectedMessage: String, private val timeoutMillis: Long = 180_000) : AutoCloseable {
+internal class SpotifyOAuth(
+    private val acceptedMessage: String,
+    private val rejectedMessage: String,
+    private val timeoutMillis: Long = 180_000,
+    private val completionGraceMillis: Long = 15_000,
+    private val callbackLifetimeMillis: Long = 60_000,
+) : AutoCloseable {
     private val server = ServerSocket().apply {
         try {
             reuseAddress = true
@@ -33,6 +47,30 @@ internal class SpotifyOAuth(private val acceptedMessage: String, private val rej
         }
     }
     @Volatile private var activeSocket: Socket? = null
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    private val code = CompletableDeferred<String>()
+    @Volatile private var capturedAt: Long? = null
+    @Volatile private var responseDeadline = Long.MAX_VALUE
+    private val responder = scope.launch(start = CoroutineStart.LAZY) {
+        responseDeadline = System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(timeoutMillis)
+        val expiry = scope.launch {
+            while (isActive) {
+                delay(250)
+                if (System.nanoTime() >= responseDeadline) {
+                    code.completeExceptionally(SpotifyImportException(SpotifyFailure.TIMEOUT))
+                    close()
+                }
+            }
+        }
+        try {
+            serve()
+        } catch (error: Exception) {
+            code.completeExceptionally(error)
+        } finally {
+            expiry.cancel()
+            close()
+        }
+    }
     val redirect = SpotifyConnectionConfig.REDIRECT
     val verifier = SpotifyPkce.randomSecret()
     private val state = SpotifyPkce.randomSecret()
@@ -42,9 +80,26 @@ internal class SpotifyOAuth(private val acceptedMessage: String, private val rej
         .addQueryParameter("state", state).addQueryParameter("code_challenge_method", "S256")
         .addQueryParameter("code_challenge", SpotifyPkce.challenge(verifier)).build().toString()
 
-    suspend fun awaitCode(): String = withContext(Dispatchers.IO) {
-        val deadline = System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(timeoutMillis)
-        while (System.nanoTime() < deadline) {
+    suspend fun awaitCode(): String {
+        responder.start()
+        return try {
+            code.await()
+        } catch (cancelled: CancellationException) {
+            close()
+            throw cancelled
+        }
+    }
+
+    // Finishing metadata loading must not race the browser rendering or retrying its callback.
+    fun finish() {
+        val captured = capturedAt
+        if (captured == null) close()
+        else responseDeadline = minOf(responseDeadline,
+            maxOf(System.nanoTime(), captured + TimeUnit.MILLISECONDS.toNanos(completionGraceMillis)))
+    }
+
+    private suspend fun serve() {
+        while (System.nanoTime() < responseDeadline) {
             currentCoroutineContext().ensureActive()
             val socket = try {
                 server.accept()
@@ -55,52 +110,83 @@ internal class SpotifyOAuth(private val acceptedMessage: String, private val rej
                 throw error
             }
             activeSocket = socket
+            if (server.isClosed) socket.close()
             try {
                 socket.use {
                     it.soTimeout = 2000
-                    // Bound the request line: never accept an unbounded local HTTP request.
-                    val bytes = ArrayList<Byte>()
                     val input = it.getInputStream()
+                    val bytes = ArrayList<Byte>()
+                    var lineComplete = false
                     while (bytes.size < 8192) {
                         val b = input.read()
-                        if (b == -1 || b == 10) break
+                        if (b == -1) throw IOException("Incomplete callback")
+                        if (b == 10) { lineComplete = true; break }
                         bytes.add(b.toByte())
                     }
+                    if (!lineComplete) throw IOException("Oversized callback")
                     var emptyHeader = true
                     var headersComplete = false
-                    repeat(8192) {
-                        if (!headersComplete) {
-                            val byte = input.read()
-                            if (byte == -1) throw IOException("Incomplete callback")
-                            if (byte == 10) {
-                                if (emptyHeader) headersComplete = true
-                                emptyHeader = true
-                            } else if (byte != 13) emptyHeader = false
-                        }
+                    var headerBytes = 0
+                    while (!headersComplete && headerBytes++ < 8192) {
+                        val byte = input.read()
+                        if (byte == -1) throw IOException("Incomplete callback")
+                        if (byte == 10) {
+                            if (emptyHeader) headersComplete = true
+                            emptyHeader = true
+                        } else if (byte != 13) emptyHeader = false
                     }
                     if (!headersComplete) throw IOException("Oversized callback")
-                    val line = bytes.toByteArray().toString(Charsets.US_ASCII).trim()
-                    val parts = line.split(' ')
-                    val url = parts.getOrNull(1)?.let { target -> runCatching { ("http://127.0.0.1" + target).toHttpUrl() }.getOrNull() }
+                    val parts = bytes.toByteArray().toString(Charsets.US_ASCII).trim().split(' ')
+                    val url = parts.getOrNull(1)?.takeIf { target -> target.startsWith('/') }?.let { target ->
+                        runCatching { ("http://127.0.0.1" + target).toHttpUrl() }.getOrNull()
+                    }
+                    if (parts.firstOrNull() == "GET" && url?.encodedPath == "/favicon.ico") {
+                        respond(it, "204 No Content", "")
+                        return@use
+                    }
                     val valid = parts.firstOrNull() == "GET" && url?.encodedPath == "/callback" &&
                         MessageDigest.isEqual(state.toByteArray(), url.queryParameter("state").orEmpty().toByteArray())
-                    val text = if (valid) acceptedMessage else rejectedMessage
-                    runCatching {
-                        it.getOutputStream().write(("HTTP/1.1 ${if (valid) "200 OK" else "400 Bad Request"}\r\nContent-Type: text/plain; charset=utf-8\r\nContent-Length: ${text.toByteArray().size}\r\nConnection: close\r\nCache-Control: no-store\r\n\r\n$text").toByteArray())
-                    }
-                    if (valid) {
-                        if (url!!.queryParameter("error") != null) throw SpotifyImportException(SpotifyFailure.DENIED)
-                        return@withContext url.queryParameter("code")?.takeIf(String::isNotBlank)
-                            ?: throw SpotifyImportException(SpotifyFailure.AUTHORIZATION)
+                    val callbackCode = url?.queryParameter("code")?.takeIf(String::isNotBlank)
+                    val accepted = valid && (capturedAt != null || (callbackCode != null && url?.queryParameter("error") == null))
+                    respond(it, if (accepted) "200 OK" else "400 Bad Request", if (accepted) acceptedMessage else rejectedMessage)
+                    if (valid && capturedAt == null) {
+                        if (url!!.queryParameter("error") != null) {
+                            code.completeExceptionally(SpotifyImportException(SpotifyFailure.DENIED))
+                            return
+                        }
+                        if (callbackCode == null) {
+                            code.completeExceptionally(SpotifyImportException(SpotifyFailure.AUTHORIZATION))
+                            return
+                        }
+                        val captured = System.nanoTime()
+                        responseDeadline = captured + TimeUnit.MILLISECONDS.toNanos(callbackLifetimeMillis)
+                        capturedAt = captured
+                        code.complete(callbackCode)
                     }
                 }
             } catch (e: IOException) {
                 currentCoroutineContext().ensureActive()
-                if (e is SpotifyImportException) throw e
-                // Browsers may preconnect or abandon a socket before sending a request.
+                // An abandoned request (including a failed response write) may be retried by the browser.
             } finally { activeSocket = null }
         }
-        throw SpotifyImportException(SpotifyFailure.TIMEOUT)
+        if (!code.isCompleted) code.completeExceptionally(SpotifyImportException(SpotifyFailure.TIMEOUT))
     }
-    override fun close() { runCatching { activeSocket?.close() }; runCatching { server.close() } }
+
+    private fun respond(socket: Socket, status: String, text: String) {
+        val body = text.toByteArray(Charsets.UTF_8)
+        val headers = "HTTP/1.1 $status\r\nContent-Type: text/plain; charset=utf-8\r\nContent-Length: ${body.size}\r\nConnection: close\r\nCache-Control: no-store\r\n\r\n"
+        socket.getOutputStream().apply {
+            write(headers.toByteArray(Charsets.US_ASCII))
+            write(body)
+            flush()
+        }
+        socket.shutdownOutput()
+    }
+
+    override fun close() {
+        runCatching { activeSocket?.close() }
+        runCatching { server.close() }
+        code.cancel()
+        scope.cancel()
+    }
 }

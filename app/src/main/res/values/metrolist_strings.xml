@@ -1041,12 +1041,12 @@
     <string name="spotify_import_selected_file">Selected file</string>
     <string name="spotify_import_preview">%1$d songs ready · %2$d invalid or duplicate rows skipped</string>
     <string name="spotify_import_start">Import songs</string>
-    <string name="spotify_import_retry">Import again / retry unmatched</string>
+    <string name="spotify_import_retry">Retry pending songs</string>
     <string name="spotify_import_reading">Reading your file…</string>
     <string name="spotify_import_running">Finding matching songs and adding them locally…</string>
     <string name="spotify_import_cancel">Cancel</string>
     <string name="spotify_import_progress">Processed %1$d / %2$d · Imported %3$d · Already present %4$d · Unmatched %5$d</string>
-    <string name="spotify_import_complete">Import complete. Existing songs were preserved. You can run the import again safely.</string>
+    <string name="spotify_import_complete">All songs in this import were added or were already in your library.</string>
     <string name="spotify_import_cancelled">Import stopped. Songs already imported remain in your library.</string>
     <string name="spotify_import_file_too_large">This file is too large. Choose a CSV smaller than 10 MiB.</string>
     <string name="spotify_import_too_many_rows">This file has more than 20,000 rows. Split it into smaller files and try again.</string>
@@ -1056,7 +1056,7 @@
     <string name="spotify_import_file_read_error">The file could not be opened. Choose it again from your device.</string>
     <string name="spotify_import_network">A network request failed after retries. Check your connection and run the import again.</string>
     <string name="spotify_import_error">The import could not continue. Try again. Songs already imported are kept.</string>
-    <string name="spotify_import_unmatched">Unmatched songs — unavailable or ambiguous recordings are skipped. Retry by running the import again.</string>
+    <string name="spotify_import_unmatched">Pending songs — no reliable match yet. Sonet also searches videos and alternate titles. Retry pending songs to search again.</string>
     <string name="sonet_video_unavailable">Video unavailable</string>
     <string name="sonet_video_playing">Video playing</string>
     <string name="sonet_video_ready">Video ready</string>
@@ -1077,4 +1077,6 @@
     <string name="spotify_import_timeout">Authorization timed out. Connect again and return from the browser after approving access.</string>
     <string name="spotify_import_port_busy">Another app is using the sign-in connection. Close it and try again, or choose a CSV file.</string>
     <string name="spotify_import_empty_library">No supported liked songs were found in your Spotify library. Save some songs in Spotify or choose a CSV file.</string>
+    <string name="spotify_import_pending_complete">Search finished. Some songs still need a match; they remain pending and can be retried.</string>
+    <string name="spotify_import_pending_count">%1$d songs pending. Retrying searches only these songs.</string>
 </resources>
