@@ -18,6 +18,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.selected
 import androidx.activity.compose.BackHandler
@@ -391,7 +392,8 @@ fun BottomSheetPlayer(
     val videoSession = if (videoModeActive) rememberMusicVideoSession(
         videoId = mediaMetadata!!.id,
         positionProvider = { playerConnection.player.currentPosition.coerceAtLeast(0L) },
-        playingProvider = { playerConnection.player.isPlaying && state.isExpanded && !showInlineLyrics },
+        playingProvider = { playerConnection.player.isPlaying },
+        visibleProvider = { state.isExpanded && !showInlineLyrics },
         speedProvider = { playerConnection.player.playbackParameters.speed },
         onUnavailable = onVideoUnavailable,
         attempt = videoAttempt,
@@ -1399,7 +1401,8 @@ fun BottomSheetPlayer(
                         }
                         if (!showInlineLyrics) {
                             if (videoSession != null) {
-                                if (immersiveVideo) Box(Modifier.fillMaxSize().clickable { immersiveVideo = false })
+                                if (immersiveVideo) Box(Modifier.fillMaxSize().clickable { immersiveVideo = false }
+                                    .semantics { contentDescription = "Video immersive" })
                                 else EmbeddedMusicVideo(
                                     session = videoSession,
                                     artworkUrl = mediaMetadata?.thumbnailUrl,

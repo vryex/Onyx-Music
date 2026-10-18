@@ -73,6 +73,7 @@ fun rememberMusicVideoSession(
     videoId: String,
     positionProvider: () -> Long,
     playingProvider: () -> Boolean,
+    visibleProvider: () -> Boolean,
     speedProvider: () -> Float,
     onUnavailable: () -> Unit,
     attempt: Int,
@@ -81,6 +82,7 @@ fun rememberMusicVideoSession(
     val lifecycleOwner = LocalLifecycleOwner.current
     val latestPosition by rememberUpdatedState(positionProvider)
     val latestPlaying by rememberUpdatedState(playingProvider)
+    val latestVisible by rememberUpdatedState(visibleProvider)
     val latestSpeed by rememberUpdatedState(speedProvider)
     val latestUnavailable by rememberUpdatedState(onUnavailable)
     val player = remember(context, videoId, attempt) {
@@ -161,7 +163,11 @@ fun rememberMusicVideoSession(
         lifecycleOwner.lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
             var previousPosition = -1L
             while (isActive) {
-                if (!session.failed) {
+                if (!latestVisible()) {
+                    player.pause()
+                    session.advancing = false
+                    previousPosition = -1L
+                } else if (!session.failed) {
                     val target = latestPosition().coerceAtLeast(0L)
                     // Don't repeatedly seek a buffering decoder; that starves its first frame.
                     videoSeekTarget(player.currentPosition, target, player.playbackState == Player.STATE_READY)
