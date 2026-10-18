@@ -1001,6 +1001,9 @@ class MainActivity : FragmentActivity() {
                     LocalContentColor provides if (pureBlack) Color.White else contentColorFor(MaterialTheme.colorScheme.surface),
                     LocalPlayerConnection provides playerConnection,
                     LocalPlayerAwareWindowInsets provides playerAwareWindowInsets,
+                    LocalPlayerSheetProgress provides remember(playerBottomSheetState) {
+                        { playerBottomSheetState.progress.coerceIn(0f, 1f) }
+                    },
                     LocalDownloadUtil provides downloadUtil,
                     LocalShimmerTheme provides ShimmerTheme,
                     LocalSyncUtils provides syncUtils,
@@ -1674,3 +1677,5 @@ val LocalListenTogetherManager = staticCompositionLocalOf<com.metrolist.music.li
 val LocalChangelogState = staticCompositionLocalOf<MutableState<Boolean>> { error("No LocalChangelogState provided") }
 val LocalArtistNameAliases = staticCompositionLocalOf<Map<String, String>> { emptyMap() }
 val LocalIsPlayerExpanded = compositionLocalOf { false }
+
+val LocalPlayerSheetProgress = staticCompositionLocalOf<() -> Float> { { 0f } }

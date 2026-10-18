@@ -5,6 +5,9 @@
 
 package com.metrolist.music.ui.screens.artist
 
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.tween
+import androidx.compose.ui.graphics.luminance
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
@@ -186,6 +189,13 @@ fun ArtistScreen(
     // No bitmap blur or per-frame color extraction is introduced.
     val artistArtwork = artistPage?.artist?.thumbnail ?: libraryArtist?.artist?.thumbnailUrl
     val artistColor by rememberArtworkColor(artistArtwork?.resize(224, 224))
+    val subscriptionColor by animateColorAsState(
+        if (isChannelSubscribed) artistColor else MaterialTheme.colorScheme.surface,
+        tween(220), label = "artistSubscriptionColor",
+    )
+    val subscriptionContentColor = if (isChannelSubscribed) {
+        if (subscriptionColor.luminance() > 0.179f) Color.Black else Color.White
+    } else MaterialTheme.colorScheme.onSurface
     val artistGradient = remember(artistColor) {
         Brush.verticalGradient(
             0f to artistColor,
@@ -270,9 +280,9 @@ fun ArtistScreen(
                                     onClick = { viewModel.toggleChannelSubscription() },
                                     shape = RoundedCornerShape(24.dp),
                                     colors = ButtonDefaults.outlinedButtonColors(
-                                        containerColor = if (isChannelSubscribed) MaterialTheme.colorScheme.surfaceContainerHigh
-                                            else MaterialTheme.colorScheme.surface),
-                                    modifier = Modifier.weight(1f).height(48.dp),
+                                        containerColor = subscriptionColor,
+                                        contentColor = subscriptionContentColor),
+                                    modifier = Modifier.weight(1f).height(48.dp).testTag("sonet_artist_subscription"),
                                 ) {
                                     Text(stringResource(if (isChannelSubscribed) R.string.subscribed else R.string.subscribe),
                                         style = MaterialTheme.typography.labelLarge, maxLines = 1,
@@ -285,7 +295,7 @@ fun ArtistScreen(
                                     }
                                     artistPage?.artist?.shuffleEndpoint?.let { shuffleEndpoint ->
                                         LiquidIconButton(R.drawable.shuffle, stringResource(R.string.shuffle),
-                                            { playArtistQueue(YouTubeQueue(shuffleEndpoint)) }, emphasized = true)
+                                            { playArtistQueue(YouTubeQueue(shuffleEndpoint)) }, emphasized = true, showBorder = false)
                                     }
                                 }
                             }

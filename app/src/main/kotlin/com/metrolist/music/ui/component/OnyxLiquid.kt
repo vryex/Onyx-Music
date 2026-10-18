@@ -63,6 +63,7 @@ fun LiquidIconButton(
     containerColor: Color? = null,
     contentColor: Color? = null,
     plain: Boolean = false,
+    showBorder: Boolean = true,
 ) {
     val interaction = remember { MutableInteractionSource() }
     val pressed by interaction.collectIsPressedAsState()
@@ -81,7 +82,10 @@ fun LiquidIconButton(
             .then(
                 if (plain && !emphasized) Modifier else Modifier
                     .background(containerColor ?: surface)
-                    .border(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = if (emphasized) 0.55f else 0.18f), shape),
+                    .then(
+                        if (showBorder) Modifier.border(1.dp, accent.copy(alpha = if (emphasized) 0.55f else 0.18f), shape)
+                        else Modifier,
+                    ),
             )
             .clickable(
                 interactionSource = interaction,

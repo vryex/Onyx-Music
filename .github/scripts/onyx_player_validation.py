@@ -65,7 +65,9 @@ for i, video in enumerate(['dQw4w9WgXcQ', 'aqz-KE-bpKQ']):
                     'thumbnailUrl': 'https://i.ytimg.com/vi/' + video + '/hqdefault.jpg'})
     insert('lyrics', {'id': video, 'lyrics': '\n'.join(f'[{i // 60:02d}:{i % 60:02d}.00]Local timing test line {i}' for i in range(180)), 'provider': 'Local validation'})
     insert('event', {'id': i + 1, 'songId': video, 'timestamp': 1770000000000 + i * 1000, 'playTime': 41000})
-insert('artist', {'id': 'onyx-ui-check', 'name': 'Sonet Studio', 'lastUpdateTime': 1770000000000})
+insert('artist', {'id': 'onyx-ui-check', 'name': 'Sonet Studio', 'lastUpdateTime': 1770000000000,
+                  'isLocal': 1, 'bookmarkedAt': 1770000000000,
+                  'thumbnailUrl': 'https://i.ytimg.com/vi/dQw4w9WgXcQ/hqdefault.jpg'})
 for i, video in enumerate(['dQw4w9WgXcQ', 'aqz-KE-bpKQ']):
     insert('song_artist_map', {'songId': video, 'artistId': 'onyx-ui-check', 'position': 0})
 insert('related_song_map', {'id': 1, 'songId': 'dQw4w9WgXcQ', 'relatedSongId': 'aqz-KE-bpKQ'})
@@ -298,6 +300,37 @@ assert max(abs(a - b) for a, b in zip(expanded_color, fitted_color)) < 6, 'Expan
 assert adb('logcat', '-d', '-s', 'SonetVideo:I').count(b'Video stream resolved:') == resolved_before, 'Changing presentation restarted extraction'
 (out / 'video-result.txt').write_text(video_result)
 print('VIDEO:', video_result)
+
+# Page actions must disappear with the player and return on the underlying page.
+tap_label(snapshot('22-fit-player'), 'minimize player')
+tap_label(snapshot('22-library'), 'home')
+home_actions = snapshot('22-home-actions')
+assert any(n.get('resource-id', '') == 'sonet_page_actions' for n in home_actions.iter('node')), 'Home floating actions missing with collapsed player'
+tap_label(home_actions, 'sonet ui check 1')
+expanded_actions = snapshot('22-expanded-actions')
+assert not any(n.get('resource-id', '') == 'sonet_page_actions' for n in expanded_actions.iter('node')), 'Page actions remain accessible over expanded player'
+tap_label(expanded_actions, 'minimize player')
+assert any(n.get('resource-id', '') == 'sonet_page_actions' for n in snapshot('22-returned-actions').iter('node')), 'Page actions did not return after collapse'
+
+# Only a disposable local artist is toggled; no real channel subscription is changed.
+adb('shell', 'am', 'start', '-W', '-a', 'android.intent.action.VIEW', '-d',
+    'https://music.youtube.com/channel/onyx-ui-check', '-n', activity)
+time.sleep(5)
+subscribed = snapshot('23-local-artist-subscribed')
+button = next((n for n in subscribed.iter('node') if n.get('resource-id', '') == 'sonet_artist_subscription'), None)
+assert button is not None, 'Local artist subscription button missing'
+assert any('subscribed' in n.get('text', '').lower() for n in button.iter('node')), 'Fixture artist not subscribed'
+bounds = list(map(int, re.findall(r'\d+', button.get('bounds', ''))))
+x1, y1, x2, y2 = bounds
+# Sample the empty left side inside the pill, away from text and border.
+patch = (x1 + 18, (y1 + y2) // 2 - 3, x1 + 24, (y1 + y2) // 2 + 3)
+subscribed_color = ImageStat.Stat(Image.open(out / '23-local-artist-subscribed.png').convert('RGB').crop(patch)).mean
+adb('shell', 'input', 'tap', str((x1 + x2) // 2), str((y1 + y2) // 2))
+time.sleep(2)
+snapshot('23-local-artist-unsubscribed')
+unsubscribed_color = ImageStat.Stat(Image.open(out / '23-local-artist-unsubscribed.png').convert('RGB').crop(patch)).mean
+assert max(abs(a - b) for a, b in zip(subscribed_color, unsubscribed_color)) > 10, 'Subscribed artist did not gain its banner fill'
+print('PASS: page action visibility and local artist subscription palette')
 
 log = adb('logcat', '-d').decode(errors='replace')
 (out / 'player-logcat.txt').write_text(log)
