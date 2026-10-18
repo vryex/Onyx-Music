@@ -17,6 +17,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.style.TextAlign
+import com.metrolist.music.ui.component.YouTubeConnectionError
 import com.metrolist.music.ui.component.LiquidIconButton
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
@@ -225,7 +226,9 @@ fun ArtistScreen(
         ) {
             if (artistPage == null && !showLocal) {
                 item(key = "shimmer") {
-                    ShimmerHost {
+                    if (viewModel.connectionError != null) {
+                        YouTubeConnectionError(viewModel.connectionError!!, viewModel::fetchArtistsFromYTM)
+                    } else ShimmerHost {
                         Column(Modifier.fillMaxWidth().padding(20.dp),
                             horizontalAlignment = Alignment.CenterHorizontally,
                             verticalArrangement = Arrangement.spacedBy(20.dp)) {
@@ -241,6 +244,11 @@ fun ArtistScreen(
                     }
                 }
             } else {
+                viewModel.connectionError?.let { detail ->
+                    item(key = "youtube_connection_error") {
+                        YouTubeConnectionError(detail, viewModel::fetchArtistsFromYTM)
+                    }
+                }
                 item(key = "header") {
                     val thumbnail = artistPage?.artist?.thumbnail ?: libraryArtist?.artist?.thumbnailUrl
                     Box(Modifier.fillMaxWidth()) {

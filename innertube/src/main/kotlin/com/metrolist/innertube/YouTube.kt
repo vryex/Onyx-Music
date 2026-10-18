@@ -79,6 +79,7 @@ import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 import com.metrolist.innertube.pages.VideoSearchPage
+import com.metrolist.innertube.utils.publicSearchFallback
 import timber.log.Timber
 import java.io.FilterInputStream
 import java.io.InputStream
@@ -90,6 +91,7 @@ import kotlin.random.Random
  * Modified from [ViMusic](https://github.com/vfsfitvnm/ViMusic)
  */
 object YouTube {
+    private val artistLookupSlots = kotlinx.coroutines.sync.Semaphore(2)
     private val innerTube = InnerTube()
 
     var locale: YouTubeLocale
@@ -166,6 +168,18 @@ object YouTube {
 
     // Background metadata resolution must never write to account search history.
     suspend fun searchSummary(
+        query: String,
+        recordSearchHistory: Boolean = false,
+    ): Result<SearchSummaryPage> = publicSearchFallback(
+        primary = { searchMusicSummary(query, recordSearchHistory) },
+        fallback = {
+            searchVideos(query).map { result ->
+                SearchSummaryPage(listOf(SearchSummary("Videos", result.items)))
+            }
+        },
+    )
+
+    private suspend fun searchMusicSummary(
         query: String,
         recordSearchHistory: Boolean = false,
     ): Result<SearchSummaryPage> =
@@ -320,6 +334,22 @@ object YouTube {
         filter: SearchFilter,
         recordSearchHistory: Boolean = false,
     ): Result<SearchResult> =
+        if (filter == SearchFilter.FILTER_SONG || filter == SearchFilter.FILTER_VIDEO) {
+            publicSearchFallback(
+                primary = { searchMusic(query, filter, recordSearchHistory) },
+                fallback = {
+                    searchVideos(query).map {
+                        it.copy(continuation = it.continuation?.let { token -> "web:$token" })
+                    }
+                },
+            )
+        } else searchMusic(query, filter, recordSearchHistory)
+
+    private suspend fun searchMusic(
+        query: String,
+        filter: SearchFilter,
+        recordSearchHistory: Boolean = false,
+    ): Result<SearchResult> =
         runCatching {
             val response = innerTube.search(WEB_REMIX, query, filter.value, setLogin = recordSearchHistory).body<SearchResponse>()
             val searchItems = mutableListOf<YTItem>()
@@ -366,7 +396,11 @@ object YouTube {
         continuation: String,
         recordSearchHistory: Boolean = false,
     ): Result<SearchResult> =
-        runCatching {
+        if (continuation.startsWith("web:")) {
+            searchVideos(continuation = continuation.removePrefix("web:")).map {
+                it.copy(continuation = it.continuation?.let { token -> "web:$token" })
+            }
+        } else runCatching {
             val response = innerTube.search(WEB_REMIX, continuation = continuation, setLogin = recordSearchHistory).body<SearchResponse>()
             val items =
                 response.continuationContents
@@ -3304,7 +3338,7 @@ object YouTube {
         if (missingNames.isEmpty()) return items
 
         val resolved = coroutineScope {
-            val semaphore = kotlinx.coroutines.sync.Semaphore(8)
+            val semaphore = artistLookupSlots
             missingNames.map { name ->
                 async {
                     semaphore.acquire()
@@ -3358,7 +3392,7 @@ object YouTube {
         if (missingNames.isEmpty()) return emptyMap()
 
         return coroutineScope {
-            val semaphore = kotlinx.coroutines.sync.Semaphore(8)
+            val semaphore = artistLookupSlots
             missingNames.map { name ->
                 async {
                     semaphore.acquire()

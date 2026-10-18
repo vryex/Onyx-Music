@@ -31,6 +31,9 @@ import com.metrolist.music.utils.get
 import com.metrolist.music.utils.reportException
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
+import com.metrolist.innertube.utils.loadYouTubePage
+import com.metrolist.music.utils.YouTubeConnectionDiagnostics
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -48,6 +51,11 @@ constructor(
     val filter = MutableStateFlow<YouTube.SearchFilter?>(null)
     var summaryPage by mutableStateOf<SearchSummaryPage?>(null)
     val viewStateMap = mutableStateMapOf<String, ItemsPage?>()
+    var connectionError by mutableStateOf<String?>(null)
+        private set
+    private var requestJob: Job? = null
+    private var moreJob: Job? = null
+    private var continuationFailed = false
 
     private suspend fun resolveSearchMetadata(items: List<YTItem>): List<YTItem> =
         coroutineScope {
@@ -86,106 +94,96 @@ constructor(
             }
         }
 
-    private suspend fun loadSummaryPage() {
-        if (summaryPage == null) {
-            YouTube
-                .searchSummary(query, recordSearchHistory = !context.dataStore.get(PauseSearchHistoryKey, false))
-                .onSuccess { page ->
-                    val resolvedItems = resolveSearchMetadata(page.summaries.flatMap { it.items })
-                    var offset = 0
-                    val resolvedSummaries =
-                        page.summaries.map { summary ->
-                            val nextOffset = offset + summary.items.size
-                            val resolvedSummary = summary.copy(items = resolvedItems.subList(offset, nextOffset))
-                            offset = nextOffset
-                            resolvedSummary
-                        }
-                    val resolvedPage = page.copy(summaries = resolvedSummaries)
-                    val hideExplicit = context.dataStore.get(HideExplicitKey, false)
-                    val hideVideoSongs = context.dataStore.get(HideVideoSongsKey, false)
-                    val hideYoutubeShorts = context.dataStore.get(HideYoutubeShortsKey, false)
-                    summaryPage =
-                        resolvedPage
-                            .filterExplicit(hideExplicit)
-                            .filterVideoSongs(hideVideoSongs)
-                            .filterYoutubeShorts(hideYoutubeShorts)
-                }.onFailure {
-                    reportException(it)
-                }
+    private suspend fun filterItems(items: List<YTItem>): List<YTItem> = items
+        .filterExplicit(context.dataStore.get(HideExplicitKey, false))
+        .filterVideoSongs(context.dataStore.get(HideVideoSongsKey, false))
+        .filterYoutubeShorts(context.dataStore.get(HideYoutubeShortsKey, false))
+
+    private fun requestFailed(error: Throwable) {
+        connectionError = YouTubeConnectionDiagnostics.code(error)
+        reportException(error)
+    }
+
+    private fun publishSummary(page: SearchSummaryPage) {
+        summaryPage = page
+        if (filter.value == YouTube.SearchFilter.FILTER_EPISODE) {
+            val episodes = page.summaries.firstOrNull { it.title == "Episodes" }?.items.orEmpty()
+            viewStateMap[YouTube.SearchFilter.FILTER_EPISODE.value] = ItemsPage(episodes, null)
         }
     }
 
-    init {
-        viewModelScope.launch {
-            filter.collect { filter ->
-                if (filter == null) {
-                    loadSummaryPage()
-                } else if (filter == YouTube.SearchFilter.FILTER_EPISODE) {
-                    // The FILTER_EPISODE API returns episodes in a format that differs from the
-                    // summary search: playlistItemData is absent and the subtitle structure is
-                    // different, making reliable isEpisode detection fail for many items.
-                    // Reuse the "Episodes" section from the summary page instead — it is already
-                    // parsed correctly by fromMusicResponsiveListItemRenderer and guaranteed to
-                    // show the same results as the episodes section in the "All" filter.
-                    if (viewStateMap[filter.value] == null) {
-                        loadSummaryPage()
-                        summaryPage?.let { page ->
-                            val episodes = page.summaries
-                                .firstOrNull { it.title == "Episodes" }
-                                ?.items
-                                .orEmpty()
-                            viewStateMap[filter.value] = ItemsPage(episodes, null)
-                        }
-                    }
-                } else {
-                    if (viewStateMap[filter.value] == null) {
-                        YouTube
-                            .search(query, filter, recordSearchHistory = !context.dataStore.get(PauseSearchHistoryKey, false))
-                            .onSuccess { result ->
-                                val resolvedItems = resolveSearchMetadata(result.items)
-                                val hideExplicit = context.dataStore.get(HideExplicitKey, false)
-                                val hideVideoSongs = context.dataStore.get(HideVideoSongsKey, false)
-                                val hideYoutubeShorts = context.dataStore.get(HideYoutubeShortsKey, false)
-                                viewStateMap[filter.value] =
-                                    ItemsPage(
-                                        resolvedItems
-                                            .distinctBy { it.id }
-                                            .filterExplicit(hideExplicit)
-                                            .filterVideoSongs(hideVideoSongs)
-                                            .filterYoutubeShorts(hideYoutubeShorts),
-                                        result.continuation,
-                                    )
-                            }.onFailure {
-                                reportException(it)
-                            }
-                    }
-                }
+    private suspend fun loadSummaryPage() {
+        summaryPage?.let { publishSummary(it); return }
+        loadYouTubePage(
+            fetch = {
+                YouTube.searchSummary(query, recordSearchHistory = !context.dataStore.get(PauseSearchHistoryKey, false))
+                    .map { page -> page.copy(summaries = page.summaries.map { it.copy(items = filterItems(it.items)) }) }
+            },
+            publish = ::publishSummary,
+            enrich = { page ->
+                val resolved = resolveSearchMetadata(page.summaries.flatMap { it.items })
+                var offset = 0
+                page.copy(summaries = page.summaries.map { summary ->
+                    val start = offset
+                    offset += summary.items.size
+                    summary.copy(items = resolved.subList(start, offset))
+                })
+            },
+            onFailure = ::requestFailed,
+        )
+    }
+
+    private fun loadCurrentFilter() {
+        requestJob?.cancel()
+        moreJob?.cancel()
+        val selected = filter.value
+        requestJob = viewModelScope.launch {
+            connectionError = null
+            continuationFailed = false
+            if (selected == null || selected == YouTube.SearchFilter.FILTER_EPISODE) {
+                loadSummaryPage()
+            } else if (viewStateMap[selected.value] == null) {
+                loadYouTubePage(
+                    fetch = {
+                        YouTube.search(query, selected, recordSearchHistory = !context.dataStore.get(PauseSearchHistoryKey, false))
+                            .map { it.copy(items = filterItems(it.items).distinctBy { item -> item.id }) }
+                    },
+                    publish = { viewStateMap[selected.value] = ItemsPage(it.items, it.continuation) },
+                    enrich = { it.copy(items = resolveSearchMetadata(it.items)) },
+                    onFailure = ::requestFailed,
+                )
             }
         }
     }
 
+    init {
+        viewModelScope.launch { filter.collect { loadCurrentFilter() } }
+    }
+
+    fun retry() {
+        if (continuationFailed) loadMore() else loadCurrentFilter()
+    }
+
     fun loadMore() {
-        val currentFilter = filter.value
-        val filterValue = currentFilter?.value ?: return
-        viewModelScope.launch {
-            val viewState = viewStateMap[filterValue] ?: return@launch
-            val continuation = viewState.continuation ?: return@launch
-            val searchResult =
-                YouTube.searchContinuation(
-                    continuation,
-                    recordSearchHistory = !context.dataStore.get(PauseSearchHistoryKey, false),
-                ).getOrNull() ?: return@launch
-            val resolvedItems = resolveSearchMetadata(searchResult.items)
-            val hideExplicit = context.dataStore.get(HideExplicitKey, false)
-            val hideVideoSongs = context.dataStore.get(HideVideoSongsKey, false)
-            val hideYoutubeShorts = context.dataStore.get(HideYoutubeShortsKey, false)
-            val newItems = resolvedItems
-                .filterExplicit(hideExplicit)
-                .filterVideoSongs(hideVideoSongs)
-                .filterYoutubeShorts(hideYoutubeShorts)
-            viewStateMap[filterValue] = ItemsPage(
-                (viewState.items + newItems).distinctBy { it.id },
-                searchResult.continuation
+        if (moreJob?.isActive == true) return
+        val selected = filter.value ?: return
+        val previous = viewStateMap[selected.value] ?: return
+        val continuation = previous.continuation ?: return
+        moreJob = viewModelScope.launch {
+            connectionError = null
+            continuationFailed = false
+            loadYouTubePage(
+                fetch = {
+                    YouTube.searchContinuation(continuation, recordSearchHistory = !context.dataStore.get(PauseSearchHistoryKey, false))
+                        .map { it.copy(items = filterItems(it.items)) }
+                },
+                publish = {
+                    if (filter.value == selected) {
+                        viewStateMap[selected.value] = ItemsPage((previous.items + it.items).distinctBy { item -> item.id }, it.continuation)
+                    }
+                },
+                enrich = { it.copy(items = resolveSearchMetadata(it.items)) },
+                onFailure = { continuationFailed = true; requestFailed(it) },
             )
         }
     }

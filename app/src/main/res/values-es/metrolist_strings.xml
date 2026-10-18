@@ -979,4 +979,5 @@
     <string name="youtube_connection_detail">Detalle de conexión con YouTube: %1$s</string>
     <string name="youtube_import_rejected">YouTube ha rechazado la petición. Tus canciones pendientes se han conservado.</string>
     <string name="youtube_import_rate_limit">YouTube está limitando las peticiones. Espera unos minutos y reintenta las canciones pendientes.</string>
+    <string name="youtube_page_connection_error">No se pudo cargar esta página de YouTube.</string>
 </resources>

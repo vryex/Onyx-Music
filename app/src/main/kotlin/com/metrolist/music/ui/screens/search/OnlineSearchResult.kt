@@ -98,6 +98,7 @@ import com.metrolist.music.extensions.toMediaItem
 import com.metrolist.music.models.toMediaMetadata
 import com.metrolist.music.playback.queues.ListQueue
 import com.metrolist.music.playback.queues.YouTubeQueue
+import com.metrolist.music.ui.component.YouTubeConnectionError
 import com.metrolist.music.ui.component.ChipsRow
 import com.metrolist.music.ui.component.EmptyPlaceholder
 import com.metrolist.music.ui.component.HideOnScrollFAB
@@ -494,6 +495,11 @@ fun OnlineSearchResult(
                     state = lazyListState,
                     modifier = Modifier.fillMaxWidth(),
                 ) {
+                    viewModel.connectionError?.let { detail ->
+                        item(key = "youtube_connection_error") {
+                            YouTubeConnectionError(detail, viewModel::retry)
+                        }
+                    }
                     if (searchFilter == null) {
                         searchSummary?.summaries?.forEach { summary ->
                             item {
@@ -522,7 +528,7 @@ fun OnlineSearchResult(
                             itemContent = ytItemContent,
                         )
 
-                        if (itemsPage?.continuation != null) {
+                        if (itemsPage?.continuation != null && viewModel.connectionError == null) {
                             item(key = "loading") {
                                 ShimmerHost {
                                     repeat(3) {
@@ -542,7 +548,7 @@ fun OnlineSearchResult(
                         }
                     }
 
-                    if (searchFilter == null && searchSummary == null || searchFilter != null && itemsPage == null) {
+                    if (viewModel.connectionError == null && (searchFilter == null && searchSummary == null || searchFilter != null && itemsPage == null)) {
                         item {
                             ShimmerHost {
                                 repeat(8) {
