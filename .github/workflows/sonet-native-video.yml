@@ -25,7 +25,7 @@ jobs:
           fetch-depth: 0
       - name: Install image assertion dependency
         run: python3 -m pip install --user --break-system-packages "Pillow>=10,<13"
-      - name: Wait for the debug artifact
+      - name: Wait for the signed release artifact
         id: release
         env:
           GH_TOKEN: ${{ github.token }}
@@ -46,30 +46,31 @@ jobs:
               matching = [r for r in runs if r['head_sha'] == target_sha]
               if matching:
                   run = matching[0]
-                  if any(a['name'] == 'Sonet-debug-validation' for a in get(api + '/runs/' + str(run['id']) + '/artifacts')['artifacts']):
+                  if any(a['name'] == 'Sonet-signed-release' for a in get(api + '/runs/' + str(run['id']) + '/artifacts')['artifacts']):
                       with open(os.environ['GITHUB_OUTPUT'], 'a') as out:
                           out.write('run_id=' + str(run['id']) + '\n')
-                      print('Matched debug artifact to source', run['head_sha'])
+                      print('Matched signed release artifact to source', run['head_sha'])
                       break
                   if run['status'] == 'completed':
-                      raise SystemExit('Build finished without its debug APK artifact: ' + str(run['conclusion']))
+                      raise SystemExit('Build finished without its signed APK artifact: ' + str(run['conclusion']))
               time.sleep(10)
           else:
               raise SystemExit('Timed out waiting for matching release artifact')
           PY
       - uses: actions/download-artifact@v4
         with:
-          name: Sonet-debug-validation
+          name: Sonet-signed-release
           run-id: ${{ steps.release.outputs.run_id }}
           github-token: ${{ github.token }}
           path: dist
-      - name: Prepare debug probe APK
+      - name: Prepare signed probe APK
         run: |
           python3 - <<'PYTHON'
           from pathlib import Path
           import shutil
-          apk = next(Path('dist').rglob('*.apk'))
-          shutil.copyfile(apk, 'dist/Sonet.apk')
+          apk = next(Path('dist').rglob('Sonet.apk'))
+          if apk != Path('dist/Sonet.apk'):
+              shutil.copyfile(apk, 'dist/Sonet.apk')
           PYTHON
       - name: Enable emulator acceleration
         run: |

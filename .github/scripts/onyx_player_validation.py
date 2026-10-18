@@ -59,17 +59,17 @@ def insert(table, values):
     keys = ','.join('"' + name + '"' for name in row)
     db.execute('INSERT OR REPLACE INTO ' + table + ' (' + keys + ') VALUES (' + ','.join('?' for _ in row) + ')', list(row.values()))
 
-for i, video in enumerate(['dQw4w9WgXcQ', 'jNQXAC9IVRw']):
+for i, video in enumerate(['dQw4w9WgXcQ', 'aqz-KE-bpKQ']):
     insert('song', {'id': video, 'title': 'Sonet UI check ' + str(i + 1), 'duration': 180,
                     'isVideo': 1 if i == 0 else 0, 'liked': 1, 'likedDate': 1770000000000, 'inLibrary': 1770000000000,
                     'thumbnailUrl': 'https://i.ytimg.com/vi/' + video + '/hqdefault.jpg'})
     insert('lyrics', {'id': video, 'lyrics': '\n'.join(f'[{i // 60:02d}:{i % 60:02d}.00]Local timing test line {i}' for i in range(180)), 'provider': 'Local validation'})
     insert('event', {'id': i + 1, 'songId': video, 'timestamp': 1770000000000 + i * 1000, 'playTime': 41000})
 insert('artist', {'id': 'onyx-ui-check', 'name': 'Sonet Studio', 'lastUpdateTime': 1770000000000})
-for i, video in enumerate(['dQw4w9WgXcQ', 'jNQXAC9IVRw']):
+for i, video in enumerate(['dQw4w9WgXcQ', 'aqz-KE-bpKQ']):
     insert('song_artist_map', {'songId': video, 'artistId': 'onyx-ui-check', 'position': 0})
-insert('related_song_map', {'id': 1, 'songId': 'dQw4w9WgXcQ', 'relatedSongId': 'jNQXAC9IVRw'})
-insert('related_song_map', {'id': 2, 'songId': 'jNQXAC9IVRw', 'relatedSongId': 'dQw4w9WgXcQ'})
+insert('related_song_map', {'id': 1, 'songId': 'dQw4w9WgXcQ', 'relatedSongId': 'aqz-KE-bpKQ'})
+insert('related_song_map', {'id': 2, 'songId': 'aqz-KE-bpKQ', 'relatedSongId': 'dQw4w9WgXcQ'})
 db.commit()
 db.execute('PRAGMA wal_checkpoint(TRUNCATE)')
 db.close()
