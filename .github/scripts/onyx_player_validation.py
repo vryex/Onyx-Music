@@ -306,7 +306,16 @@ tap_label(snapshot('22-fit-player'), 'minimize player')
 tap_label(snapshot('22-library'), 'home')
 home_actions = snapshot('22-home-actions')
 assert any(n.get('resource-id', '') == 'sonet_page_actions' for n in home_actions.iter('node')), 'Home floating actions missing with collapsed player'
-tap_label(home_actions, 'sonet ui check 1')
+mini = max((n for n in home_actions.iter('node') if 'sonet ui check 1' in (n.get('text', '') + n.get('content-desc', '')).lower()),
+           key=lambda n: int(re.findall(r'\d+', n.get('bounds', ''))[3]))
+mx1, my1, mx2, my2 = map(int, re.findall(r'\d+', mini.get('bounds', '')))
+size = list(map(int, re.findall(r'\d+', adb('shell', 'wm', 'size').decode())))[-2:]
+drag = subprocess.Popen(['adb', 'shell', 'input', 'swipe', str((mx1 + mx2) // 2), str((my1 + my2) // 2),
+                         str(size[0] // 2), str(size[1] // 4), '4000'])
+time.sleep(1.2)
+snapshot('22-dragging-player')
+drag.wait(timeout=10)
+time.sleep(2)
 expanded_actions = snapshot('22-expanded-actions')
 assert not any(n.get('resource-id', '') == 'sonet_page_actions' for n in expanded_actions.iter('node')), 'Page actions remain accessible over expanded player'
 tap_label(expanded_actions, 'minimize player')

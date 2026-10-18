@@ -193,9 +193,8 @@ fun ArtistScreen(
         if (isChannelSubscribed) artistColor else MaterialTheme.colorScheme.surface,
         tween(220), label = "artistSubscriptionColor",
     )
-    val subscriptionContentColor = if (isChannelSubscribed) {
+    val subscriptionContentColor =
         if (subscriptionColor.luminance() > 0.179f) Color.Black else Color.White
-    } else MaterialTheme.colorScheme.onSurface
     val artistGradient = remember(artistColor) {
         Brush.verticalGradient(
             0f to artistColor,
