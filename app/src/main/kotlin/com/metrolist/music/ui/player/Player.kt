@@ -847,7 +847,7 @@ fun BottomSheetPlayer(
             // One seamless background for the ENTIRE expanded sheet. Painting
             // the image here (instead of inside Thumbnail) lets it begin behind
             // the status bar and now-playing header with no horizontal seam.
-            val darkTone = artworkColor.copy(
+            val darkTone = if (videoModeActive && immersiveVideo && !showInlineLyrics) Color.Black else artworkColor.copy(
                 red = artworkColor.red * 0.45f,
                 green = artworkColor.green * 0.45f,
                 blue = artworkColor.blue * 0.45f,
