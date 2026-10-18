@@ -36,9 +36,6 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import com.metrolist.music.ui.component.SonetLoadingIndicator
-import androidx.compose.animation.animateBounds
-import androidx.compose.animation.EnterTransition
-import androidx.compose.animation.ExitTransition
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
@@ -129,10 +126,14 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.BlendMode
+import androidx.compose.ui.graphics.CompositingStrategy
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.layout
+import androidx.compose.ui.unit.offset
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
@@ -856,33 +857,45 @@ fun BottomSheetPlayer(
                         enter = fadeIn(tween(320)), exit = fadeOut(tween(320)),
                     ) {
                     Box(
-                        modifier = Modifier.fillMaxWidth().aspectRatio(0.82f),
+                        modifier = Modifier.fillMaxWidth().aspectRatio(0.82f)
+                            // Share the feathered artwork, not the unmasked bitmap.
+                            // Otherwise its rectangular edge travels across the lyrics.
+                            .sharedBounds(
+                                rememberSharedContentState("sonet_cover"),
+                                animatedVisibilityScope = this@AnimatedVisibility,
+                                enter = fadeIn(tween(240)), exit = fadeOut(tween(180)),
+                                boundsTransform = { _, _ -> tween(320) },
+                                renderInOverlayDuringTransition = false,
+                            )
+                            .graphicsLayer { compositingStrategy = CompositingStrategy.Offscreen }
+                            .drawWithCache {
+                                val mask = Brush.verticalGradient(
+                                    0f to Color.White,
+                                    0.40f to Color.White,
+                                    0.63f to Color.White.copy(alpha = 0.75f),
+                                    0.82f to Color.White.copy(alpha = 0.22f),
+                                    0.98f to Color.Transparent,
+                                    1f to Color.Transparent,
+                                )
+                                onDrawWithContent {
+                                    drawContent()
+                                    drawRect(mask, blendMode = BlendMode.DstIn)
+                                }
+                            },
                     ) {
                         AsyncImage(
                             model = mediaMetadata?.thumbnailUrl?.resize(960, 960),
                             placeholder = instantArtworkPainter,
                             contentDescription = null,
                             contentScale = ContentScale.Crop,
-                            modifier = Modifier.fillMaxSize().sharedBounds(
-                                rememberSharedContentState("sonet_cover"),
-                                animatedVisibilityScope = this@AnimatedVisibility,
-                                enter = EnterTransition.None, exit = ExitTransition.None,
-                                boundsTransform = { _, _ -> tween(320) },
-                                renderInOverlayDuringTransition = false,
-                            ),
+                            modifier = Modifier.fillMaxSize(),
                         )
-                        // A light veil under the status icons and one continuous
-                        // lower fade. Last stop equals the color UNDER the image.
                         Box(
-                            modifier = Modifier.matchParentSize().background(
+                            Modifier.matchParentSize().background(
                                 Brush.verticalGradient(
                                     0f to Color.Black.copy(alpha = 0.26f),
                                     0.19f to Color.Transparent,
-                                    0.43f to Color.Transparent,
-                                    0.56f to darkTone.copy(alpha = 0.30f),
-                                    0.74f to darkTone.copy(alpha = 0.86f),
-                                    0.92f to darkTone,
-                                    1f to darkTone,
+                                    1f to Color.Transparent,
                                 )
                             )
                         )
@@ -910,12 +923,19 @@ fun BottomSheetPlayer(
         },
     ) {
         val metadataContent: @Composable (MediaMetadata) -> Unit = { mediaMetadata ->
-            val coverSlotWidth = if (showInlineLyrics && !mediaMetadata.thumbnailUrl.isNullOrBlank()) 60.dp else 0.dp
+            // Only the horizontal cover slot animates. A global bounds animation
+            // here also chased the parent's fullscreen resize, delaying the title
+            // and separating it from its cover, slider and buttons.
+            val coverInset = if (showInlineLyrics && !mediaMetadata.thumbnailUrl.isNullOrBlank()) 60.dp else 0.dp
+            val coverSlotWidth = animateDpAsState(
+                coverInset,
+                tween(320), label = "metadataCoverSlot",
+            )
             Row(
                 Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 8.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Box(Modifier.width(coverSlotWidth).height(48.dp)) {
+                Box(Modifier.weight(1f), contentAlignment = Alignment.CenterStart) {
                 androidx.compose.animation.AnimatedVisibility(
                     visible = showInlineLyrics && !mediaMetadata.thumbnailUrl.isNullOrBlank(),
                     enter = fadeIn(tween(320)), exit = fadeOut(tween(320)),
@@ -926,21 +946,24 @@ fun BottomSheetPlayer(
                         modifier = Modifier.requiredSize(48.dp).sharedBounds(
                             rememberSharedContentState("sonet_cover"),
                             animatedVisibilityScope = this@AnimatedVisibility,
-                            enter = EnterTransition.None, exit = ExitTransition.None,
+                            enter = fadeIn(tween(240)), exit = fadeOut(tween(180)),
                             boundsTransform = { _, _ -> tween(320) },
                             renderInOverlayDuringTransition = false,
                         ).clip(RoundedCornerShape(12.dp)),
                         contentScale = ContentScale.Crop,
                     )
                 }
-                }
                 Column(
-                    Modifier.weight(1f)
-                        .animateBounds(
-                            lookaheadScope = this@SharedTransitionLayout,
-                            boundsTransform = { _, _ -> tween(320) },
-                        )
-                        .skipToLookaheadSize { true }
+                    Modifier.fillMaxWidth()
+                        .layout { measurable, constraints ->
+                            // Measure text once for its destination width; animate
+                            // placement only, without relaying out text each frame.
+                            val inset = coverInset.roundToPx()
+                            val text = measurable.measure(constraints.offset(horizontal = -inset))
+                            layout(text.width + inset, text.height) {
+                                text.placeRelative(coverSlotWidth.value.roundToPx(), 0)
+                            }
+                        }
                         .padding(end = 12.dp),
                     verticalArrangement = Arrangement.spacedBy(4.dp),
                 ) {
@@ -985,6 +1008,7 @@ fun BottomSheetPlayer(
                             )
                         }
                     }
+                }
                 }
                 val favorite = if (currentSong?.song?.isEpisode == true) currentSong?.song?.inLibrary != null else currentSong?.song?.liked == true
                 val favoritePulse = remember { Animatable(1f) }
