@@ -285,12 +285,16 @@ tap_label(reopened, 'Video playing')
 immersive = snapshot('21-video-immersive')
 assert any('Video immersive' in n.get('content-desc', '') for n in immersive.iter('node')), 'Tap did not expand the video'
 assert any('Equalizer' in n.get('content-desc', '') for n in immersive.iter('node')), 'Immersive video covered the toolbar'
-# The fade must meet the lower black player without a colored horizontal seam.
+# Expanded footage must reveal the same artwork palette as the fitted cover.
 image = Image.open(out / '21-video-immersive.png').convert('RGB')
-edge_y = min(image.height - 3, int(image.width / .82))
-assert max(ImageStat.Stat(image.crop((0, edge_y + 1, 12, edge_y + 3))).mean) < 10, 'Video fade ends against a colored strip'
 tap_label(immersive, 'Video immersive')
 snapshot('21-video-fit')
+fitted = Image.open(out / '21-video-fit.png').convert('RGB')
+edge_y = min(image.height - 6, int(image.width / .82) + 2)
+patch = (0, edge_y, 12, edge_y + 4)
+expanded_color = ImageStat.Stat(image.crop(patch)).mean
+fitted_color = ImageStat.Stat(fitted.crop(patch)).mean
+assert max(abs(a - b) for a, b in zip(expanded_color, fitted_color)) < 6, 'Expanded video loses the artwork palette'
 assert adb('logcat', '-d', '-s', 'SonetVideo:I').count(b'Video stream resolved:') == resolved_before, 'Changing presentation restarted extraction'
 (out / 'video-result.txt').write_text(video_result)
 print('VIDEO:', video_result)

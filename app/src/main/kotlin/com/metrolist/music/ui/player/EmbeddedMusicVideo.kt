@@ -3,7 +3,10 @@ package com.metrolist.music.ui.player
 import android.view.TextureView
 import android.graphics.Matrix
 import androidx.compose.foundation.clickable
-import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.draw.drawWithCache
+import androidx.compose.ui.graphics.BlendMode
+import androidx.compose.ui.graphics.CompositingStrategy
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.runtime.Stable
 import androidx.compose.foundation.background
@@ -197,7 +200,21 @@ fun EmbeddedMusicVideo(
     onRetry: () -> Unit,
 ) {
     val status = if (session.failed) "Video unavailable" else if (session.advancing) "Video playing" else if (session.rendered) "Video ready" else "Video loading"
-    Box(modifier.clipToBounds().clickable(onClick = onTogglePresentation)
+    Box(modifier.graphicsLayer {
+        clip = true
+        compositingStrategy = if (immersive) CompositingStrategy.Offscreen else CompositingStrategy.Auto
+    }.drawWithCache {
+        val fade = Brush.verticalGradient(
+            0f to Color.Transparent, .40f to Color.Transparent,
+            .63f to Color.Black.copy(alpha = .25f), .82f to Color.Black.copy(alpha = .78f),
+            .98f to Color.Black, 1f to Color.Black,
+        )
+        onDrawWithContent {
+            drawContent()
+            // Reveal the same artwork-colored sheet used by the normal cover.
+            if (immersive) drawRect(fade, blendMode = BlendMode.DstOut)
+        }
+    }.clickable(onClick = onTogglePresentation)
         .semantics { contentDescription = status + if (immersive) ", Video immersive" else "" },
         contentAlignment = Alignment.Center) {
         fun fitSurface(view: TextureView) {
@@ -232,7 +249,7 @@ fun EmbeddedMusicVideo(
         }
         if (immersive) Box(Modifier.fillMaxSize().background(Brush.verticalGradient(
             0f to Color.Black.copy(alpha = .30f), .20f to Color.Transparent,
-            .55f to Color.Transparent, .85f to Color.Black.copy(alpha = .80f), 1f to Color.Black,
+            1f to Color.Transparent,
         )))
     }
 }
