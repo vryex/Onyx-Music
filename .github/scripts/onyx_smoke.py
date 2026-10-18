@@ -68,6 +68,24 @@ adb('logcat', '-c')
 adb('shell', 'am', 'start', '-W', '-n', ACTIVITY)
 time.sleep(10)
 assert adb('shell', 'pidof', PACKAGE).strip(), 'App terminated during launch'
+if globals().get('VIDEO_PROBE_ONLY', False):
+    # Verify the reported endless Home skeleton on a genuinely offline emulator.
+    adb('shell', 'svc', 'wifi', 'disable')
+    adb('shell', 'svc', 'data', 'disable')
+    adb('shell', 'am', 'force-stop', PACKAGE)
+    adb('shell', 'am', 'start', '-W', '-n', ACTIVITY)
+    time.sleep(28)
+    offline = snapshot('00-offline-home-recovery')
+    assert any('YouTube connection detail:' in n.get('text', '') for n in offline.iter('node')), 'Offline Home did not leave its loading skeleton with a diagnostic'
+    assert any('try again' in n.get('text', '').lower() for n in offline.iter('node')), 'Offline Home has no retry action'
+    assert adb('shell', 'pidof', PACKAGE).strip(), 'App stopped during offline Home recovery'
+    print('PASS: offline Home exits loading and shows an actionable connection diagnostic')
+    adb('shell', 'svc', 'wifi', 'enable')
+    adb('shell', 'svc', 'data', 'enable')
+    adb('shell', 'am', 'force-stop', PACKAGE)
+    adb('shell', 'am', 'start', '-W', '-n', ACTIVITY)
+    time.sleep(3)
+
 if not globals().get('VIDEO_PROBE_ONLY', False):
     home = snapshot('01-home')
     tap_label(home, 'library')
