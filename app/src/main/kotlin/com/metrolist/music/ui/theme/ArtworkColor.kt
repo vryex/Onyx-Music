@@ -31,14 +31,17 @@ data class ArtworkTones(
     val quaternary: Color = surface,
 )
 
-private val artworkColors = LruCache<String, ArtworkTones>(24)
+private val artworkColors = LruCache<String, ArtworkTones>(96)
 private val artworkFallback = ArtworkTones(Color(0xFF252529), Color(0xFF353539))
 
 /** Reuse one tiny cached bitmap sample to obtain both the dominant and alternate colors. */
 @Composable
 fun rememberArtworkTones(artwork: String?): State<ArtworkTones> {
     val context = LocalContext.current
-    return produceState(artworkFallback, artwork, context) {
+    // Recycled cards should start with their cached palette, not replay a
+    // fallback-to-color animation whenever they scroll back into view.
+    val initial = remember(artwork) { artwork?.let(artworkColors::get) ?: artworkFallback }
+    return produceState(initial, artwork, context) {
         if (artwork.isNullOrBlank()) {
             value = artworkFallback
             return@produceState

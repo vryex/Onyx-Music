@@ -14,6 +14,7 @@ import com.metrolist.innertube.models.Artist
 import com.metrolist.innertube.models.ArtistItem
 import com.metrolist.innertube.models.PlaylistItem
 import com.metrolist.innertube.models.SongItem
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.combine
 import com.metrolist.innertube.models.WatchEndpoint
 import com.metrolist.innertube.models.BrowseEndpoint
@@ -190,7 +191,8 @@ class HomeViewModel @Inject constructor(
                     },
                 home = home?.sections.orEmpty().flatMap { it.items },
             )
-        }.stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
+        }.flowOn(Dispatchers.Default)
+            .stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
 
     suspend fun getRandomItem(): YTItem? {
         try {

@@ -5,7 +5,9 @@ import androidx.compose.runtime.LaunchedEffect
 import kotlinx.coroutines.isActive
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.tween
-import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.ui.draw.drawWithCache
+import androidx.compose.ui.graphics.drawscope.translate
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -48,32 +50,33 @@ fun SonetLyricsBackdrop(artwork: String?, modifier: Modifier = Modifier, active:
         )
     }
 
-    Canvas(modifier) {
-        drawRect(Color(0xFF020305))
-        val phase = phaseState.value
+    Spacer(modifier.drawWithCache {
         val radius = max(size.width, size.height) * 0.77f
-        colors.forEachIndexed { index, color ->
-            val indexF = index.toFloat()
-            // Different speeds and phases create smoothly roaming color pools.
-            // They can move sideways, diagonally, up or down independently.
-            val x = (0.49f +
-                0.32f * sin(phase * (0.81f + indexF * .14f) + indexF * 1.77f) +
-                0.08f * cos(phase * 1.41f + indexF)).coerceIn(0.10f, 0.90f)
-            val y = (0.43f +
-                0.29f * cos(phase * (0.69f + indexF * .18f) + indexF * 2.16f) +
-                0.09f * sin(phase * 1.23f + indexF)).coerceIn(0.12f, 0.83f)
-            val center = Offset(size.width * x, size.height * y)
-            drawCircle(
-                brush = Brush.radialGradient(
-                    colors = listOf(color.copy(alpha = .76f), Color.Transparent),
-                    center = center,
-                    radius = radius,
-                ),
-                center = center,
+        // Keep shader centers fixed. Move the canvas instead of allocating four
+        // radial-gradient brushes/shaders on every display frame.
+        val pools = colors.map { color ->
+            Brush.radialGradient(
+                colors = listOf(color.copy(alpha = .76f), Color.Transparent),
+                center = Offset.Zero,
                 radius = radius,
             )
         }
-        // Retain contrast at the bottom controls and across inactive words.
-        drawRect(brush = contrastOverlay)
-    }
+        onDrawBehind {
+            drawRect(Color(0xFF020305))
+            val phase = phaseState.value
+            pools.forEachIndexed { index, brush ->
+                val indexF = index.toFloat()
+                val x = (0.49f +
+                    0.32f * sin(phase * (0.81f + indexF * .14f) + indexF * 1.77f) +
+                    0.08f * cos(phase * 1.41f + indexF)).coerceIn(0.10f, 0.90f)
+                val y = (0.43f +
+                    0.29f * cos(phase * (0.69f + indexF * .18f) + indexF * 2.16f) +
+                    0.09f * sin(phase * 1.23f + indexF)).coerceIn(0.12f, 0.83f)
+                translate(left = size.width * x, top = size.height * y) {
+                    drawCircle(brush = brush, center = Offset.Zero, radius = radius)
+                }
+            }
+            drawRect(brush = contrastOverlay)
+        }
+    })
 }

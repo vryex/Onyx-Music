@@ -28,8 +28,6 @@ import android.content.Intent
 import android.content.res.Configuration
 import android.view.WindowManager
 import android.widget.Toast
-import androidx.compose.animation.SharedTransitionLayout
-import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.Spring
 import androidx.compose.ui.graphics.graphicsLayer
@@ -126,12 +124,12 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.BlendMode
-import androidx.compose.ui.graphics.CompositingStrategy
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.unit.offset
 import androidx.compose.ui.layout.ContentScale
@@ -233,7 +231,7 @@ import kotlin.math.roundToInt
 import com.metrolist.music.ui.component.Icon as MIcon
 
 
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalSharedTransitionApi::class)
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun BottomSheetPlayer(
     state: BottomSheetState,
@@ -817,11 +815,13 @@ fun BottomSheetPlayer(
     val lyricsBackdropActive by remember(state, showInlineLyrics) {
         derivedStateOf { state.progress > 0f && (showInlineLyrics || lyricsMix.value > 0f) }
     }
-    SharedTransitionLayout {
+    val artworkPlacement = remember { PlayerArtworkPlacement() }
+    var hasShownLyrics by remember { mutableStateOf(false) }
+    LaunchedEffect(showInlineLyrics) { if (showInlineLyrics) hasShownLyrics = true }
     BottomSheet(
         state = state,
         backgroundFollowsContent = true,
-        retainExpandedContent = showInlineLyrics,
+        retainExpandedContent = hasShownLyrics || showInlineLyrics,
         modifier = modifier,
         background = {
             // One seamless background for the ENTIRE expanded sheet. Painting
@@ -833,7 +833,7 @@ fun BottomSheetPlayer(
                 blue = artworkColor.blue * 0.45f,
             )
             Box(
-                modifier = Modifier.fillMaxSize().background(
+                modifier = Modifier.fillMaxSize().onGloballyPositioned(artworkPlacement::placeContainer).background(
                     Brush.verticalGradient(
                         0f to darkTone,
                         0.62f to darkTone,
@@ -847,60 +847,16 @@ fun BottomSheetPlayer(
                     modifier = Modifier.matchParentSize().graphicsLayer { alpha = lyricsMix.value },
                 )
                 if (
-                    !showVideo &&
-                    !hidePlayerThumbnail &&
                     !mediaMetadata?.thumbnailUrl.isNullOrBlank() &&
                     LocalConfiguration.current.orientation != Configuration.ORIENTATION_LANDSCAPE
                 ) {
-                    AnimatedVisibility(
-                        visible = !showInlineLyrics,
-                        enter = fadeIn(tween(320)), exit = fadeOut(tween(320)),
-                    ) {
-                    Box(
-                        modifier = Modifier.fillMaxWidth().aspectRatio(0.82f)
-                            // Share the feathered artwork, not the unmasked bitmap.
-                            // Otherwise its rectangular edge travels across the lyrics.
-                            .sharedBounds(
-                                rememberSharedContentState("sonet_cover"),
-                                animatedVisibilityScope = this@AnimatedVisibility,
-                                enter = fadeIn(tween(240)), exit = fadeOut(tween(180)),
-                                boundsTransform = { _, _ -> tween(320) },
-                                renderInOverlayDuringTransition = false,
-                            )
-                            .graphicsLayer { compositingStrategy = CompositingStrategy.Offscreen }
-                            .drawWithCache {
-                                val mask = Brush.verticalGradient(
-                                    0f to Color.White,
-                                    0.40f to Color.White,
-                                    0.63f to Color.White.copy(alpha = 0.75f),
-                                    0.82f to Color.White.copy(alpha = 0.22f),
-                                    0.98f to Color.Transparent,
-                                    1f to Color.Transparent,
-                                )
-                                onDrawWithContent {
-                                    drawContent()
-                                    drawRect(mask, blendMode = BlendMode.DstIn)
-                                }
-                            },
-                    ) {
-                        AsyncImage(
-                            model = mediaMetadata?.thumbnailUrl?.resize(960, 960),
-                            placeholder = instantArtworkPainter,
-                            contentDescription = null,
-                            contentScale = ContentScale.Crop,
-                            modifier = Modifier.fillMaxSize(),
-                        )
-                        Box(
-                            Modifier.matchParentSize().background(
-                                Brush.verticalGradient(
-                                    0f to Color.Black.copy(alpha = 0.26f),
-                                    0.19f to Color.Transparent,
-                                    1f to Color.Transparent,
-                                )
-                            )
-                        )
-                    }
-                    }
+                    PlayerArtwork(
+                        url = mediaMetadata?.thumbnailUrl,
+                        placeholder = instantArtworkPainter,
+                        mix = lyricsMix,
+                        placement = artworkPlacement,
+                        visibleInCoverMode = !showVideo && !hidePlayerThumbnail,
+                    )
                 }
             }
         },
@@ -936,21 +892,16 @@ fun BottomSheetPlayer(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Box(Modifier.weight(1f), contentAlignment = Alignment.CenterStart) {
-                androidx.compose.animation.AnimatedVisibility(
-                    visible = showInlineLyrics && !mediaMetadata.thumbnailUrl.isNullOrBlank(),
-                    enter = fadeIn(tween(320)), exit = fadeOut(tween(320)),
-                ) {
+                if (LocalConfiguration.current.orientation != Configuration.ORIENTATION_LANDSCAPE) {
+                    // A layout anchor only. The bitmap is drawn once in the background.
+                    Box(Modifier.size(48.dp).onGloballyPositioned(artworkPlacement::placeTarget))
+                } else {
                     AsyncImage(
-                        model = mediaMetadata.thumbnailUrl?.resize(960, 960),
+                        model = mediaMetadata.thumbnailUrl?.resize(96, 96),
                         contentDescription = null,
-                        modifier = Modifier.requiredSize(48.dp).sharedBounds(
-                            rememberSharedContentState("sonet_cover"),
-                            animatedVisibilityScope = this@AnimatedVisibility,
-                            enter = fadeIn(tween(240)), exit = fadeOut(tween(180)),
-                            boundsTransform = { _, _ -> tween(320) },
-                            renderInOverlayDuringTransition = false,
-                        ).clip(RoundedCornerShape(12.dp)),
                         contentScale = ContentScale.Crop,
+                        modifier = Modifier.size(48.dp).clip(RoundedCornerShape(12.dp))
+                            .graphicsLayer { alpha = lyricsMix.value },
                     )
                 }
                 Column(
@@ -1405,19 +1356,19 @@ fun BottomSheetPlayer(
                         val currentSliderPosition by rememberUpdatedState(sliderPosition)
                         val sliderPositionProvider = remember { { currentSliderPosition } }
                         val isExpandedProvider = remember(state) { { state.isExpanded } }
-                        AnimatedContent(
-                            targetState = showInlineLyrics,
-                            label = "Lyrics",
-                            transitionSpec = { fadeIn(tween(320)) togetherWith fadeOut(tween(280)) },
-                        ) { showLyrics ->
-                            if (showLyrics) {
-                                InlineLyricsView(
-                                    mediaMetadata = mediaMetadata,
-                                    showLyrics = showLyrics,
-                                    playbackActive = !state.isCollapsed && !state.isDismissed,
-                                    positionProvider = { effectivePosition },
-                                )
-                            } else if (showVideo && canShowVideo && state.isExpanded) {
+                        if (showInlineLyrics || hasShownLyrics) {
+                            InlineLyricsView(
+                                mediaMetadata = mediaMetadata,
+                                showLyrics = showInlineLyrics,
+                                playbackActive = showInlineLyrics && !state.isCollapsed && !state.isDismissed,
+                                positionProvider = { effectivePosition },
+                                modifier = Modifier.matchParentSize()
+                                    .graphicsLayer { alpha = lyricsMix.value }
+                                    .then(if (!showInlineLyrics) Modifier.clearAndSetSemantics { } else Modifier),
+                            )
+                        }
+                        if (!showInlineLyrics) {
+                            if (showVideo && canShowVideo && state.isExpanded) {
                                 EmbeddedMusicVideo(
                                     videoId = mediaMetadata!!.id,
                                     artworkUrl = mediaMetadata?.thumbnailUrl,
@@ -1478,7 +1429,6 @@ fun BottomSheetPlayer(
             )
         }
     }
-    }
 }
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
@@ -1488,6 +1438,7 @@ fun InlineLyricsView(
     showLyrics: Boolean,
     playbackActive: Boolean = true,
     positionProvider: () -> Long,
+    modifier: Modifier = Modifier,
 ) {
     val playerConnection = LocalPlayerConnection.current ?: return
     val currentLyrics by playerConnection.currentLyrics.collectAsStateWithLifecycle(initialValue = null)
@@ -1583,15 +1534,14 @@ fun InlineLyricsView(
     }
 
     Box(
-        modifier =
-            Modifier
+        modifier = modifier
                 .fillMaxSize()
                 .clip(RoundedCornerShape(12.dp)),
         contentAlignment = Alignment.Center,
     ) {
         when {
             lyrics == null -> {
-                SonetLoadingIndicator()
+                if (playbackActive) SonetLoadingIndicator()
             }
 
             lyrics == LyricsEntity.LYRICS_NOT_FOUND -> {
