@@ -105,7 +105,7 @@ object InnerTubeXPlayer {
     suspend fun videoStreamForPlayback(videoId: String): ExtractedStream {
         val stream = requireNotNull(bundle().extractor.extract(
             videoId = videoId,
-            hints = ContentHints(wantVideo = true, maxVideoHeight = 720)
+            hints = ContentHints(wantVideo = true, maxVideoHeight = 1080)
                 .withStreamCapabilities(allowHls = true, allowSabr = false, allowBoundedRange = true),
             audioQuality = InnerTubeXAudioQuality.AUTO,
         )) { "No playable video stream" }

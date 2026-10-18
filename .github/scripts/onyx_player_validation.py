@@ -266,6 +266,23 @@ for attempt in range(40):
         break
     time.sleep(1)
 assert video_result is not None, 'Known public clip never rendered advancing video; READY/cover fallback does not pass'
+# A loaded clip must survive collapse without a second extraction or loading overlay.
+resolved_before = adb('logcat', '-d', '-s', 'SonetVideo:I').count(b'Video stream resolved:')
+tap_label(video, 'minimize player')
+time.sleep(2)
+tap_label(snapshot('20-video-collapsed'), 'sonet ui check 1')
+reopened = snapshot('20-video-reopened')
+assert not any('Video loading' in n.get('content-desc', '') for n in reopened.iter('node')), 'Video lost its loaded session on collapse'
+time.sleep(2)
+assert adb('logcat', '-d', '-s', 'SonetVideo:I').count(b'Video stream resolved:') == resolved_before, 'Collapse extracted the video again'
+# Tapping the surface changes presentation without restarting the decoder.
+tap_label(reopened, 'Video playing')
+immersive = snapshot('21-video-immersive')
+assert any('Video immersive' in n.get('content-desc', '') for n in immersive.iter('node')), 'Tap did not expand the video'
+assert any('Equalizer' in n.get('content-desc', '') for n in immersive.iter('node')), 'Immersive video covered the toolbar'
+tap_label(immersive, 'Video immersive')
+snapshot('21-video-fit')
+assert adb('logcat', '-d', '-s', 'SonetVideo:I').count(b'Video stream resolved:') == resolved_before, 'Changing presentation restarted extraction'
 (out / 'video-result.txt').write_text(video_result)
 print('VIDEO:', video_result)
 

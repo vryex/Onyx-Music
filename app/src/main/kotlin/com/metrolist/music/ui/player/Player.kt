@@ -108,6 +108,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -385,6 +386,16 @@ fun BottomSheetPlayer(
     val onVideoUnavailable: () -> Unit = {
         Toast.makeText(context, R.string.onyx_video_unavailable, Toast.LENGTH_SHORT).show()
     }
+    var immersiveVideo by rememberSaveable(mediaMetadata?.id) { mutableStateOf(false) }
+    var videoAttempt by remember(mediaMetadata?.id) { mutableIntStateOf(0) }
+    val videoSession = if (videoModeActive) rememberMusicVideoSession(
+        videoId = mediaMetadata!!.id,
+        positionProvider = { playerConnection.player.currentPosition.coerceAtLeast(0L) },
+        playingProvider = { playerConnection.player.isPlaying && state.isExpanded && !showInlineLyrics },
+        speedProvider = { playerConnection.player.playbackParameters.speed },
+        onUnavailable = onVideoUnavailable,
+        attempt = videoAttempt,
+    ) else null
     val focusRequester = remember { FocusRequester() }
 
     LaunchedEffect(state.isExpanded) {
@@ -828,7 +839,7 @@ fun BottomSheetPlayer(
     BottomSheet(
         state = state,
         backgroundFollowsContent = true,
-        retainExpandedContent = hasShownLyrics || showInlineLyrics,
+        retainExpandedContent = hasShownLyrics || showInlineLyrics || videoModeActive,
         modifier = modifier,
         background = {
             // One seamless background for the ENTIRE expanded sheet. Painting
@@ -848,6 +859,17 @@ fun BottomSheetPlayer(
                     )
                 )
             ) {
+                if (videoSession != null && immersiveVideo && !showInlineLyrics &&
+                    LocalConfiguration.current.orientation != Configuration.ORIENTATION_LANDSCAPE) {
+                    EmbeddedMusicVideo(
+                        session = videoSession,
+                        artworkUrl = mediaMetadata?.thumbnailUrl,
+                        immersive = true,
+                        modifier = Modifier.fillMaxWidth().aspectRatio(.82f),
+                        onTogglePresentation = { immersiveVideo = false },
+                        onRetry = { videoAttempt++ },
+                    )
+                }
                 SonetLyricsBackdrop(
                     artwork = mediaMetadata?.thumbnailUrl,
                     active = lyricsBackdropActive,
@@ -1292,14 +1314,13 @@ fun BottomSheetPlayer(
                                     playbackActive = !state.isCollapsed && !state.isDismissed,
                                     positionProvider = { effectivePosition },
                                 )
-                            } else if (videoModeActive && state.isExpanded) {
+                            } else if (videoSession != null) {
                                 EmbeddedMusicVideo(
-                                    videoId = mediaMetadata!!.id,
+                                    session = videoSession,
                                     artworkUrl = mediaMetadata?.thumbnailUrl,
-                                    positionProvider = { effectivePosition },
-                                    playingProvider = { effectiveIsPlaying },
-                                    speedProvider = { playerConnection.player.playbackParameters.speed },
-                                    onUnavailable = onVideoUnavailable,
+                                    modifier = Modifier.fillMaxSize().padding(24.dp),
+                                    onTogglePresentation = { immersiveVideo = !immersiveVideo },
+                                    onRetry = { videoAttempt++ },
                                 )
                             } else {
                                 Thumbnail(
@@ -1377,14 +1398,14 @@ fun BottomSheetPlayer(
                             )
                         }
                         if (!showInlineLyrics) {
-                            if (videoModeActive && state.isExpanded) {
-                                EmbeddedMusicVideo(
-                                    videoId = mediaMetadata!!.id,
+                            if (videoSession != null) {
+                                if (immersiveVideo) Box(Modifier.fillMaxSize().clickable { immersiveVideo = false })
+                                else EmbeddedMusicVideo(
+                                    session = videoSession,
                                     artworkUrl = mediaMetadata?.thumbnailUrl,
-                                    positionProvider = { effectivePosition },
-                                    playingProvider = { effectiveIsPlaying },
-                                    speedProvider = { playerConnection.player.playbackParameters.speed },
-                                    onUnavailable = onVideoUnavailable,
+                                    modifier = Modifier.fillMaxSize().padding(24.dp),
+                                    onTogglePresentation = { immersiveVideo = !immersiveVideo },
+                                    onRetry = { videoAttempt++ },
                                 )
                             } else {
                                 Thumbnail(

@@ -38,6 +38,9 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -285,7 +288,7 @@ fun OnyxPlayerHeader(onCollapse: () -> Unit, onEqualizer: () -> Unit, modifier: 
         Row(verticalAlignment = Alignment.CenterVertically) {
             if (showCast) CastButton(tintColor = Color.White)
             if (onVideo != null) LiquidIconButton(R.drawable.slow_motion_video, stringResource(R.string.onyx_video), onVideo,
-                emphasized = videoSelected, plain = !videoSelected)
+                modifier = Modifier.alpha(if (videoSelected) 1f else .55f).semantics { selected = videoSelected }, plain = true)
             LiquidIconButton(R.drawable.equalizer, stringResource(R.string.equalizer), onEqualizer, plain = true)
         }
     }
