@@ -50,6 +50,9 @@ import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.text
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.PlatformTextStyle
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.graphics.Shadow
@@ -536,6 +539,7 @@ private fun WordLevelLyrics(
         val drawWholeLine = remember(mainText) { mainText.containsRtl() || mainText.containsJoinedIndic() }
         
         Canvas(modifier = Modifier
+            .semantics { text = AnnotatedString(mainText) }
             .fillMaxWidth()
             .height(with(density) { layoutResult.size.height.toDp() })
             .graphicsLayer(
