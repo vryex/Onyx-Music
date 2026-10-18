@@ -6,6 +6,12 @@ import org.junit.Assert.*
 import org.junit.Test
 
 class SpotifyImportRulesTest {
+    @Test fun commaSeparatedCollaboratorsMatchWithoutSplittingArtistNames() {
+        assertTrue(SpotifyImportRules.matches(SpotifyTrack("Song", listOf("Artist A, Artist B")), "Song", listOf("Artist A", "Artist B"), 200))
+        assertTrue(SpotifyImportRules.matches(SpotifyTrack("Song", listOf("Tyler, The Creator")), "Song", listOf("Tyler, The Creator"), 200))
+        assertFalse(SpotifyImportRules.matches(SpotifyTrack("Song", listOf("Artist A, Artist B")), "Song", listOf("Artist A"), 200))
+    }
+
     @Test fun repeatedImportPreservesExistingSongDataAndMembershipDates() {
         val now = LocalDateTime.of(2026, 10, 18, 12, 0)
         val existing = SongEntity(id = "local-id", title = "Edited title", totalPlayTime = 74000, lyricsOffset = 123,
@@ -21,21 +27,11 @@ class SpotifyImportRulesTest {
         assertTrue(imported.isDownloaded)
         assertEquals(imported, repeated)
     }
-    @Test fun pageGuardAllowsAllOffsetsButRejectsCyclesAndTokenExfiltration() {
-        val guard = SpotifyPageGuard()
-        assertTrue(guard.accept("https://api.spotify.com/v1/me/tracks?limit=50"))
-        assertTrue(guard.accept("https://api.spotify.com/v1/me/tracks?offset=50&limit=50"))
-        assertTrue(guard.accept("https://api.spotify.com/v1/me/tracks?offset=100&limit=50"))
-        assertFalse(guard.accept("https://api.spotify.com/v1/me/tracks?limit=50"))
-        assertFalse(guard.accept("https://attacker.example/v1/me/tracks?offset=150"))
-        assertFalse(guard.accept("http://api.spotify.com/v1/me/tracks"))
-        assertFalse(guard.accept("https://api.spotify.com/v1/me/tracks/other"))
-    }
-    @Test fun pkceMatchesRfc7636AppendixB() {
-        assertEquals("E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM", SpotifyImportRules.challenge("dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk"))
-        val verifier = SpotifyImportRules.randomSecret()
-        assertTrue(verifier.matches(Regex("[A-Za-z0-9_-]{43}")))
-        assertNotEquals(verifier, SpotifyImportRules.randomSecret())
+    @Test fun missingDurationStillRequiresExactTitleAndArtist() {
+        val track = SpotifyTrack("Hello", listOf("Adele"))
+        assertTrue(SpotifyImportRules.matches(track, "Hello", listOf("Adele"), null))
+        assertFalse(SpotifyImportRules.matches(track, "Hello Live", listOf("Adele"), 295))
+        assertFalse(SpotifyImportRules.matches(track, "Hello", listOf("Cover artist"), 295))
     }
     @Test fun recordingVersionsAndCoversAreNeverCollapsed() {
         val track = SpotifyTrack("Hello", listOf("Adele"), 295)

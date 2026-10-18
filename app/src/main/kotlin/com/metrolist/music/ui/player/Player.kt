@@ -18,6 +18,8 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.testTagsAsResourceId
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.selected
@@ -1214,7 +1216,7 @@ fun BottomSheetPlayer(
             ) {
                 Row(
                     Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 8.dp)
-                        .clip(RoundedCornerShape(50)).background(Color.White.copy(alpha = .06f))
+                        .semantics { testTagsAsResourceId = true }.testTag("sonet_player_transport")
                         .padding(horizontal = 8.dp, vertical = 4.dp),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.SpaceBetween,
@@ -1404,8 +1406,11 @@ fun BottomSheetPlayer(
                         }
                         if (!showInlineLyrics) {
                             if (videoSession != null) {
-                                if (immersiveVideo) Box(Modifier.fillMaxSize().clickable { immersiveVideo = false }
-                                    .semantics { contentDescription = "Video immersive" })
+                                if (immersiveVideo) {
+                                    val immersiveLabel = stringResource(R.string.sonet_video_immersive)
+                                    Box(Modifier.fillMaxSize().clickable { immersiveVideo = false }
+                                        .semantics { contentDescription = immersiveLabel })
+                                }
                                 else EmbeddedMusicVideo(
                                     session = videoSession,
                                     artworkUrl = mediaMetadata?.thumbnailUrl,

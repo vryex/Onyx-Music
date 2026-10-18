@@ -199,7 +199,13 @@ fun EmbeddedMusicVideo(
     onTogglePresentation: () -> Unit,
     onRetry: () -> Unit,
 ) {
-    val status = if (session.failed) "Video unavailable" else if (session.advancing) "Video playing" else if (session.rendered) "Video ready" else "Video loading"
+    val status = stringResource(when {
+        session.failed -> R.string.sonet_video_unavailable
+        session.advancing -> R.string.sonet_video_playing
+        session.rendered -> R.string.sonet_video_ready
+        else -> R.string.sonet_video_loading
+    })
+    val immersiveLabel = stringResource(R.string.sonet_video_immersive)
     Box(modifier.graphicsLayer {
         clip = true
         compositingStrategy = if (immersive) CompositingStrategy.Offscreen else CompositingStrategy.Auto
@@ -215,7 +221,7 @@ fun EmbeddedMusicVideo(
             if (immersive) drawRect(fade, blendMode = BlendMode.DstOut)
         }
     }.clickable(onClick = onTogglePresentation)
-        .semantics { contentDescription = status + if (immersive) ", Video immersive" else "" },
+        .semantics { contentDescription = status + if (immersive) ", $immersiveLabel" else "" },
         contentAlignment = Alignment.Center) {
         fun fitSurface(view: TextureView) {
             if (view.width <= 0 || view.height <= 0) return

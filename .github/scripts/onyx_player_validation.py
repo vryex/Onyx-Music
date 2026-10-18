@@ -81,11 +81,37 @@ def validate_page_actions():
     time.sleep(2)
     spotify = snapshot('24-spotify-setup')
     assert any(n.get('resource-id', '') == 'sonet_spotify_import' for n in spotify.iter('node')), 'Spotify setup screen missing'
-    assert any(n.get('resource-id', '') == 'sonet_spotify_client_id' for n in spotify.iter('node')), 'Spotify Client ID setup missing'
-    spotify = scroll_to_label(spotify, 'connect my account', '24-spotify-connect')
-    connect = next((n for n in spotify.iter('node') if n.get('resource-id', '') == 'sonet_spotify_connect'), None)
-    assert connect is not None and connect.get('enabled') == 'false', 'Spotify connection must require configuration'
-    print('PASS: page action visibility, artist subscription palette, and Spotify configuration UI')
+    choose = next((n for n in spotify.iter('node') if n.get('resource-id', '') == 'sonet_spotify_choose_file'), None)
+    assert choose is not None and choose.get('enabled') == 'true', 'CSV picker missing'
+    assert not any('client id' in n.get('text', '').lower() for n in spotify.iter('node')), 'Technical Spotify setup remains'
+    fixture = out / 'sonet-spotify-test.csv'
+    fixture.write_text('Track Name,Artist Name(s),Track Duration (ms)\nNever Gonna Give You Up,Rick Astley,213000\n', encoding='utf-8')
+    adb('push', str(fixture), '/sdcard/Download/sonet-spotify-test.csv')
+    x1, y1, x2, y2 = map(int, re.findall(r'\d+', choose.get('bounds', '')))
+    adb('shell', 'input', 'tap', str((x1+x2)//2), str((y1+y2)//2))
+    time.sleep(2)
+    picker = snapshot('24-csv-picker')
+    if not any('sonet-spotify-test.csv' in n.get('text', '') for n in picker.iter('node')):
+        # DocumentsUI navigation drawer exposes Downloads across emulator versions.
+        adb('shell', 'input', 'tap', '70', '150')
+        picker = snapshot('24-csv-locations')
+        tap_label(picker, 'downloads')
+        picker = snapshot('24-csv-downloads')
+    tap_label(picker, 'sonet-spotify-test.csv')
+    time.sleep(2)
+    preview = snapshot('24-csv-preview')
+    assert any('Never Gonna Give You Up' in n.get('text', '') for n in preview.iter('node')), 'CSV preview missing'
+    assert any(n.get('resource-id', '') == 'sonet_spotify_import_button' and n.get('enabled') == 'true' for n in preview.iter('node')), 'Explicit import button missing'
+    # Changing the OS per-app locale must change the same resource-backed screen.
+    adb('shell', 'cmd', 'locale', 'set-app-locales', package, '--user', '0', '--locales', 'es')
+    time.sleep(3)
+    spanish = snapshot('24-spotify-spanish')
+    assert any('Elegir archivo' in n.get('text', '') for n in spanish.iter('node')), 'Spanish Spotify translation missing'
+    adb('shell', 'cmd', 'locale', 'set-app-locales', package, '--user', '0', '--locales', 'en')
+    time.sleep(3)
+    english = snapshot('24-spotify-english')
+    assert any('Choose CSV file' in n.get('text', '') for n in english.iter('node')), 'English Spotify translation did not return'
+    print('PASS: page actions, artist palette, CSV picker/preview, and Spanish/English app locales')
 
 
 def save_runtime_log():
@@ -183,6 +209,15 @@ for attempt in range(8):
     player = snapshot('11-player-settled-' + str(attempt))
 assert any('Minimize player' in n.get('content-desc', '') for n in player.iter('node')), 'Expanded player header missing'
 assert any('Next track' in n.get('content-desc', '') for n in player.iter('node')), 'Transport missing'
+transport = next(n for n in player.iter('node') if n.get('resource-id', '') == 'sonet_player_transport')
+x1, y1, x2, y2 = map(int, re.findall(r'\d+', transport.get('bounds', '')))
+pixels = Image.open(out / '11-player.png').convert('RGB')
+# Empty regions inside and outside the old capsule should show the same sheet.
+y = (y1+y2)//2
+inside = ImageStat.Stat(pixels.crop((x1+12,y-2,x1+18,y+2))).mean
+outside = ImageStat.Stat(pixels.crop((4,y-2,10,y+2))).mean
+assert max(abs(a-b) for a,b in zip(inside,outside)) < 4, 'Transport capsule background remains'
+
 if page_actions_only:
     next_control = next(n for n in player.iter('node') if n.get('content-desc', '') == 'Next track')
     x1, y1, x2, y2 = map(int, re.findall(r'\d+', next_control.get('bounds', '')))
