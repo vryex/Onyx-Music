@@ -8,9 +8,11 @@ import runpy
 import sqlite3
 import subprocess
 import time
+from PIL import Image, ImageStat
 from pathlib import Path
 
-video_only = '--video-only' in sys.argv
+page_actions_only = '--page-actions-only' in sys.argv
+video_only = '--video-only' in sys.argv or page_actions_only
 helpers = runpy.run_path('.github/scripts/onyx_smoke.py', init_globals={'VIDEO_PROBE_ONLY': video_only})
 adb = helpers['adb']
 snapshot = helpers['snapshot']
@@ -28,6 +30,49 @@ def tap_label(root, label):
         time.sleep(1)
         root = snapshot('wait-' + re.sub(r'[^a-z0-9]+', '-', label) + '-' + str(attempt))
     raise AssertionError('Missing visible control after accessibility settled: ' + label)
+
+def validate_page_actions():
+    # Page actions must disappear with the player and return on the underlying page.
+    tap_label(snapshot('22-fit-player'), 'minimize player')
+    adb('shell', 'input', 'keyevent', 'KEYCODE_BACK')
+    tap_label(snapshot('22-library'), 'home')
+    home_actions = snapshot('22-home-actions')
+    assert any(n.get('resource-id', '') == 'sonet_page_actions' for n in home_actions.iter('node')), 'Home floating actions missing with collapsed player'
+    mini = max((n for n in home_actions.iter('node') if 'sonet ui check 1' in (n.get('text', '') + n.get('content-desc', '')).lower()),
+               key=lambda n: int(re.findall(r'\d+', n.get('bounds', ''))[3]))
+    mx1, my1, mx2, my2 = map(int, re.findall(r'\d+', mini.get('bounds', '')))
+    size = list(map(int, re.findall(r'\d+', adb('shell', 'wm', 'size').decode())))[-2:]
+    drag = subprocess.Popen(['adb', 'shell', 'input', 'swipe', str((mx1 + mx2) // 2), str((my1 + my2) // 2),
+                             str(size[0] // 2), str(size[1] // 4), '4000'])
+    time.sleep(1.2)
+    snapshot('22-dragging-player')
+    drag.wait(timeout=10)
+    time.sleep(2)
+    expanded_actions = snapshot('22-expanded-actions')
+    assert not any(n.get('resource-id', '') == 'sonet_page_actions' for n in expanded_actions.iter('node')), 'Page actions remain accessible over expanded player'
+    tap_label(expanded_actions, 'minimize player')
+    assert any(n.get('resource-id', '') == 'sonet_page_actions' for n in snapshot('22-returned-actions').iter('node')), 'Page actions did not return after collapse'
+
+    # Only a disposable local artist is toggled; no real channel subscription is changed.
+    adb('shell', 'am', 'start', '-W', '-a', 'android.intent.action.VIEW', '-d',
+        'https://music.youtube.com/channel/onyx-ui-check', '-n', activity)
+    time.sleep(5)
+    subscribed = snapshot('23-local-artist-subscribed')
+    button = next((n for n in subscribed.iter('node') if n.get('resource-id', '') == 'sonet_artist_subscription'), None)
+    assert button is not None, 'Local artist subscription button missing'
+    assert any('subscribed' in n.get('text', '').lower() for n in button.iter('node')), 'Fixture artist not subscribed'
+    bounds = list(map(int, re.findall(r'\d+', button.get('bounds', ''))))
+    x1, y1, x2, y2 = bounds
+    # Sample the empty left side inside the pill, away from text and border.
+    patch = (x1 + 18, (y1 + y2) // 2 - 3, x1 + 24, (y1 + y2) // 2 + 3)
+    subscribed_color = ImageStat.Stat(Image.open(out / '23-local-artist-subscribed.png').convert('RGB').crop(patch)).mean
+    adb('shell', 'input', 'tap', str((x1 + x2) // 2), str((y1 + y2) // 2))
+    time.sleep(2)
+    snapshot('23-local-artist-unsubscribed')
+    unsubscribed_color = ImageStat.Stat(Image.open(out / '23-local-artist-unsubscribed.png').convert('RGB').crop(patch)).mean
+    assert max(abs(a - b) for a, b in zip(subscribed_color, unsubscribed_color)) > 10, 'Subscribed artist did not gain its banner fill'
+    print('PASS: page action visibility and local artist subscription palette')
+
 
 def save_runtime_log():
     raw = adb('logcat', '-d', check=False)
@@ -115,6 +160,10 @@ for attempt in range(8):
     player = snapshot('11-player-settled-' + str(attempt))
 assert any('Minimize player' in n.get('content-desc', '') for n in player.iter('node')), 'Expanded player header missing'
 assert any('Next track' in n.get('content-desc', '') for n in player.iter('node')), 'Transport missing'
+if page_actions_only:
+    validate_page_actions()
+    assert adb('shell', 'pidof', package).strip(), 'App stopped'
+    sys.exit(0)
 if not video_only:
     tap_label(player, 'repeat')
     tap_label(snapshot('12-repeat'), 'sleep timer')
@@ -301,45 +350,7 @@ assert adb('logcat', '-d', '-s', 'SonetVideo:I').count(b'Video stream resolved:'
 (out / 'video-result.txt').write_text(video_result)
 print('VIDEO:', video_result)
 
-# Page actions must disappear with the player and return on the underlying page.
-tap_label(snapshot('22-fit-player'), 'minimize player')
-tap_label(snapshot('22-library'), 'home')
-home_actions = snapshot('22-home-actions')
-assert any(n.get('resource-id', '') == 'sonet_page_actions' for n in home_actions.iter('node')), 'Home floating actions missing with collapsed player'
-mini = max((n for n in home_actions.iter('node') if 'sonet ui check 1' in (n.get('text', '') + n.get('content-desc', '')).lower()),
-           key=lambda n: int(re.findall(r'\d+', n.get('bounds', ''))[3]))
-mx1, my1, mx2, my2 = map(int, re.findall(r'\d+', mini.get('bounds', '')))
-size = list(map(int, re.findall(r'\d+', adb('shell', 'wm', 'size').decode())))[-2:]
-drag = subprocess.Popen(['adb', 'shell', 'input', 'swipe', str((mx1 + mx2) // 2), str((my1 + my2) // 2),
-                         str(size[0] // 2), str(size[1] // 4), '4000'])
-time.sleep(1.2)
-snapshot('22-dragging-player')
-drag.wait(timeout=10)
-time.sleep(2)
-expanded_actions = snapshot('22-expanded-actions')
-assert not any(n.get('resource-id', '') == 'sonet_page_actions' for n in expanded_actions.iter('node')), 'Page actions remain accessible over expanded player'
-tap_label(expanded_actions, 'minimize player')
-assert any(n.get('resource-id', '') == 'sonet_page_actions' for n in snapshot('22-returned-actions').iter('node')), 'Page actions did not return after collapse'
-
-# Only a disposable local artist is toggled; no real channel subscription is changed.
-adb('shell', 'am', 'start', '-W', '-a', 'android.intent.action.VIEW', '-d',
-    'https://music.youtube.com/channel/onyx-ui-check', '-n', activity)
-time.sleep(5)
-subscribed = snapshot('23-local-artist-subscribed')
-button = next((n for n in subscribed.iter('node') if n.get('resource-id', '') == 'sonet_artist_subscription'), None)
-assert button is not None, 'Local artist subscription button missing'
-assert any('subscribed' in n.get('text', '').lower() for n in button.iter('node')), 'Fixture artist not subscribed'
-bounds = list(map(int, re.findall(r'\d+', button.get('bounds', ''))))
-x1, y1, x2, y2 = bounds
-# Sample the empty left side inside the pill, away from text and border.
-patch = (x1 + 18, (y1 + y2) // 2 - 3, x1 + 24, (y1 + y2) // 2 + 3)
-subscribed_color = ImageStat.Stat(Image.open(out / '23-local-artist-subscribed.png').convert('RGB').crop(patch)).mean
-adb('shell', 'input', 'tap', str((x1 + x2) // 2), str((y1 + y2) // 2))
-time.sleep(2)
-snapshot('23-local-artist-unsubscribed')
-unsubscribed_color = ImageStat.Stat(Image.open(out / '23-local-artist-unsubscribed.png').convert('RGB').crop(patch)).mean
-assert max(abs(a - b) for a, b in zip(subscribed_color, unsubscribed_color)) > 10, 'Subscribed artist did not gain its banner fill'
-print('PASS: page action visibility and local artist subscription palette')
+validate_page_actions()
 
 log = adb('logcat', '-d').decode(errors='replace')
 (out / 'player-logcat.txt').write_text(log)
