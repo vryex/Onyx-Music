@@ -6,6 +6,18 @@ import org.junit.Assert.*
 import org.junit.Test
 
 class SpotifyImportRulesTest {
+    @Test fun combinedYouTubeArtistCreditsAreNotMistakenForADifferentArtist() {
+        val track = SpotifyTrack("U-Bahn Ride", listOf("1tbsp", "Reaks"), 200)
+        assertTrue(SpotifyImportRules.matches(track, "U-Bahn Ride", listOf("1tbsp & Reaks"), 200))
+        assertFalse(SpotifyImportRules.matches(track, "U-Bahn Ride", listOf("1tbsp & Unrelated"), 200))
+    }
+
+    @Test fun singleVersionLabelDoesNotHideTheSameRecording() {
+        val track = SpotifyTrack("Under Your Control - Single version", listOf("Seppuku"), 200)
+        assertTrue(SpotifyImportRules.matches(track, "Under Your Control", listOf("Seppuku"), 201))
+        assertFalse(SpotifyImportRules.matches(track, "Under Your Control (Live)", listOf("Seppuku"), 201))
+    }
+
     @Test fun commaSeparatedCollaboratorsMatchWithoutSplittingArtistNames() {
         assertTrue(SpotifyImportRules.matches(SpotifyTrack("Song", listOf("Artist A, Artist B")), "Song", listOf("Artist A", "Artist B"), 200))
         assertTrue(SpotifyImportRules.matches(SpotifyTrack("Song", listOf("Tyler, The Creator")), "Song", listOf("Tyler, The Creator"), 200))
