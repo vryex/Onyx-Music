@@ -1099,4 +1099,8 @@
     <string name="spotify_import_liked_count">Total favorites saved on this device: %1$d. Your library filters can hide videos or explicit songs.</string>
     <string name="spotify_import_incomplete_library">Spotify returned only part of your library. No partial import was prepared. Reconnect to read all saved songs.</string>
     <string name="spotify_import_scanned">Fast search checked %1$d / %2$d songs; difficult tracks will be retried afterward.</string>
+    <string name="youtube_home_connection_error">YouTube could not be loaded. Your saved music is still available.</string>
+    <string name="youtube_connection_detail">YouTube connection detail: %1$s</string>
+    <string name="youtube_import_rejected">YouTube rejected the request. Your pending songs have been preserved.</string>
+    <string name="youtube_import_rate_limit">YouTube is limiting requests. Wait a few minutes, then retry your pending songs.</string>
 </resources>

@@ -975,4 +975,8 @@
     <string name="spotify_import_scanned">Búsqueda rápida: revisadas %1$d / %2$d canciones. Las difíciles se buscarán después.</string>
     <string name="spotify_import_pause">Pausar importación</string>
     <string name="spotify_import_liked_count">Total de favoritos guardados en este dispositivo: %1$d. Los filtros de biblioteca pueden ocultar videos o canciones explícitas.</string>
+    <string name="youtube_home_connection_error">No se pudo cargar YouTube. Tu música guardada sigue disponible.</string>
+    <string name="youtube_connection_detail">Detalle de conexión con YouTube: %1$s</string>
+    <string name="youtube_import_rejected">YouTube ha rechazado la petición. Tus canciones pendientes se han conservado.</string>
+    <string name="youtube_import_rate_limit">YouTube está limitando las peticiones. Espera unos minutos y reintenta las canciones pendientes.</string>
 </resources>

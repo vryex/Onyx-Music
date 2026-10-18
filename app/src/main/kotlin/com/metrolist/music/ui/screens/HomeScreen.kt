@@ -713,6 +713,7 @@ fun HomeScreen(
     val episodesForLater by viewModel.episodesForLater.collectAsStateWithLifecycle()
 
     val isLoading: Boolean by viewModel.isLoading.collectAsStateWithLifecycle()
+    val connectionError by viewModel.connectionError.collectAsStateWithLifecycle()
     val isMoodAndGenresLoading = isLoading && explorePage?.moodAndGenres == null
     val isRefreshing by viewModel.isRefreshing.collectAsStateWithLifecycle()
     val isRandomizing by viewModel.isRandomizing.collectAsStateWithLifecycle()
@@ -1225,6 +1226,15 @@ fun HomeScreen(
             ) {
                 item(key = "onyx_observatory") {
                     OnyxHomeObservatory()
+                }
+                if (connectionError != null && !isLoading) item(key = "youtube_connection_error") {
+                    Column(modifier = Modifier.padding(horizontal = 20.dp, vertical = 12.dp)) {
+                        Text(stringResource(R.string.youtube_home_connection_error))
+                        Text(stringResource(R.string.youtube_connection_detail, connectionError!!))
+                        androidx.compose.material3.TextButton(onClick = viewModel::refresh) {
+                            Text(stringResource(R.string.try_again))
+                        }
+                    }
                 }
                 item(key = "onyx_home_shortcuts") {
                     OnyxHomeShortcuts(

@@ -57,6 +57,7 @@ import com.metrolist.music.viewmodels.SpotifyImportViewModel
 @Composable
 fun SpotifyImportScreen(navController: NavController, viewModel: SpotifyImportViewModel = hiltViewModel()) {
     val state by viewModel.state.collectAsState()
+    val connectionFailures by com.metrolist.music.utils.YouTubeConnectionDiagnostics.failures.collectAsState()
     val likedCount by viewModel.likedCount.collectAsState()
     val context = LocalContext.current
     val acceptedMessage = stringResource(R.string.spotify_import_callback_success)
@@ -165,13 +166,18 @@ fun SpotifyImportScreen(navController: NavController, viewModel: SpotifyImportVi
                 SpotifyFailure.RESPONSE -> R.string.spotify_import_error
                 SpotifyFailure.DENIED -> R.string.spotify_import_denied
                 SpotifyFailure.AUTHORIZATION -> R.string.spotify_import_authorization_error
-                SpotifyFailure.FORBIDDEN -> R.string.spotify_import_forbidden
-                SpotifyFailure.RATE_LIMIT -> R.string.spotify_import_rate_limit
+                SpotifyFailure.FORBIDDEN -> if (connectionFailures["import"] != null) R.string.youtube_import_rejected else R.string.spotify_import_forbidden
+                SpotifyFailure.RATE_LIMIT -> if (connectionFailures["import"] != null) R.string.youtube_import_rate_limit else R.string.spotify_import_rate_limit
                 SpotifyFailure.TIMEOUT -> R.string.spotify_import_timeout
                 SpotifyFailure.PORT_BUSY -> R.string.spotify_import_port_busy
                 SpotifyFailure.EMPTY_LIBRARY -> R.string.spotify_import_empty_library
                 SpotifyFailure.INCOMPLETE_LIBRARY -> R.string.spotify_import_incomplete_library
             })) } }
+            if (state.error in setOf(SpotifyFailure.NETWORK, SpotifyFailure.RESPONSE, SpotifyFailure.FORBIDDEN, SpotifyFailure.RATE_LIMIT)) {
+                connectionFailures["import"]?.let { code -> item {
+                    Text(stringResource(R.string.youtube_connection_detail, code), modifier = Modifier.testTag("sonet_connection_detail"))
+                } }
+            }
             if (state.progress.unmatched.isNotEmpty()) {
                 item { Text(stringResource(R.string.spotify_import_unmatched)) }
                 items(state.progress.unmatchedTracks) { track ->

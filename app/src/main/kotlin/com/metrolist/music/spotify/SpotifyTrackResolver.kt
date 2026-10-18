@@ -1,5 +1,8 @@
 package com.metrolist.music.spotify
 
+import com.metrolist.music.utils.YouTubeConnectionDiagnostics
+import com.metrolist.innertubex.InnerTubeHttpException
+import java.io.IOException
 import com.metrolist.innertube.YouTube
 import com.metrolist.innertube.models.SongItem
 import kotlinx.coroutines.CancellationException
@@ -125,13 +128,27 @@ internal class SpotifyTrackResolver(
             try { return withTimeout(10_000L) { block() } }
             catch (error: TimeoutCancellationException) {
                 currentCoroutineContext().ensureActive()
-                if (attempt == 2) throw SpotifyImportException(SpotifyFailure.NETWORK)
+                if (attempt == 2) {
+                    YouTubeConnectionDiagnostics.record("import", error)
+                    throw SpotifyImportException(SpotifyFailure.NETWORK)
+                }
                 wait((attempt + 1) * 1500L)
             }
             catch (error: CancellationException) { throw error }
-            catch (_: Exception) {
+            catch (error: Exception) {
                 currentCoroutineContext().ensureActive()
-                if (attempt == 2) throw SpotifyImportException(SpotifyFailure.NETWORK)
+                val status = (error as? InnerTubeHttpException)?.status?.value
+                val reason = when {
+                    status == 429 -> SpotifyFailure.RATE_LIMIT
+                    status == 401 || status == 403 -> SpotifyFailure.FORBIDDEN
+                    status != null && status in 400..499 -> SpotifyFailure.RESPONSE
+                    error !is IOException && status == null -> SpotifyFailure.RESPONSE
+                    else -> SpotifyFailure.NETWORK
+                }
+                if (reason != SpotifyFailure.NETWORK || attempt == 2) {
+                    YouTubeConnectionDiagnostics.record("import", error)
+                    throw SpotifyImportException(reason)
+                }
                 wait((attempt + 1) * 1500L)
             }
         }

@@ -116,6 +116,23 @@ class SpotifyTrackResolverTest {
         assertEquals("found-in-video", resolver.resolve(source)?.id)
     }
 
+    @Test fun serverRejectionsAndInvalidResponsesAreNotReportedAsOfflineOrRetriedInABurst() = runBlocking {
+        for ((status, reason) in listOf(
+            io.ktor.http.HttpStatusCode.Forbidden to SpotifyFailure.FORBIDDEN,
+            io.ktor.http.HttpStatusCode.TooManyRequests to SpotifyFailure.RATE_LIMIT,
+            io.ktor.http.HttpStatusCode.BadRequest to SpotifyFailure.RESPONSE,
+        )) {
+            val search = FakeSearch { _, _ -> throw com.metrolist.innertubex.InnerTubeHttpException("search", status) }
+            val failure = runCatching { SpotifyTrackResolver(search, wait = {}).resolve(SpotifyTrack("Song", listOf("Artist"))) }.exceptionOrNull()
+            assertEquals(reason, (failure as SpotifyImportException).reason)
+            assertEquals(1, search.calls.size)
+        }
+        val malformed = FakeSearch { _, _ -> throw IllegalArgumentException("invalid search data") }
+        val failure = runCatching { SpotifyTrackResolver(malformed, wait = {}).resolve(SpotifyTrack("Song", listOf("Artist"))) }.exceptionOrNull()
+        assertEquals(SpotifyFailure.RESPONSE, (failure as SpotifyImportException).reason)
+        assertEquals(1, malformed.calls.size)
+    }
+
     @Test fun transientSearchFailuresRetryButCancellationDoesNotBecomeUnmatched() = runBlocking {
         var attempts = 0
         val search = FakeSearch { _, _ -> attempts++; if (attempts < 3) throw IOException("offline") else SpotifySearchPage(listOf(song())) }

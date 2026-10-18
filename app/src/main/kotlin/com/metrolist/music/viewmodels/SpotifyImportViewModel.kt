@@ -161,6 +161,7 @@ class SpotifyImportViewModel @Inject constructor(
         if (job?.isActive == true || manager.state.value.active) return
         if (previewActive && tracks.isEmpty()) return
         if (!previewActive && manager.state.value.remaining.isEmpty()) return
+        com.metrolist.music.utils.YouTubeConnectionDiagnostics.clear("import")
         job = viewModelScope.launch {
             try {
                 if (previewActive) {
