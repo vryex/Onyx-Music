@@ -15,10 +15,12 @@ internal interface SpotifySongSearch {
 
 internal class YouTubeSpotifySongSearch : SpotifySongSearch {
     override suspend fun search(query: String, videos: Boolean): SpotifySearchPage {
+        SpotifyRequestPacer.shared.awaitTurn()
         val result = YouTube.search(query, if (videos) YouTube.SearchFilter.FILTER_VIDEO else YouTube.SearchFilter.FILTER_SONG).getOrThrow()
         return SpotifySearchPage(result.items.filterIsInstance<SongItem>(), result.continuation)
     }
     override suspend fun continuation(token: String): SpotifySearchPage {
+        SpotifyRequestPacer.shared.awaitTurn()
         val result = YouTube.searchContinuation(token).getOrThrow()
         return SpotifySearchPage(result.items.filterIsInstance<SongItem>(), result.continuation)
     }

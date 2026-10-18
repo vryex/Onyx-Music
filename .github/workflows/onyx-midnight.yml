@@ -46,8 +46,6 @@ jobs:
           mkdir -p "$HOME/.android"
           keytool -genkeypair -keystore "$HOME/.android/debug.keystore" -storepass android -keypass android -alias androiddebugkey -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Onyx CI Debug,O=Onyx,C=MX" -noprompt
       - name: Regression tests and required debug build
-        env:
-          SONET_MATCH_PROBE: "1"
         run: |
           bash ./gradlew :app:testFossDebugUnitTest :innertube:testDebugUnitTest :app:assembleFossDebug --console=plain --continue --max-workers=2 -Pkotlin.compiler.execution.strategy=in-process
       - name: Upload debug APK for native video probe

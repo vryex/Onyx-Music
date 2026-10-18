@@ -31,6 +31,73 @@ def tap_label(root, label):
         root = snapshot('wait-' + re.sub(r'[^a-z0-9]+', '-', label) + '-' + str(attempt))
     raise AssertionError('Missing visible control after accessibility settled: ' + label)
 
+def validate_spotify_background(root):
+    # Disposable local CSV only: no real Spotify account is connected by CI.
+    fixture = out / 'sonet-background-test.csv'
+    fixture.write_text('Track Name,Artist Name(s),Track Duration (ms)\n' + ''.join(
+        f'Sonet background queue {i},Sonet validation artist,213000\n' for i in range(50)), encoding='utf-8')
+    adb('push', str(fixture), '/sdcard/Download/sonet-background-test.csv')
+    adb('shell', 'pm', 'grant', package, 'android.permission.POST_NOTIFICATIONS')
+    root = scroll_to_label(root, 'choose csv file', '25-find-picker')
+    tap_label(root, 'choose csv file')
+    time.sleep(1)
+    picker = snapshot('25-background-picker')
+    if not any('sonet-background-test.csv' in n.get('text', '') for n in picker.iter('node')):
+        adb('shell', 'input', 'tap', '70', '150')
+        tap_label(snapshot('25-background-locations'), 'downloads')
+        picker = snapshot('25-background-downloads')
+    tap_label(picker, 'sonet-background-test.csv')
+    preview = scroll_to_label(snapshot('25-background-preview'), 'import songs', '25-background-import')
+    tap_label(preview, 'import songs')
+    service_name = 'SpotifyImportForegroundService'
+    def service_state():
+        return adb('shell', 'dumpsys', 'activity', 'services', package).decode(errors='replace')
+    for attempt in range(25):
+        services = service_state()
+        blocks = [block for block in services.split('ServiceRecord') if service_name in block]
+        if any('isForeground=true' in block for block in blocks):
+            break
+        time.sleep(.2)
+    else:
+        raise AssertionError('Spotify import never became a foreground service')
+    (out / '25-import-service.txt').write_text(services)
+    adb('shell', 'input', 'keyevent', 'KEYCODE_HOME')
+    time.sleep(.5)
+    background = service_state()
+    assert service_name in background, 'Import service stopped when leaving the app'
+    adb('shell', 'input', 'keyevent', 'KEYCODE_SLEEP')
+    time.sleep(1)
+    adb('shell', 'input', 'keyevent', 'KEYCODE_WAKEUP')
+    adb('shell', 'wm', 'dismiss-keyguard')
+    notifications = adb('shell', 'dumpsys', 'notification', '--noredact').decode(errors='replace')
+    (out / '25-import-notification.txt').write_text(notifications)
+    assert 'spotify_import' in notifications, 'Spotify import notification channel missing'
+    adb('shell', 'cmd', 'statusbar', 'expand-notifications')
+    tray = snapshot('25-background-notification')
+    if any('cancel' == n.get('text', '').lower() for n in tray.iter('node')):
+        tap_label(tray, 'cancel')
+    else:
+        adb('shell', 'am', 'startservice', '-n', package + '/com.metrolist.music.spotify.SpotifyImportForegroundService',
+            '-a', 'com.metrolist.music.spotify.CANCEL_IMPORT')
+    adb('shell', 'cmd', 'statusbar', 'collapse')
+    for attempt in range(30):
+        services = service_state()
+        if not any('isForeground=true' in block for block in services.split('ServiceRecord') if service_name in block):
+            break
+        time.sleep(.2)
+    else:
+        raise AssertionError('Cancelled import retained its foreground service')
+    # A new process must restore pending work and notification navigation directly opens its page.
+    adb('shell', 'am', 'force-stop', package)
+    adb('shell', 'am', 'start', '-W', '-n', activity, '--ez', 'open_spotify_import', 'true')
+    time.sleep(3)
+    restored = snapshot('25-background-restored')
+    assert any(n.get('resource-id', '') == 'sonet_spotify_import' for n in restored.iter('node')), 'Notification target did not open import screen'
+    restored = scroll_to_label(restored, 'retry pending songs', '25-restored-retry')
+    assert any(n.get('resource-id', '') in ('sonet_spotify_resume', 'sonet_spotify_import_button') and n.get('enabled') == 'true' for n in restored.iter('node')), 'Pending import was not restored after process restart'
+    print('PASS: Spotify foreground import, notification, app backgrounding, cancellation, and pending checkpoint restore')
+
+
 def validate_page_actions():
     # Page actions must disappear with the player and return on the underlying page.
     tap_label(snapshot('22-fit-player'), 'minimize player')
@@ -103,9 +170,12 @@ def validate_page_actions():
         picker = snapshot('24-csv-downloads')
     tap_label(picker, 'sonet-spotify-test.csv')
     time.sleep(2)
-    preview = snapshot('24-csv-preview')
+    preview = scroll_to_label(snapshot('24-csv-preview'), 'import songs', '24-find-import-button')
     assert any('Never Gonna Give You Up' in n.get('text', '') for n in preview.iter('node')), 'CSV preview missing'
     assert any(n.get('resource-id', '') == 'sonet_spotify_import_button' and n.get('enabled') == 'true' for n in preview.iter('node')), 'Explicit import button missing'
+    size = list(map(int, re.findall(r'\d+', adb('shell', 'wm', 'size').decode())))[-2:]
+    for _ in range(3):
+        adb('shell', 'input', 'swipe', str(size[0]//2), str(size[1]//3), str(size[0]//2), str(size[1]*4//5), '250')
     # Changing the OS per-app locale must change the same resource-backed screen.
     adb('shell', 'cmd', 'locale', 'set-app-locales', package, '--user', '0', '--locales', 'es')
     time.sleep(3)
@@ -116,6 +186,7 @@ def validate_page_actions():
     english = snapshot('24-spotify-english')
     assert any('Connect Spotify' in n.get('text', '') for n in english.iter('node')), 'English direct connection translation did not return'
     print('PASS: page actions, artist palette, direct Spotify connection UI, CSV picker/preview, and Spanish/English app locales')
+    validate_spotify_background(english)
 
 
 def save_runtime_log():

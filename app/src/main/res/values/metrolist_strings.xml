@@ -1039,13 +1039,13 @@
     <string name="spotify_import_help_done">Got it</string>
     <string name="spotify_import_choose_file">Choose CSV file</string>
     <string name="spotify_import_selected_file">Selected file</string>
-    <string name="spotify_import_preview">%1$d songs ready · %2$d invalid or duplicate rows skipped</string>
+    <string name="spotify_import_preview">%1$d songs found to import · %2$d invalid or duplicate rows skipped</string>
     <string name="spotify_import_start">Import songs</string>
     <string name="spotify_import_retry">Retry pending songs</string>
     <string name="spotify_import_reading">Reading your file…</string>
     <string name="spotify_import_running">Finding matching songs and adding them locally…</string>
     <string name="spotify_import_cancel">Cancel</string>
-    <string name="spotify_import_progress">Processed %1$d / %2$d · Imported %3$d · Already present %4$d · Unmatched %5$d</string>
+    <string name="spotify_import_progress">Processed %1$d / %2$d · Imported %3$d · Already present %4$d · Pending %5$d</string>
     <string name="spotify_import_complete">All songs in this import were added or were already in your library.</string>
     <string name="spotify_import_cancelled">Import stopped. Songs already imported remain in your library.</string>
     <string name="spotify_import_file_too_large">This file is too large. Choose a CSV smaller than 10 MiB.</string>
@@ -1079,4 +1079,14 @@
     <string name="spotify_import_empty_library">No supported liked songs were found in your Spotify library. Save some songs in Spotify or choose a CSV file.</string>
     <string name="spotify_import_pending_complete">Search finished. Some songs still need a match; they remain pending and can be retried.</string>
     <string name="spotify_import_pending_count">%1$d songs pending. Retrying searches only these songs.</string>
+    <string name="spotify_import_notification_channel">Spotify imports</string>
+    <string name="spotify_import_notification_running">Importing Spotify songs</string>
+    <string name="spotify_import_notification_complete">Spotify search finished</string>
+    <string name="spotify_import_notification_paused">Spotify import paused</string>
+    <string name="spotify_import_cancelled_title">Spotify import stopped</string>
+    <string name="spotify_import_notification_progress">Processed %1$d / %2$d · Imported %3$d · Pending %4$d</string>
+    <string name="spotify_import_resume">Resume pending songs</string>
+    <string name="spotify_import_paused">The import paused. Resume to continue with pending songs. Songs already added remain in your library.</string>
+    <string name="spotify_import_background_help">Importing continues when you leave this screen or lock your phone. The notification shows progress and lets you stop. If Android interrupts the import, reopen this screen to resume pending songs. After force-stopping Sonet, you must reopen it and resume manually.</string>
+    <string name="spotify_import_notification_denied">Notifications are disabled. Importing can continue in the background; return here to check progress or stop it.</string>
 </resources>

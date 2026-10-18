@@ -231,6 +231,11 @@
             android:theme="@style/Theme.Metrolist.Transparent" />
 
         <service
+            android:name=".spotify.SpotifyImportForegroundService"
+            android:exported="false"
+            android:foregroundServiceType="dataSync" />
+
+        <service
             android:name=".playback.MusicService"
             android:exported="true"
             android:foregroundServiceType="mediaPlayback"

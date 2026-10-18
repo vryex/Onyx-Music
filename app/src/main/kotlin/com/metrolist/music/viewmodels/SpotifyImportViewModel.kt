@@ -5,13 +5,13 @@ import android.net.Uri
 import android.provider.OpenableColumns
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.metrolist.music.db.MusicDatabase
 import com.metrolist.music.spotify.SpotifyCsvParser
 import com.metrolist.music.spotify.SpotifyFailure
 import com.metrolist.music.spotify.SpotifyImportException
 import com.metrolist.music.spotify.SpotifyImportProgress
-import com.metrolist.music.spotify.SpotifyImportRepository
-import com.metrolist.music.spotify.pendingSpotifyTracks
+import com.metrolist.music.spotify.SpotifyImportManager
+import com.metrolist.music.spotify.SpotifyImportForegroundService
+import com.metrolist.music.spotify.SpotifyImportPhase
 import com.metrolist.music.spotify.SpotifyTrack
 import com.metrolist.music.spotify.SpotifyOAuth
 import com.metrolist.music.spotify.SpotifySavedTracksClient
@@ -24,6 +24,7 @@ import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.ByteArrayOutputStream
@@ -34,25 +35,54 @@ data class SpotifyImportState(
     val busy: Boolean = false, val loading: Boolean = false, val complete: Boolean = false, val cancelled: Boolean = false,
     val spotifySource: Boolean = false, val connecting: Boolean = false, val authorizing: Boolean = false,
     val loaded: Int = 0, val loadTotal: Int = 0, val pendingSongs: Int? = null,
+    val resumable: Boolean = false, val backgroundImport: Boolean = false,
     val error: SpotifyFailure? = null, val progress: SpotifyImportProgress = SpotifyImportProgress(),
 )
 
 @HiltViewModel
 class SpotifyImportViewModel @Inject constructor(
     @ApplicationContext private val context: Context,
-    database: MusicDatabase,
+    private val manager: SpotifyImportManager,
 ) : ViewModel() {
-    private val repository = SpotifyImportRepository(database)
     private val mutableState = MutableStateFlow(SpotifyImportState())
     val state = mutableState.asStateFlow()
     private var job: Job? = null
     private var tracks: List<SpotifyTrack> = emptyList()
-    private var retryQueue: List<SpotifyTrack>? = null
+    private var previewActive = false
+    private var sourceLoading = false
+    private var localeTag = ""
     @Volatile private var oauth: SpotifyOAuth? = null
 
+    init {
+        viewModelScope.launch {
+            manager.awaitRestored()
+            manager.state.collect { snapshot ->
+                if (snapshot.id.isNotBlank() && !previewActive && !sourceLoading) {
+                    mutableState.update { it.copy(fileName = snapshot.fileName, spotifySource = snapshot.spotifySource,
+                        validSongs = snapshot.progress.total, skippedRows = snapshot.skippedRows,
+                        preview = snapshot.remaining.take(5).map { track -> "${track.title} — ${track.artists.joinToString()}" },
+                        busy = snapshot.active, loading = false, connecting = false, authorizing = false,
+                        complete = snapshot.phase == SpotifyImportPhase.COMPLETE,
+                        cancelled = snapshot.phase == SpotifyImportPhase.CANCELLED,
+                        resumable = snapshot.phase == SpotifyImportPhase.PAUSED,
+                        backgroundImport = snapshot.active, pendingSongs = snapshot.remaining.size,
+                        error = snapshot.failure, progress = snapshot.progress) }
+                } else if (snapshot.id.isBlank() && snapshot.failure != null && !previewActive && !sourceLoading) {
+                    mutableState.update { it.copy(error = snapshot.failure) }
+                }
+            }
+        }
+    }
+
+    fun setLocale(languageTag: String) {
+        localeTag = languageTag
+        manager.setLocale(languageTag)
+    }
+
     fun connect(acceptedMessage: String, rejectedMessage: String, openBrowser: (String) -> Unit) {
-        if (job?.isActive == true) return
+        if (job?.isActive == true || manager.state.value.active) return
         oauth?.close(); oauth = null
+        sourceLoading = true
         mutableState.value = state.value.copy(busy = true, loading = true, connecting = true, authorizing = true,
             cancelled = false, error = null, loaded = 0, loadTotal = 0)
         job = viewModelScope.launch {
@@ -67,15 +97,16 @@ class SpotifyImportViewModel @Inject constructor(
                 val token = client.exchange(code, callback.verifier)
                 val saved = client.load(token) { loaded, total -> mutableState.value = state.value.copy(loaded = loaded, loadTotal = total) }
                 tracks = saved.tracks
-                retryQueue = null
+                previewActive = true
                 mutableState.value = state.value.copy(fileName = "", spotifySource = true, validSongs = tracks.size,
                     skippedRows = saved.skipped, preview = tracks.take(5).map { "${it.title} — ${it.artists.joinToString()}" },
-                    complete = false, pendingSongs = null, progress = SpotifyImportProgress())
+                    complete = false, resumable = false, backgroundImport = false, pendingSongs = null, progress = SpotifyImportProgress())
             } catch (error: CancellationException) { throw error
             } catch (error: Exception) {
                 currentCoroutineContext().ensureActive()
                 mutableState.value = state.value.copy(error = (error as? SpotifyImportException)?.reason ?: SpotifyFailure.RESPONSE)
             } finally {
+                sourceLoading = false
                 oauth?.finish()
                 mutableState.value = state.value.copy(busy = false, loading = false, connecting = false, authorizing = false)
             }
@@ -83,7 +114,8 @@ class SpotifyImportViewModel @Inject constructor(
     }
 
     fun chooseFile(uri: Uri) {
-        if (job?.isActive == true) return
+        if (job?.isActive == true || manager.state.value.active) return
+        sourceLoading = true
         mutableState.value = state.value.copy(busy = true, loading = true, cancelled = false, error = null)
         job = viewModelScope.launch {
             try {
@@ -109,34 +141,37 @@ class SpotifyImportViewModel @Inject constructor(
                     fileName to SpotifyCsvParser.parse(bytes) { coroutine.ensureActive() }
                 }
                 tracks = preview.tracks
-                retryQueue = null
-                mutableState.value = state.value.copy(fileName = fileName, spotifySource = false, complete = false, pendingSongs = null, progress = SpotifyImportProgress(), validSongs = tracks.size, skippedRows = preview.skippedRows,
+                previewActive = true
+                mutableState.value = state.value.copy(fileName = fileName, spotifySource = false, complete = false, resumable = false, backgroundImport = false, pendingSongs = null, progress = SpotifyImportProgress(), validSongs = tracks.size, skippedRows = preview.skippedRows,
                     preview = tracks.take(5).map { "${it.title} — ${it.artists.joinToString()}" })
             } catch (error: CancellationException) { throw error
             } catch (error: Exception) {
                 currentCoroutineContext().ensureActive()
                 mutableState.value = state.value.copy(error = (error as? SpotifyImportException)?.reason ?: SpotifyFailure.FILE_READ)
-            } finally { mutableState.value = state.value.copy(busy = false, loading = false) }
+            } finally { sourceLoading = false; mutableState.value = state.value.copy(busy = false, loading = false) }
         }
     }
 
     fun import() {
-        val attempted = retryQueue ?: tracks
-        if (job?.isActive == true || attempted.isEmpty()) return
-        mutableState.value = state.value.copy(busy = true, complete = false, cancelled = false, error = null,
-            progress = SpotifyImportProgress(total = attempted.size))
+        if (job?.isActive == true || manager.state.value.active) return
+        if (previewActive && tracks.isEmpty()) return
+        if (!previewActive && manager.state.value.remaining.isEmpty()) return
         job = viewModelScope.launch {
             try {
-                repository.import(attempted) { progress -> mutableState.value = state.value.copy(progress = progress) }
-                mutableState.value = state.value.copy(complete = true)
-            } catch (error: CancellationException) { throw error
-            } catch (error: Exception) {
-                currentCoroutineContext().ensureActive()
-                mutableState.value = state.value.copy(error = (error as? SpotifyImportException)?.reason ?: SpotifyFailure.RESPONSE)
-            } finally {
-                val remaining = pendingSpotifyTracks(attempted, state.value.progress)
-                retryQueue = remaining
-                mutableState.value = state.value.copy(busy = false, pendingSongs = remaining.size)
+                if (previewActive) {
+                    val preview = state.value
+                    val prepared = withContext(Dispatchers.IO) {
+                        manager.prepare(tracks, preview.fileName, preview.spotifySource, preview.skippedRows, localeTag)
+                    }
+                    if (!prepared) return@launch
+                    previewActive = false
+                }
+                SpotifyImportForegroundService.start(context, localeTag)
+            } catch (cancelled: CancellationException) {
+                manager.requestStop(paused = true)
+                throw cancelled
+            } catch (_: Exception) {
+                manager.requestStop(paused = true, failure = SpotifyFailure.RESPONSE)
             }
         }
     }
@@ -144,7 +179,8 @@ class SpotifyImportViewModel @Inject constructor(
     fun cancel() {
         job?.cancel()
         oauth?.close()
-        mutableState.value = state.value.copy(cancelled = true)
+        if (manager.state.value.active) manager.requestStop(paused = false)
+        else mutableState.value = state.value.copy(cancelled = true)
     }
     override fun onCleared() { oauth?.close(); super.onCleared() }
 }

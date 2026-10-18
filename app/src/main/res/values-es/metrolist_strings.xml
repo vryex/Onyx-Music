@@ -922,13 +922,13 @@
     <string name="spotify_import_help_done">Entendido</string>
     <string name="spotify_import_choose_file">Elegir archivo CSV</string>
     <string name="spotify_import_selected_file">Archivo seleccionado</string>
-    <string name="spotify_import_preview">%1$d canciones listas · %2$d filas no válidas o duplicadas omitidas</string>
+    <string name="spotify_import_preview">%1$d canciones encontradas para importar · %2$d filas no válidas o duplicadas omitidas</string>
     <string name="spotify_import_start">Importar canciones</string>
     <string name="spotify_import_retry">Reintentar pendientes</string>
     <string name="spotify_import_reading">Leyendo tu archivo…</string>
     <string name="spotify_import_running">Buscando coincidencias y añadiendo canciones a tu biblioteca local…</string>
     <string name="spotify_import_cancel">Cancelar</string>
-    <string name="spotify_import_progress">Procesadas %1$d / %2$d · Importadas %3$d · Ya disponibles %4$d · Sin coincidencia %5$d</string>
+    <string name="spotify_import_progress">Procesadas %1$d / %2$d · Importadas %3$d · Ya disponibles %4$d · Pendientes %5$d</string>
     <string name="spotify_import_complete">Todas las canciones de esta importación se añadieron o ya estaban en tu biblioteca.</string>
     <string name="spotify_import_cancelled">Importación detenida. Las canciones ya importadas permanecen en tu biblioteca.</string>
     <string name="spotify_import_file_too_large">El archivo es demasiado grande. Elige un CSV de menos de 10 MiB.</string>
@@ -962,4 +962,14 @@
     <string name="spotify_import_empty_library">No se han encontrado canciones favoritas compatibles en tu biblioteca de Spotify. Guarda canciones en Spotify o elige un archivo CSV.</string>
     <string name="spotify_import_pending_complete">La búsqueda terminó. Algunas canciones aún necesitan una coincidencia; quedan pendientes para reintentarlas.</string>
     <string name="spotify_import_pending_count">%1$d canciones pendientes. Al reintentar solo se buscan estas canciones.</string>
+    <string name="spotify_import_notification_channel">Importaciones de Spotify</string>
+    <string name="spotify_import_notification_running">Importando canciones de Spotify</string>
+    <string name="spotify_import_notification_complete">Búsqueda de Spotify finalizada</string>
+    <string name="spotify_import_notification_paused">Importación de Spotify en pausa</string>
+    <string name="spotify_import_cancelled_title">Importación de Spotify detenida</string>
+    <string name="spotify_import_notification_progress">Procesadas %1$d / %2$d · Importadas %3$d · Pendientes %4$d</string>
+    <string name="spotify_import_resume">Continuar con las pendientes</string>
+    <string name="spotify_import_paused">La importación se ha pausado. Continúa con las canciones pendientes. Las canciones ya añadidas permanecen en tu biblioteca.</string>
+    <string name="spotify_import_background_help">La importación continúa al salir de esta pantalla o bloquear el teléfono. La notificación muestra el progreso y permite detenerla. Si Android la interrumpe, vuelve a esta pantalla para continuar con las pendientes. Si fuerzas la detención de Sonet, debes abrirla y continuar manualmente.</string>
+    <string name="spotify_import_notification_denied">Las notificaciones están desactivadas. La importación puede continuar en segundo plano; vuelve aquí para ver el progreso o detenerla.</string>
 </resources>

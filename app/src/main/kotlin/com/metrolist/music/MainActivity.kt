@@ -401,6 +401,7 @@ class MainActivity : FragmentActivity() {
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         if (::navController.isInitialized) {
+            handleSpotifyImportIntent(intent, navController)
             handleWidgetTargetIntent(intent, navController)
             handleDeepLinkIntent(intent, navController)
         } else {
@@ -949,11 +950,13 @@ class MainActivity : FragmentActivity() {
 
                 LaunchedEffect(Unit) {
                     if (pendingIntent != null) {
+                        handleSpotifyImportIntent(pendingIntent!!, navController)
                         handleWidgetTargetIntent(pendingIntent!!, navController)
                         handleRecognitionIntent(pendingIntent!!, navController)
                         handleDeepLinkIntent(pendingIntent!!, navController)
                         pendingIntent = null
                     } else {
+                        handleSpotifyImportIntent(intent, navController)
                         handleWidgetTargetIntent(intent, navController)
                         handleRecognitionIntent(intent, navController)
                         handleDeepLinkIntent(intent, navController)
@@ -963,6 +966,7 @@ class MainActivity : FragmentActivity() {
                 DisposableEffect(Unit) {
                     val listener =
                         Consumer<Intent> { intent ->
+                            handleSpotifyImportIntent(intent, navController)
                             handleWidgetTargetIntent(intent, navController)
                             handleRecognitionIntent(intent, navController)
                             handleDeepLinkIntent(intent, navController)
@@ -1476,6 +1480,13 @@ class MainActivity : FragmentActivity() {
             }
             }
         }
+    }
+
+    private fun handleSpotifyImportIntent(intent: Intent, navController: NavHostController) {
+        val key = com.metrolist.music.spotify.SpotifyImportForegroundService.EXTRA_OPEN_IMPORT
+        if (!intent.getBooleanExtra(key, false)) return
+        intent.removeExtra(key)
+        navController.navigate("spotify_import") { launchSingleTop = true }
     }
 
     /**

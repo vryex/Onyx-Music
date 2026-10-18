@@ -1,6 +1,13 @@
 package com.metrolist.music.ui.screens
 
+import android.Manifest
+import android.os.Build
 import android.content.Intent
+import android.content.pm.PackageManager
+import androidx.core.content.ContextCompat
+import androidx.core.app.NotificationManagerCompat
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.ui.platform.LocalConfiguration
 import android.net.Uri
 import androidx.browser.customtabs.CustomTabsIntent
 import androidx.compose.ui.platform.LocalContext
@@ -53,6 +60,20 @@ fun SpotifyImportScreen(navController: NavController, viewModel: SpotifyImportVi
     val acceptedMessage = stringResource(R.string.spotify_import_callback_success)
     val rejectedMessage = stringResource(R.string.spotify_import_callback_invalid)
     var showHelp by rememberSaveable { mutableStateOf(false) }
+    var notificationDenied by rememberSaveable { mutableStateOf(false) }
+    val configuration = LocalConfiguration.current
+    val localeTag = configuration.locales[0].toLanguageTag()
+    LaunchedEffect(localeTag) { viewModel.setLocale(localeTag) }
+    val notificationPermission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+        notificationDenied = !granted
+        viewModel.import()
+    }
+    val startImport: () -> Unit = {
+        notificationDenied = !NotificationManagerCompat.from(context).areNotificationsEnabled()
+        if (Build.VERSION.SDK_INT >= 33 && ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
+            notificationPermission.launch(Manifest.permission.POST_NOTIFICATIONS)
+        } else viewModel.import()
+    }
     val picker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri -> uri?.let(viewModel::chooseFile) }
     if (showHelp) AlertDialog(onDismissRequest = { showHelp = false },
         title = { Text(stringResource(R.string.spotify_import_export_help)) },
@@ -68,6 +89,8 @@ fun SpotifyImportScreen(navController: NavController, viewModel: SpotifyImportVi
             .windowInsetsPadding(LocalPlayerAwareWindowInsets.current.only(WindowInsetsSides.Bottom)),
             contentPadding = PaddingValues(20.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
             item { Text(stringResource(R.string.spotify_import_description)) }
+            item { Text(stringResource(R.string.spotify_import_background_help)) }
+            if (notificationDenied) item { Text(stringResource(R.string.spotify_import_notification_denied), modifier = Modifier.testTag("sonet_spotify_notification_denied")) }
             item { Button(modifier = Modifier.testTag("sonet_spotify_connect"), enabled = !state.busy, onClick = {
                 viewModel.connect(acceptedMessage, rejectedMessage) { url ->
                     try { CustomTabsIntent.Builder().build().launchUrl(context, Uri.parse(url)) }
@@ -88,8 +111,8 @@ fun SpotifyImportScreen(navController: NavController, viewModel: SpotifyImportVi
                     Text(stringResource(R.string.spotify_import_preview, state.validSongs, state.skippedRows))
                     state.preview.forEach { Text(it) }
                 } }
-                item { Button(modifier = Modifier.testTag("sonet_spotify_import_button"), enabled = !state.busy && state.pendingSongs != 0, onClick = viewModel::import) {
-                    Text(stringResource(if (state.complete || state.cancelled || state.error != null) R.string.spotify_import_retry else R.string.spotify_import_start))
+                item { Button(modifier = Modifier.testTag(if (state.resumable) "sonet_spotify_resume" else "sonet_spotify_import_button"), enabled = !state.busy && state.pendingSongs != 0, onClick = startImport) {
+                    Text(stringResource(if (state.resumable) R.string.spotify_import_resume else if (state.complete || state.cancelled || state.error != null) R.string.spotify_import_retry else R.string.spotify_import_start))
                 } }
             }
             if (state.busy) item { Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -103,15 +126,16 @@ fun SpotifyImportScreen(navController: NavController, viewModel: SpotifyImportVi
                     else -> R.string.spotify_import_running
                 }))
                 if (state.connecting && !state.authorizing) Text(stringResource(R.string.spotify_import_fetch_progress, state.loaded, state.loadTotal))
-                TextButton(onClick = viewModel::cancel) { Text(stringResource(R.string.spotify_import_cancel)) }
+                TextButton(modifier = Modifier.testTag("sonet_spotify_cancel"), onClick = viewModel::cancel) { Text(stringResource(R.string.spotify_import_cancel)) }
             } }
             if (state.progress.total > 0) item { Text(
-                stringResource(R.string.spotify_import_progress, state.progress.processed, state.progress.total, state.progress.imported, state.progress.already, state.progress.unmatched.size),
+                stringResource(R.string.spotify_import_progress, state.progress.processed, state.progress.total, state.progress.imported, state.progress.already, state.pendingSongs ?: state.progress.unmatched.size),
                 modifier = Modifier.testTag("sonet_spotify_progress")) }
             if (state.complete) item { Text(stringResource(if (state.pendingSongs == 0) R.string.spotify_import_complete else R.string.spotify_import_pending_complete)) }
             if (state.pendingSongs != null && state.pendingSongs!! > 0 && !state.busy) item {
                 Text(stringResource(R.string.spotify_import_pending_count, state.pendingSongs!!))
             }
+            if (state.resumable) item { Text(stringResource(R.string.spotify_import_paused)) }
             if (state.cancelled) item { Text(stringResource(R.string.spotify_import_cancelled)) }
             state.error?.let { error -> item { Text(stringResource(when (error) {
                 SpotifyFailure.FILE_TOO_LARGE -> R.string.spotify_import_file_too_large

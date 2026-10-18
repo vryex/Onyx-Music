@@ -3,9 +3,6 @@ package com.metrolist.music.spotify
 import com.metrolist.music.db.MusicDatabase
 import com.metrolist.music.models.toMediaMetadata
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.currentCoroutineContext
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.withContext
 import java.io.IOException
 import java.time.LocalDateTime
@@ -16,33 +13,27 @@ class SpotifyImportException(val reason: SpotifyFailure) : IOException(reason.na
 data class SpotifyImportProgress(
     val processed: Int = 0, val total: Int = 0, val imported: Int = 0, val already: Int = 0,
     val unmatched: List<String> = emptyList(), val unmatchedTracks: List<SpotifyTrack> = emptyList(),
+    val remainingTracks: List<SpotifyTrack>? = null,
 )
 
 internal class SpotifyImportRepository(private val database: MusicDatabase, private val resolver: SpotifyTrackResolver = SpotifyTrackResolver()) {
     suspend fun import(tracks: List<SpotifyTrack>, onProgress: (SpotifyImportProgress) -> Unit) = withContext(Dispatchers.IO) {
-        var progress = SpotifyImportProgress(total = tracks.size)
-        onProgress(progress)
-        for (track in tracks) {
-            currentCoroutineContext().ensureActive()
-            val candidate = resolver.resolve(track)
-            if (candidate == null) {
-                progress = progress.copy(unmatched = progress.unmatched + listOf(track.title + " — ${track.artists.joinToString()}"),
-                    unmatchedTracks = progress.unmatchedTracks + track)
-            } else {
-                var already = false
+        SpotifyImportPipeline(
+            resolve = resolver::resolve,
+            store = { candidate ->
+                var result = SpotifyStoreResult.ALREADY
                 database.withTransaction {
                     val existing = songEntity(candidate.id)
-                    already = existing?.liked == true && existing.inLibrary != null
-                    val now = LocalDateTime.now()
-                    if (existing == null) insert(candidate.toMediaMetadata()) { it.withSpotifyImportMembership(now) }
-                    else if (!already) update(existing.withSpotifyImportMembership(now))
+                    val already = existing?.liked == true && existing.inLibrary != null
+                    if (!already) {
+                        val now = LocalDateTime.now()
+                        if (existing == null) insert(candidate.toMediaMetadata()) { it.withSpotifyImportMembership(now) }
+                        else update(existing.withSpotifyImportMembership(now))
+                        result = SpotifyStoreResult.IMPORTED
+                    }
                 }
-                progress = if (already) progress.copy(already = progress.already + 1) else progress.copy(imported = progress.imported + 1)
-            }
-            progress = progress.copy(processed = progress.processed + 1)
-            onProgress(progress)
-            delay(200)
-        }
+                result
+            },
+        ).import(tracks, onProgress)
     }
-
 }
