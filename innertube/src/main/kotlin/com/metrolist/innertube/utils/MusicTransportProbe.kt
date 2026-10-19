@@ -1,7 +1,7 @@
 package com.metrolist.innertube.utils
 
-import com.metrolist.innertube.InnerTube
 import com.metrolist.innertube.YouTube
+import com.metrolist.innertube.models.YouTubeLocale
 import com.metrolist.innertube.models.YouTubeClient
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.okhttp.OkHttp
@@ -9,8 +9,13 @@ import io.ktor.client.plugins.HttpTimeout
 import io.ktor.client.plugins.compression.ContentEncoding
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.plugins.defaultRequest
+import io.ktor.client.request.post
+import io.ktor.client.request.parameter
+import io.ktor.client.request.setBody
 import io.ktor.client.request.header
 import io.ktor.client.request.url
+import io.ktor.http.ContentType
+import io.ktor.http.contentType
 import io.ktor.client.statement.bodyAsText
 import io.ktor.serialization.kotlinx.json.json
 import java.io.ByteArrayInputStream
@@ -23,6 +28,9 @@ import java.util.concurrent.atomic.AtomicReference
 import java.util.zip.GZIPInputStream
 import java.util.zip.InflaterInputStream
 import javax.net.ssl.SSLException
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.TimeoutCancellationException
@@ -35,6 +43,9 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeout
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.encodeToJsonElement
+import kotlinx.serialization.json.put
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.jsonObject
@@ -58,6 +69,32 @@ internal fun classifyMusicRejection(contentType: String, text: String): String {
     }
 }
 
+/** A single anonymous Music request, deliberately bypassing facade retry policy. */
+internal suspend fun requestMusicProbe(client: HttpClient, locale: YouTubeLocale, visitor: String?) =
+    client.post("https://music.youtube.com/youtubei/v1/search") {
+        val identity = YouTubeClient.WEB_REMIX
+        val language = locale.hl.replace('_', '-')
+        val regional = if ('-' in language || locale.gl.isEmpty()) language else "$language-${locale.gl}"
+        val fallback = language.substringBefore('-')
+        contentType(ContentType.Application.Json)
+        header("X-Goog-Api-Format-Version", "1")
+        header("X-YouTube-Client-Name", identity.clientId)
+        header("X-YouTube-Client-Version", identity.clientVersion)
+        header("Origin", "https://music.youtube.com")
+        header("X-Origin", "https://music.youtube.com")
+        header("Referer", "https://music.youtube.com/")
+        header("User-Agent", identity.userAgent)
+        header("Accept-Language", if (regional == fallback) regional else "$regional,$fallback;q=0.9")
+        visitor?.let { header("X-Goog-Visitor-Id", it) }
+        parameter("prettyPrint", false)
+        val json = Json { encodeDefaults = true; explicitNulls = false }
+        setBody(buildJsonObject {
+            put("context", json.encodeToJsonElement(identity.toContext(locale, visitor, null)))
+            put("query", "The Weeknd")
+            put("params", YouTube.SearchFilter.FILTER_SONG.value)
+        }.toString())
+    }
+
 @Serializable
 data class MusicProbeResult(
     val transport: String,
@@ -73,6 +110,9 @@ data class MusicProbeResult(
 )
 
 object MusicTransportProbe {
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    fun start() { scope.launch { run() } }
+
     private val lock = Mutex()
     private val mutableResults = MutableStateFlow<List<MusicProbeResult>>(emptyList())
     private val mutableRunning = MutableStateFlow(false)
@@ -99,11 +139,7 @@ object MusicTransportProbe {
                         try {
                             withTimeout(15_000) {
                                 newClient(transport, wire).use { client ->
-                                    val innerTube = InnerTube(client).apply {
-                                        this.locale = locale
-                                        visitorData = visitor.takeIf { visitorMode == "CURRENT" }
-                                    }
-                                    val response = innerTube.search(YouTubeClient.WEB_REMIX, "The Weeknd", YouTube.SearchFilter.FILTER_SONG.value)
+                                    val response = requestMusicProbe(client, locale, visitor.takeIf { visitorMode == "CURRENT" })
                                     val body = Json.parseToJsonElement(response.bodyAsText()).jsonObject
                                     check(body["contents"] != null) { "Unexpected response structure" }
                                 }
@@ -152,6 +188,9 @@ object MusicTransportProbe {
         }
         engine {
             config {
+                retryOnConnectionFailure(false)
+                followRedirects(false)
+                followSslRedirects(false)
                 protocols(if (transport == "HTTP1") listOf(okhttp3.Protocol.HTTP_1_1) else listOf(okhttp3.Protocol.HTTP_2, okhttp3.Protocol.HTTP_1_1))
                 connectTimeout(8, TimeUnit.SECONDS)
                 readTimeout(8, TimeUnit.SECONDS)

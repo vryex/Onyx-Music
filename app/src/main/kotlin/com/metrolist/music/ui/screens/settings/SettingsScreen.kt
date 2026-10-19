@@ -232,7 +232,7 @@ fun SettingsScreen(navController: NavController, latestVersionName: String) {
                         else -> stringResource(R.string.sonet_connection_test_description)
                     }) },
                     enabled = !connectionProbeRunning,
-                    onClick = { fontScope.launch { MusicTransportProbe.run() } }
+                    onClick = { MusicTransportProbe.start() }
                 ),
                 Material3SettingsItem(
                     icon = painterResource(R.drawable.storage),
