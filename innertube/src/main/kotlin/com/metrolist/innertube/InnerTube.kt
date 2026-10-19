@@ -191,6 +191,9 @@ class InnerTube(
             }
         }
 
+    internal suspend fun searchWeb(query: String): kotlinx.serialization.json.JsonObject =
+        search(YouTubeClient.WEB, query = query).body()
+
     suspend fun search(
         client: YouTubeClient,
         query: String? = null,
