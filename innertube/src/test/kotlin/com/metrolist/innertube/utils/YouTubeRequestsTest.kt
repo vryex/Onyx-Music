@@ -7,48 +7,6 @@ import org.junit.Assert.*
 import org.junit.Test
 
 class YouTubeRequestsTest {
-    @Test fun musicSearchRejectionStillTriesPublicVideoSearch() = runBlocking {
-        val rejected = InnerTubeHttpException("search", HttpStatusCode.Forbidden)
-        val result = publicSearchFallback(
-            primary = { Result.failure<String>(rejected) },
-            fallback = { Result.success("public video result") },
-        )
-        assertEquals("public video result", result.getOrNull())
-    }
-
-    @Test fun successfulMusicSearchDoesNotMakeAnotherRequest() = runBlocking {
-        var fallbackCalls = 0
-        assertEquals("music", publicSearchFallback(
-            primary = { Result.success("music") },
-            fallback = { fallbackCalls++; Result.success("video") },
-        ).getOrThrow())
-        assertEquals(0, fallbackCalls)
-    }
-
-    @Test fun rateLimitAndAccountFailureDoNotTriggerMoreRequests() = runBlocking {
-        for (status in listOf(HttpStatusCode.Unauthorized, HttpStatusCode.TooManyRequests)) {
-            var fallbackCalls = 0
-            val error = InnerTubeHttpException("search", status)
-            val result = publicSearchFallback(
-                primary = { Result.failure<String>(error) },
-                fallback = { fallbackCalls++; Result.success("video") },
-            )
-            assertSame(error, result.exceptionOrNull())
-            assertEquals(0, fallbackCalls)
-        }
-    }
-
-    @Test fun rejectingBothSearchesStopsAfterOneFallback() = runBlocking {
-        var calls = 0
-        val error = InnerTubeHttpException("search", HttpStatusCode.Forbidden)
-        val result = publicSearchFallback(
-            primary = { calls++; Result.failure<String>(error) },
-            fallback = { calls++; Result.failure<String>(error) },
-        )
-        assertEquals(2, calls)
-        assertSame(error, result.exceptionOrNull())
-    }
-
     @Test fun basePageIsVisibleWhileOptionalMetadataIsStillStalled() = runBlocking {
         val published = CompletableDeferred<String>()
         val enriching = CompletableDeferred<Unit>()
@@ -128,17 +86,6 @@ class YouTubeRequestsTest {
         releaseMetadata.complete(Unit)
         yield()
         assertEquals(listOf("first", "second page"), visible)
-    }
-
-    @Test fun cancellationWrappedByAnApiResultDoesNotRunFallback() = runBlocking {
-        var fallbackCalls = 0
-        try {
-            publicSearchFallback<String>(primary = { Result.failure(CancellationException("screen closed")) },
-                fallback = { fallbackCalls++; Result.success("stale result") })
-            fail("Cancellation must propagate")
-        } catch (_: CancellationException) {
-            assertEquals(0, fallbackCalls)
-        }
     }
 
 }

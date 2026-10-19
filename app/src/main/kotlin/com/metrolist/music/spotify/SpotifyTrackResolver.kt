@@ -16,7 +16,6 @@ internal data class SpotifySearchPage(val songs: List<SongItem>, val continuatio
 internal interface SpotifySongSearch {
     suspend fun search(query: String, videos: Boolean = false): SpotifySearchPage
     suspend fun continuation(token: String): SpotifySearchPage
-    suspend fun generalVideos(query: String): SpotifySearchPage = SpotifySearchPage(emptyList())
 }
 
 internal class YouTubeSpotifySongSearch : SpotifySongSearch {
@@ -25,17 +24,8 @@ internal class YouTubeSpotifySongSearch : SpotifySongSearch {
         val result = YouTube.search(query, if (videos) YouTube.SearchFilter.FILTER_VIDEO else YouTube.SearchFilter.FILTER_SONG).getOrThrow()
         return SpotifySearchPage(result.items.filterIsInstance<SongItem>(), result.continuation)
     }
-    override suspend fun generalVideos(query: String): SpotifySearchPage {
-        SpotifyRequestPacer.shared.awaitTurn()
-        val result = YouTube.searchVideos(query = query).getOrThrow()
-        return SpotifySearchPage(result.items.filterIsInstance<SongItem>(), result.continuation?.let { "web:$it" })
-    }
     override suspend fun continuation(token: String): SpotifySearchPage {
         SpotifyRequestPacer.shared.awaitTurn()
-        if (token.startsWith("web:")) {
-            val result = YouTube.searchVideos(continuation = token.removePrefix("web:")).getOrThrow()
-            return SpotifySearchPage(result.items.filterIsInstance<SongItem>(), result.continuation?.let { "web:$it" })
-        }
         val result = YouTube.searchContinuation(token).getOrThrow()
         return SpotifySearchPage(result.items.filterIsInstance<SongItem>(), result.continuation)
     }
@@ -94,11 +84,6 @@ internal class SpotifyTrackResolver(
         val video = query(cleaned, true)
         video?.let { best(it, true) }?.let { return SpotifyResolution(song = it) }
         following(video, true)?.let { return SpotifyResolution(song = it) }
-        // Reserve the general YouTube fallback before spending the remaining budget on ranking variants.
-        requests++
-        val general = retry { search.generalVideos(cleaned) }
-        best(general, true)?.let { return SpotifyResolution(song = it) }
-        following(general, true)?.let { return SpotifyResolution(song = it) }
         val title = SpotifyImportRules.cleanedTitle(track)
         val variants = listOf("$title ${track.artists.joinToString(" ")}", "${track.artists.first()} - $title", "\"$title\" ${track.artists.first()}")
             .filter { SpotifyImportRules.normalized(it) !in setOf(SpotifyImportRules.normalized(original), SpotifyImportRules.normalized(cleaned)) || it.contains('"') }
@@ -110,13 +95,6 @@ internal class SpotifyTrackResolver(
                 following(page, videos)?.let { return SpotifyResolution(song = it) }
             }
         }
-        for (variant in variants) {
-            if (requests >= MAX_REQUESTS) break
-            requests++
-            val page = retry { search.generalVideos(variant) }
-            best(page, true)?.let { return SpotifyResolution(song = it) }
-            following(page, true)?.let { return SpotifyResolution(song = it) }
-        }
         return SpotifyResolution(failure = failures.maxByOrNull { it.ordinal } ?: SpotifyMatchFailure.NO_RESULTS)
     }
 
@@ -125,7 +103,7 @@ internal class SpotifyTrackResolver(
     private suspend fun <T> retry(block: suspend () -> T): T {
         repeat(3) { attempt ->
             currentCoroutineContext().ensureActive()
-            try { return withTimeout(18_000L) { block() } }
+            try { return withTimeout(10_000L) { block() } }
             catch (error: TimeoutCancellationException) {
                 currentCoroutineContext().ensureActive()
                 if (attempt == 2) {

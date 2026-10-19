@@ -107,18 +107,13 @@ constructor(
     private fun publishSummary(page: SearchSummaryPage) {
         summaryPage = page
         if (filter.value == YouTube.SearchFilter.FILTER_EPISODE) {
-            if (page.isVideoFallback) {
-                connectionError = "HTTP 403"
-                return
-            }
             val episodes = page.summaries.firstOrNull { it.title == "Episodes" }?.items.orEmpty()
             viewStateMap[YouTube.SearchFilter.FILTER_EPISODE.value] = ItemsPage(episodes, null)
         }
     }
 
     private suspend fun loadSummaryPage() {
-        summaryPage?.takeUnless { filter.value == YouTube.SearchFilter.FILTER_EPISODE && it.isVideoFallback }
-            ?.let { publishSummary(it); return }
+        summaryPage?.let { publishSummary(it); return }
         loadYouTubePage(
             fetch = {
                 YouTube.searchSummary(query, recordSearchHistory = !context.dataStore.get(PauseSearchHistoryKey, false))

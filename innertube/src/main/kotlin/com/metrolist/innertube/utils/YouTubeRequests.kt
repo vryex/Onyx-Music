@@ -1,27 +1,10 @@
 package com.metrolist.innertube.utils
 
-import com.metrolist.innertubex.InnerTubeHttpException
 import java.net.SocketTimeoutException
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.withTimeoutOrNull
-
-/** A Music search rejection must not make the separate public video search unreachable. */
-suspend fun <T> publicSearchFallback(
-    primary: suspend () -> Result<T>,
-    fallback: suspend () -> Result<T>,
-): Result<T> {
-    val result = primary()
-    currentCoroutineContext().ensureActive()
-    val error = result.exceptionOrNull()
-    if (error is CancellationException) throw error
-    if (error !is InnerTubeHttpException || error.status.value != 403) return result
-    return fallback().also {
-        currentCoroutineContext().ensureActive()
-        (it.exceptionOrNull() as? CancellationException)?.let { cancelled -> throw cancelled }
-    }
-}
 
 /** Optional metadata may improve a page, but must never gate or erase its usable results. */
 suspend fun <T : Any> loadYouTubePage(

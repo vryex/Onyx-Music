@@ -73,16 +73,11 @@ class SpotifyTrackResolverTest {
         assertTrue(search.calls.contains("continuation:video-next"))
     }
 
-    @Test fun generalYouTubeFallbackFindsUploadsOutsideTheMusicCatalogue() = runBlocking {
-        val search = object : SpotifySongSearch {
-            override suspend fun search(query: String, videos: Boolean) = SpotifySearchPage(emptyList())
-            override suspend fun generalVideos(query: String) = SpotifySearchPage(emptyList(), "web:next")
-            override suspend fun continuation(token: String): SpotifySearchPage {
-                assertEquals("web:next", token)
-                return SpotifySearchPage(listOf(song("general", "Artist - Song (Official Video)", "Uploader", 210)))
-            }
-        }
-        assertEquals("general", SpotifyTrackResolver(search).resolve(SpotifyTrack("Song", listOf("Artist"), 200))?.id)
+    @Test fun unmatchedMusicQueriesStayUnmatchedWithoutPublicYouTubeFallback() = runBlocking {
+        val search = FakeSearch { _, _ -> SpotifySearchPage(emptyList()) }
+        assertNull(SpotifyTrackResolver(search).resolve(SpotifyTrack("Song", listOf("Artist"), 200)))
+        assertTrue(search.calls.any { it.startsWith("song:") })
+        assertTrue(search.calls.any { it.startsWith("video:") })
     }
 
     @Test fun jointArtistQueryRecoversResultsWithoutWeakeningArtistChecks() = runBlocking {
