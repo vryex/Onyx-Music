@@ -17,8 +17,15 @@ for attempt in range(35):
     time.sleep(2)
 else:
     raise AssertionError('Search never produced a result or actionable error')
-adb('shell', 'input', 'keyevent', 'KEYCODE_BACK')
-tap(snapshot('30-back'), 'home')
+for attempt in range(6):
+    navigation = snapshot('30-back-' + str(attempt))
+    if any(n.get('text', '').lower() == 'home' for n in navigation.iter('node')):
+        break
+    adb('shell', 'input', 'keyevent', 'KEYCODE_BACK')
+    time.sleep(1)
+else:
+    raise AssertionError('Could not return from nested pages to bottom navigation')
+tap(navigation, 'home')
 tap(snapshot('30-home'), 'more options')
 tap(snapshot('30-menu'), 'settings')
 settings = scroll(snapshot('31-settings'), 'export diagnostic', '31-find-export', max_swipes=8)

@@ -1,0 +1,45 @@
+name: Sonet Diagnostic Export Validation
+on:
+  push:
+    branches: [test/diagnostic-export]
+permissions:
+  contents: read
+  actions: read
+jobs:
+  smoke:
+    env:
+      SONET_TEST_PACKAGE: com.onyx.music.diagnostics
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: Sonet-diagnostic-signed-release
+          run-id: 39199066246
+          github-token: ${{ github.token }}
+          path: dist
+      - name: Enable emulator acceleration
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - name: Release smoke test
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          target: google_apis
+          arch: x86_64
+          profile: pixel_2
+          ram-size: 2048M
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none -no-snapshot
+          disable-animations: false
+          script: python3 .github/scripts/sonet_diagnostic_export.py
+      - name: Upload screenshots and runtime logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: Sonet-diagnostic-export-validation
+          path: smoke/
+          if-no-files-found: ignore
+
