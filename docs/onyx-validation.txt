@@ -1,0 +1,104 @@
+ONYX MUSIC V1 — VALIDATION STATUS
+
+Implementation branch: feat/onyx-redesign-v1
+Base: 4d4899f47343a14b625390e4ea7bec201efda8a1
+
+STATUS: ACTIONS BUILD AND UNIT TESTS PASSED; APK AVAILABLE; DEVICE TESTS PENDING.
+
+GitHub access was enabled on 2026-10-15. The five implementation commits are
+published on the feature branch; PR https://github.com/xero-scripts-repo/Onyx-Music/pull/1
+No changes were made to main, and no release was published.
+
+First CI run: https://github.com/xero-scripts-repo/Onyx-Music/actions/runs/38684019847
+Java21/SDK/signing succeeded. Izzy/Foss compilation found an implicit
+BoxWithConstraints.maxWidth access across a Compose DSL scope in MainActivity.
+Fixed by capturing compactWindow in its owning scope before child composables.
+Successful validation:
+https://github.com/xero-scripts-repo/Onyx-Music/actions/runs/38684374166
+Tested source commit: 88e5ffc3bde4c91f9c0df82303686568ef2a4406
+Java21/SDK setup, :app:testIzzyDebugUnitTest, :app:assembleIzzyDebug and
+:app:assembleFossDebug all completed successfully (BUILD SUCCESSFUL).
+Only this validation document changed after that tested source commit.
+
+APK:
+https://github.com/xero-scripts-repo/Onyx-Music/actions/runs/38684374166/artifacts/11948994860
+Artifact: Onyx-Music-APK-IzzyDebug-ephemeral
+APK SHA-256: ccf116c7ea8c8608decdd6d1024330eb3b8b3cbecab6daf07d6170f3d85c61bd
+APK size: 51131943 bytes
+Actual binary manifest checked: package=com.onyx.music, versionCode=153,
+versionName=13.7.0. Compiled resources contain Onyx Music.
+Downloaded ZIP/APK CRC and SHA-256 match CI metadata; apksigner verification
+passed in CI. No ONYX signing Secrets were configured, so this preview uses
+an ephemeral key. Set up persistent signing before relying on in-place updates.
+Successful compilation does not verify playback/network/UI behavior on a phone.
+
+Changes implemented:
+- Original native monochrome theme, typography, shapes, default dark mode.
+- Explicit light/custom theme options remain available.
+- Custom primary navigation with outline icons and selection markers;
+  three default tabs, existing optional social tab/top action retained.
+- Home editorial heading, continue listening first, discovery and real
+  upstream content retained, bounded cards and shared section hierarchy.
+- Library filters/title, rounded functional search input and results,
+  outlined category settings, Onyx identity and Kev customization credit.
+- Compact mini player artwork, play/pause, next, bottom progress and
+  existing swipe gesture; full player uses calmer fixed-size controls.
+- Full player lyrics, queue, EQ, shuffle, repeat, share/favorite and
+  service bindings retained; mini favorite/subscribe inline shortcuts
+  removed in the new layout, available through full player/artist screens.
+- Original faceted O launcher, adaptive/themed/static icons, notification
+  mark, black splash. Kotlin namespace and GPL/upstream credits retained.
+- Application ID com.onyx.music; launcher shortcuts corrected for debug
+  and main; no application version bump.
+
+Concrete performance changes (not benchmark claims):
+- Automix enqueue moved from composition to keyed LaunchedEffect.
+- UI playback flows use lifecycle-aware collection.
+- Mini progress continues to be read at draw time; holder remember keys
+  fixed so replaced state holders do not become stale.
+- Cover color caches bounded to 64 entries via LruCache.
+- Main theme color extraction requests 96x96 instead of full-resolution
+  bitmap. Daily discovery thumbnail server request reduced 1080 to 544.
+- Shared thumbnail ImageRequest remembered by context + URL.
+- Community playlist row uses stable IDs and de-duplicates ID collisions.
+- Large transport button weight spring animations removed.
+- Existing Coil singleton, image memory/disk caches, Media3 service,
+  background playback, Room schema and download cache architecture retained.
+
+Verified locally:
+- Android resource XML parsing, including launcher shortcuts.
+- Workflow YAML parsing and run block bash syntax.
+- Signing script no/partial/full/invalid secret branches mocked; no
+  actual private key was created or committed.
+- Complete branch git diff --check.
+- Independent source review; launcher shortcut finding fixed and checked.
+- GPL LICENSE unchanged; versions unchanged; no database schema edits.
+
+Automated coverage executed successfully with the Izzy unit-test suite:
+- OnyxThemeTest: primary/secondary/accent contrast and explicit light mode.
+- ProgressStateTest: zero/negative duration, clamped seeks, live state,
+  finite output on extreme long values.
+
+Actions validation:
+- Java21, original android-37.0 SDK/symlink workaround.
+- :app:testIzzyDebugUnitTest :app:assembleIzzyDebug :app:assembleFossDebug
+- APK artifacts with SHA256, signing mode, commit and certificate digest.
+- Persistent signing via four repository secrets documented separately.
+
+Pending phone tests:
+1. Back up data before replacing an APK with a different signing key.
+2. Startup: Onyx icon/splash/name, no white flash, dark default.
+3. Home real recommendations; empty/offline and refresh states.
+4. Tabs, search typing/source toggle, results, history and library filters.
+5. Music playback, mini/full synchronization, seek, swipe, next/previous,
+   favorite, shuffle/repeat, lyrics, queue and EQ.
+6. Downloads, airplane-mode playback, cache and playlists.
+7. Lock screen/notification controls and at least ten minutes background
+   playback with screen off; audio focus/headphone reconnect.
+8. Login/synchronization, recognition, social host/guest controls; Cast
+   requires GMS flavor rather than the requested Izzy APK.
+9. Small phone and large display; large system text; keyboard + mini + nav;
+   gesture/three-button navigation, supported rotation and repeated opening.
+10. Restart process: saved preferences, library and player state.
+11. Long-press launcher Search/Library must open this app.
+12. Profile CPU/memory/frame times before claiming measured improvement.

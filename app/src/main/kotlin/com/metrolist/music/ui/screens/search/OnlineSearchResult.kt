@@ -425,16 +425,16 @@ fun OnlineSearchResult(
                         if (pureBlack) {
                             MaterialTheme.colorScheme.surface
                         } else {
-                            MaterialTheme.colorScheme.surfaceContainerHigh
+                            MaterialTheme.colorScheme.surfaceContainer
                         },
                     unfocusedContainerColor =
                         if (pureBlack) {
                             MaterialTheme.colorScheme.surface
                         } else {
-                            MaterialTheme.colorScheme.surfaceContainerHigh
+                            MaterialTheme.colorScheme.surfaceContainer
                         },
-                    focusedBorderColor = Color.Transparent,
-                    unfocusedBorderColor = Color.Transparent,
+                    focusedBorderColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                    unfocusedBorderColor = MaterialTheme.colorScheme.onSurfaceVariant,
                 ),
             modifier =
                 Modifier

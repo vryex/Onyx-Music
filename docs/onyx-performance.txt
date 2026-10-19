@@ -1,0 +1,63 @@
+ONYX MUSIC — PERFORMANCE AND EQUALIZER FOLLOW-UP
+
+Trigger: user tested v1 IzzyDebug and reported sluggish interaction,
+intermittent graphics artifacts and a non-working equalizer.
+
+Concrete causes addressed:
+1. v1 APK was debuggable/unminified. CI now retains debug validation and
+   additionally builds an R8-optimized, resource-shrunk, non-debuggable
+   IzzyRelease REVIEW APK. This does not publish a GitHub release or merge main.
+   Debug and optimized artifacts from one run share the signing key.
+2. Custom EQ could be bypassed by hardware audio offload or float output.
+   Keep the custom chain on PCM16; prevent offload while EQ is selected,
+   including the secondary crossfade player. Retain user offload preference
+   and restore its eligibility when EQ/crossfade are off.
+3. EQ's stereo path allocated Pair/boxed values per band per audio frame.
+   Each channel now runs through primitive filter functions.
+4. EQ configuration mutated live filter state across service/audio threads.
+   Publish complete immutable requests; apply them at audio buffer boundaries.
+   Equal requests do not reset filter histories. Format/reset changes rebuild
+   coefficients from the retained selected profile, and preamp-only profiles work.
+5. Changing EQ previously sought to the current position unnecessarily.
+   New buffer-boundary updates need no seek/rebuffer. UI apply-error feedback
+   is preserved; repeated service/UI requests are coalesced by the processor.
+6. Unity/disabled normalization iterated every sample. It now copies raw PCM
+   in bulk, preserving byte values for all four supported encodings.
+7. Full-player position ticks invalidated the controls/artwork scope. Timeline
+   reads now live in a separate restartable composable. Background opacity
+   reads sheet progress in graphicsLayer rather than restarting composition.
+   The 100ms UI clock stops when the application is not STARTED.
+8. Original lyrics polled at 8ms; word rendering had duplicate frame clocks.
+   Use one visible, lifecycle-scoped frame clock and defer active word reads
+   to drawing; inactive lines no longer observe continuously ticking position.
+9. Artwork had three forced nested Offscreen layers without blend masks.
+   Remove them; keep explicit offscreen compositing only for the shimmer mask.
+   Shimmer brush is cached and alpha=.99 layer forcing is removed.
+10. Playing indicator ran a coroutine per bar; share one draw-phase animation.
+    Release no longer plants Timber's DebugTree.
+
+Automated checks added:
+- EQ PCM16 gain/clipping and disabled passthrough.
+- Preamp-only behavior, reset/sample-rate changes, stereo channel isolation,
+  newest request wins, equal-profile history preservation, invalid bands.
+- Normalization raw byte preservation for PCM16/24/32/float and unity float
+  NaN/sign payloads; non-unity gain still applies.
+- CI builds/tests debug + Foss and optimized IzzyRelease, verifies actual
+  APK application ID/name/debuggable flag, signature and SHA256, and uploads
+  unit reports. Execution results are recorded in PR #1 / Actions.
+
+Limits:
+No CPU/FPS/frame-time/startup or memory improvement percentage is claimed.
+No device trace was available. Source hotspots and deterministic PCM behavior
+are verifiable separately from user-perceived speed. Audio offload without EQ
+remains available. The app's local EQ cannot affect a remote Cast receiver.
+System EQ remains dependent on the device's installed system effect panel.
+
+Phone comparison:
+Use the optimized-review artifact. Test the same track and device settings as
+v1: scroll Home/library while playing, open/close/swipe artwork, seek with lyrics,
+switch line/word lyric modes, turn EQ on/off with a clearly audible profile,
+switch tracks/sample rates, test headphones/Bluetooth, and test 10 minutes with
+screen off. Check normal controls and settings persistence. Report the phone
+model/Android version and a screen recording for remaining graphical artifacts.
+Back up before replacing an installation signed with a different ephemeral key.

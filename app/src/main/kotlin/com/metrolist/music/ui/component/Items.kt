@@ -265,18 +265,18 @@ inline fun ListItem(
             modifier // playing highlight
                 .height(ListItemHeight)
                 .padding(horizontal = 8.dp)
-                .clip(RoundedCornerShape(8.dp))
+                .clip(RoundedCornerShape(12.dp))
                 .background(
                     color = // selected active
-                        if (isSelected == true) MaterialTheme.colorScheme.primary.copy(alpha = 0.4f)
+                        if (isSelected == true) MaterialTheme.colorScheme.primary.copy(alpha = 0.18f)
                         else MaterialTheme.colorScheme.secondaryContainer
                 )
         } else if (isSelected == true) {
             modifier // inactive selected
                 .height(ListItemHeight)
                 .padding(horizontal = 8.dp)
-                .clip(RoundedCornerShape(8.dp))
-                .background(color = MaterialTheme.colorScheme.inversePrimary.copy(alpha = 0.4f))
+                .clip(RoundedCornerShape(12.dp))
+                .background(color = MaterialTheme.colorScheme.primary.copy(alpha = 0.12f))
         } else {
             modifier // default
                 .height(ListItemHeight)
@@ -409,15 +409,17 @@ fun GridItem(
 ) {
     val gridHeight = currentGridThumbnailHeight()
     Column(
-        modifier = if (fillMaxWidth) {
+        modifier = (if (fillMaxWidth) {
             modifier
                 .padding(12.dp)
                 .fillMaxWidth()
         } else {
             modifier
                 .padding(12.dp)
-                .width(gridHeight * thumbnailRatio)
-        }
+                .width(gridHeight * thumbnailRatio + 20.dp)
+        }).clip(RoundedCornerShape(16.dp))
+            .background(MaterialTheme.colorScheme.surfaceContainer)
+            .padding(10.dp)
     ) {
         BoxWithConstraints(
             contentAlignment = Alignment.Center,
@@ -1478,7 +1480,16 @@ fun ItemThumbnail(
     thumbnailRatio: Float = 1f
 ) {
     val cropAlbumArt by rememberPreference(CropAlbumArtKey, false)
-    
+    val context = LocalContext.current
+    val imageRequest = remember(context, thumbnailUrl) {
+        ImageRequest.Builder(context)
+            .data(thumbnailUrl?.resize(544, 544))
+            .memoryCachePolicy(coil3.request.CachePolicy.ENABLED)
+            .diskCachePolicy(coil3.request.CachePolicy.ENABLED)
+            .networkCachePolicy(coil3.request.CachePolicy.ENABLED)
+            .build()
+    }
+
     Box(
         contentAlignment = Alignment.Center,
         modifier = modifier
@@ -1488,12 +1499,7 @@ fun ItemThumbnail(
     ) {
         if (albumIndex == null) {
             AsyncImage(
-                model = ImageRequest.Builder(LocalContext.current)
-                    .data(thumbnailUrl?.resize(544, 544))
-                    .memoryCachePolicy(coil3.request.CachePolicy.ENABLED)
-                    .diskCachePolicy(coil3.request.CachePolicy.ENABLED)
-                    .networkCachePolicy(coil3.request.CachePolicy.ENABLED)
-                    .build(),
+                model = imageRequest,
                 contentDescription = null,
                 contentScale = if (cropAlbumArt) ContentScale.Crop else ContentScale.Fit,
                 modifier = Modifier

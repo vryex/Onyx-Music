@@ -1,0 +1,98 @@
+Onyx Music APK signing
+
+The Onyx workflow builds com.onyx.music / Onyx Music with no application ID
+suffix. It uses Java 21 and validates Izzy unit tests plus IzzyDebug and
+FossDebug builds. A separate Gradle invocation then builds IzzyRelease with
+R8 code optimization/minification, resource shrinking, and debugging disabled.
+This is an optimized review APK for device testing, not a published release.
+No version code or version name is increased.
+
+Download the optimized APK from the separate artifact named
+Onyx-Music-APK-IzzyRelease-optimized-review-persistent (or -ephemeral).
+The existing Onyx-Music-APK-IzzyDebug artifact remains available for debugging.
+Each APK artifact contains metadata with its actual package name, application
+label, and debuggable flag inspected using aapt; CI rejects an unexpected
+identity or build type. Metadata also includes the commit, signing mode,
+APK SHA-256, and public signing certificate fingerprints verified by apksigner.
+The optimized artifact additionally includes the R8 mapping.txt for diagnosing
+obfuscated crash traces. IzzyDebug unit test reports are uploaded even if a
+later build step fails, when reports exist.
+
+Both APK variants use the same signing key within one workflow run. When
+METROLIST_DEBUG_KEYSTORE_PATH is supplied, the release build uses the existing
+workflowDebug signing configuration. Without that variable, the project's
+original release signing behavior is preserved. Persistent signing lets the
+optimized APK update an existing Debug installation if both have the same key
+and application ID; ephemeral APKs from different runs cannot update each
+other. Compare responsiveness on a device using the optimized review APK;
+this build configuration alone does not establish measured performance gains.
+
+Persistent signing (recommended for updates)
+
+Generate a private key once on your own trusted computer, outside this repository:
+
+  mkdir -p "$HOME/.config/onyx-music"
+  chmod 700 "$HOME/.config/onyx-music"
+  keytool -genkeypair -storetype PKCS12 \
+    -keystore "$HOME/.config/onyx-music/onyx-upload.p12" \
+    -alias onyx -keyalg RSA -keysize 3072 -validity 10000 \
+    -dname "CN=Onyx Music"
+  chmod 600 "$HOME/.config/onyx-music/onyx-upload.p12"
+
+Keytool prompts for the password; keep it in a password manager. PKCS12 uses
+that same password for the private key. Back up both the keystore and password
+securely. Never commit a key or password to this repository.
+
+In GitHub repository Settings > Secrets and variables > Actions, add all four
+repository secrets:
+
+  ONYX_KEYSTORE_BASE64: the base64-encoded contents of onyx-upload.p12
+  ONYX_KEYSTORE_PASSWORD: the keystore password
+  ONYX_KEY_ALIAS: onyx
+  ONYX_KEY_PASSWORD: the same password for the PKCS12 private key
+
+Produce the base64 value locally with:
+
+  base64 < "$HOME/.config/onyx-music/onyx-upload.p12" | tr -d '\n'
+
+Paste the output directly into the GitHub secret, then clear terminal/clipboard
+history as appropriate. This encoded value is still a private key. Do not put
+it in a commit, issue, pull request, workflow input, or build artifact.
+
+Run the Onyx Music APK workflow or push feat/onyx-redesign-v1. All four secrets
+must be configured together; a partial configuration fails before building.
+The workflow decodes the key only into runner temporary storage and passes it
+through the existing METROLIST_DEBUG_KEYSTORE_PATH, _KEYSTORE_PASSWORD,
+_KEY_ALIAS, and _KEY_PASSWORD environment variables. Temporary keys are removed
+at the end of the job. The artifact's signing mode will be persistent.
+
+No secrets / fork pull requests
+
+If all four secrets are absent (including fork PRs), CI explicitly warns and
+generates a new ephemeral debug key for that run. The artifact name and build
+metadata say ephemeral. No private key is uploaded or cached. These APKs cannot
+update installations signed by another run's ephemeral key.
+
+An APK previously generated with a random key can only be updated in place if
+that original private signing key is recovered and used again. Creating a new
+persistent key cannot recover this ability. Otherwise, back up user data and
+uninstall the old app before installing the APK signed with the new key. Keep
+using the same persistent key for subsequent updates; the application ID must
+also remain com.onyx.music. This workflow does not increase the version code.
+
+Windows PowerShell alternative
+
+Install a Java 21 JDK if keytool is not available; Android Studio is not needed.
+Run the following in PowerShell, outside the repository:
+
+  New-Item -ItemType Directory -Force "$env:USERPROFILE\OnyxSigning"
+  keytool -genkeypair -storetype PKCS12 `
+    -keystore "$env:USERPROFILE\OnyxSigning\onyx-upload.p12" `
+    -alias onyx -keyalg RSA -keysize 3072 -validity 10000 `
+    -dname "CN=Onyx Music"
+  [Convert]::ToBase64String([IO.File]::ReadAllBytes("$env:USERPROFILE\OnyxSigning\onyx-upload.p12")) | Set-Clipboard
+
+Keytool prompts for the password. Paste the clipboard into the
+ONYX_KEYSTORE_BASE64 repository secret, then set the other three secrets as
+listed above. Clear the clipboard with Set-Clipboard -Value "" and retain a
+secure backup of the key/password. Do not send the key in chat.

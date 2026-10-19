@@ -1,74 +1,194 @@
-
 name: Onyx Music APK
 
 on:
+  push:
+    branches: [feat/onyx-redesign-v1]
+  pull_request:
+    branches: [main]
   workflow_dispatch:
 
 permissions:
   contents: read
 
+concurrency:
+  group: onyx-${{ github.event.pull_request.head.ref || github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build:
+    # This branch already builds on push; other PR branches still get validation.
+    if: github.event_name != 'pull_request' || github.head_ref != 'feat/onyx-redesign-v1' || github.event.pull_request.head.repo.full_name != github.repository
     runs-on: ubuntu-latest
     timeout-minutes: 60
 
     steps:
-      - name: Descargar proyecto
+      - name: Check out project
         uses: actions/checkout@v4
         with:
           submodules: recursive
 
-      - name: Configurar Java 21
+      - name: Set up Java 21
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '21'
 
-      - name: Configurar Android SDK
+      - name: Set up Android SDK
         uses: android-actions/setup-android@v4
         with:
           packages: 'platform-tools'
 
-      
-      - name: Instalar SDK
+      - name: Install SDK
         run: |
           sdkmanager "platforms;android-37.0" "build-tools;36.0.0"
-
           if [ ! -e "$ANDROID_HOME/platforms/android-37" ]; then
             ln -s "$ANDROID_HOME/platforms/android-37.0" "$ANDROID_HOME/platforms/android-37"
           fi
 
-
-      - name: Configurar Gradle
+      - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
 
-      
-      - name: Generar firma Android
+      - name: Prepare signing key
+        id: signing
+        env:
+          ONYX_KEYSTORE_BASE64: ${{ secrets.ONYX_KEYSTORE_BASE64 }}
+          ONYX_KEYSTORE_PASSWORD: ${{ secrets.ONYX_KEYSTORE_PASSWORD }}
+          ONYX_KEY_ALIAS: ${{ secrets.ONYX_KEY_ALIAS }}
+          ONYX_KEY_PASSWORD: ${{ secrets.ONYX_KEY_PASSWORD }}
         run: |
-          mkdir -p "$HOME/.android"
+          set -euo pipefail
+          supplied=0
+          for name in ONYX_KEYSTORE_BASE64 ONYX_KEYSTORE_PASSWORD ONYX_KEY_ALIAS ONYX_KEY_PASSWORD; do
+            if [ -n "${!name}" ]; then supplied=$((supplied + 1)); fi
+          done
+          if [ "$supplied" -ne 0 ] && [ "$supplied" -ne 4 ]; then
+            echo "::error::Set all four ONYX signing secrets, or leave all four unset."
+            exit 1
+          fi
+          umask 077
+          keystore="$RUNNER_TEMP/onyx-debug.keystore"
+          if [ "$supplied" -eq 4 ]; then
+            printf '%s' "$ONYX_KEYSTORE_BASE64" | base64 --decode > "$keystore"
+            keytool -list -keystore "$keystore" -storepass:env ONYX_KEYSTORE_PASSWORD -alias "$ONYX_KEY_ALIAS" > /dev/null
+            mode=persistent
+          else
+            echo "::warning::No ONYX signing secrets: using a new ephemeral debug key. This APK cannot update APKs signed by previous runs."
+            keytool -genkeypair -keystore "$keystore" \
+              -storepass android -keypass android -alias androiddebugkey \
+              -keyalg RSA -keysize 2048 -validity 10000 \
+              -dname "CN=Onyx Ephemeral Debug,O=Onyx Music,C=US" -noprompt
+            mode=ephemeral
+          fi
+          echo "METROLIST_DEBUG_KEYSTORE_PATH=$keystore" >> "$GITHUB_ENV"
+          echo "mode=$mode" >> "$GITHUB_OUTPUT"
 
-          keytool -genkeypair \
-            -keystore "$HOME/.android/debug.keystore" \
-            -storepass android \
-            -keypass android \
-            -alias androiddebugkey \
-            -keyalg RSA \
-            -keysize 2048 \
-            -validity 10000 \
-            -dname "CN=Android Debug,O=Android,C=US" \
-            -noprompt
-
-
-      - name: Compilar Onyx Music
+      - name: Test and build Onyx Music Debug
         env:
           METROLIST_APP_NAME: Onyx Music
           METROLIST_APPLICATION_ID: com.onyx.music
-        run: |
-          bash ./gradlew :app:assembleIzzyDebug --stacktrace
+          METROLIST_DEBUG_KEYSTORE_PASSWORD: ${{ secrets.ONYX_KEYSTORE_PASSWORD || 'android' }}
+          METROLIST_DEBUG_KEY_ALIAS: ${{ secrets.ONYX_KEY_ALIAS || 'androiddebugkey' }}
+          METROLIST_DEBUG_KEY_PASSWORD: ${{ secrets.ONYX_KEY_PASSWORD || 'android' }}
+        run: bash ./gradlew :app:testIzzyDebugUnitTest :app:assembleIzzyDebug :app:assembleFossDebug --console=plain --stacktrace
 
-      - name: Subir APK
+      - name: Verify and record IzzyDebug APK metadata
+        env:
+          SIGNING_MODE: ${{ steps.signing.outputs.mode }}
+        run: |
+          set -euo pipefail
+          output=app/build/outputs/apk/izzy/debug
+          {
+            echo "variant=IzzyDebug"
+            echo "signing=$SIGNING_MODE"
+            echo "commit=$GITHUB_SHA"
+            echo "run=$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
+            for apk in "$output"/*.apk; do
+              badging="$RUNNER_TEMP/onyx-debug-badging.txt"
+              "$ANDROID_HOME/build-tools/36.0.0/aapt" dump badging "$apk" > "$badging"
+              package_name=$(sed -n "s/^package: name='\([^']*\)'.*/\1/p" "$badging")
+              app_label=$(sed -n "s/^application-label:'\(.*\)'$/\1/p" "$badging")
+              debuggable=false
+              if grep -q '^application-debuggable' "$badging"; then debuggable=true; fi
+              test "$package_name" = com.onyx.music
+              test "$app_label" = 'Onyx Music'
+              test "$debuggable" = true
+              echo "applicationId=$package_name"
+              echo "applicationLabel=$app_label"
+              echo "debuggable=$debuggable"
+              sha256sum "$apk"
+              "$ANDROID_HOME/build-tools/36.0.0/apksigner" verify --print-certs "$apk"
+            done
+          } > "$output/onyx-build-info.txt"
+          cat "$output/onyx-build-info.txt" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload IzzyDebug APK
         uses: actions/upload-artifact@v4
         with:
-          name: Onyx-Music-APK
-          path: app/build/outputs/apk/izzy/debug/*.apk
+          name: Onyx-Music-APK-IzzyDebug-${{ steps.signing.outputs.mode }}
+          path: |
+            app/build/outputs/apk/izzy/debug/*.apk
+            app/build/outputs/apk/izzy/debug/onyx-build-info.txt
           if-no-files-found: error
+
+      - name: Build optimized Onyx Music review APK
+        env:
+          METROLIST_APP_NAME: Onyx Music
+          METROLIST_APPLICATION_ID: com.onyx.music
+          METROLIST_DEBUG_KEYSTORE_PASSWORD: ${{ secrets.ONYX_KEYSTORE_PASSWORD || 'android' }}
+          METROLIST_DEBUG_KEY_ALIAS: ${{ secrets.ONYX_KEY_ALIAS || 'androiddebugkey' }}
+          METROLIST_DEBUG_KEY_PASSWORD: ${{ secrets.ONYX_KEY_PASSWORD || 'android' }}
+        run: bash ./gradlew :app:assembleIzzyRelease --console=plain --stacktrace
+
+      - name: Verify and record IzzyRelease APK metadata
+        env:
+          SIGNING_MODE: ${{ steps.signing.outputs.mode }}
+        run: |
+          set -euo pipefail
+          output=app/build/outputs/apk/izzy/release
+          {
+            echo "variant=IzzyRelease"
+            echo "signing=$SIGNING_MODE"
+            echo "commit=$GITHUB_SHA"
+            echo "run=$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
+            for apk in "$output"/*.apk; do
+              badging="$RUNNER_TEMP/onyx-release-badging.txt"
+              "$ANDROID_HOME/build-tools/36.0.0/aapt" dump badging "$apk" > "$badging"
+              package_name=$(sed -n "s/^package: name='\([^']*\)'.*/\1/p" "$badging")
+              app_label=$(sed -n "s/^application-label:'\(.*\)'$/\1/p" "$badging")
+              debuggable=false
+              if grep -q '^application-debuggable' "$badging"; then debuggable=true; fi
+              test "$package_name" = com.onyx.music
+              test "$app_label" = 'Onyx Music'
+              test "$debuggable" = false
+              echo "applicationId=$package_name"
+              echo "applicationLabel=$app_label"
+              echo "debuggable=$debuggable"
+              sha256sum "$apk"
+              "$ANDROID_HOME/build-tools/36.0.0/apksigner" verify --print-certs "$apk"
+            done
+          } > "$output/onyx-build-info.txt"
+          cat "$output/onyx-build-info.txt" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload optimized IzzyRelease review APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: Onyx-Music-APK-IzzyRelease-optimized-review-${{ steps.signing.outputs.mode }}
+          path: |
+            app/build/outputs/apk/izzy/release/*.apk
+            app/build/outputs/apk/izzy/release/onyx-build-info.txt
+            app/build/outputs/mapping/izzyRelease/mapping.txt
+          if-no-files-found: error
+
+      - name: Upload Izzy unit test reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: Onyx-Music-IzzyDebug-unit-test-reports
+          path: |
+            app/build/reports/tests/testIzzyDebugUnitTest/**
+            app/build/test-results/testIzzyDebugUnitTest/**
+          if-no-files-found: warn
+
+      - name: Remove temporary signing key
+        if: always()
+        run: rm -f "$RUNNER_TEMP/onyx-debug.keystore"

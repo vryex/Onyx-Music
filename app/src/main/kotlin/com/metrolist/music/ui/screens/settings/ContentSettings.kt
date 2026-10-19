@@ -140,7 +140,7 @@ fun ContentSettings(
         rememberPreference(key = ShowMostStatsPlaylistsKey, defaultValue = true)
     val (randomizeHomeOrder, onRandomizeHomeOrderChange) = rememberPreference(
         RandomizeHomeOrderKey,
-        defaultValue = true
+        defaultValue = false
     )
     val (addToPlaylistPosition, onAddToPlaylistPositionChange) = rememberEnumPreference(
         AddToPlaylistPositionKey,

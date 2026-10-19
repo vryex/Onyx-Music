@@ -108,6 +108,8 @@ import androidx.compose.ui.zIndex
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.repeatOnLifecycle
+import androidx.compose.runtime.withFrameNanos
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.palette.graphics.Palette
 import coil3.ImageLoader
@@ -239,7 +241,7 @@ fun OriginalLyrics(
         defaultValue = PlayerBackgroundStyle.DEFAULT,
     )
 
-    val darkTheme by rememberEnumPreference(DarkModeKey, defaultValue = DarkMode.AUTO)
+    val darkTheme by rememberEnumPreference(DarkModeKey, defaultValue = DarkMode.ON)
     val isSystemInDarkTheme = isSystemInDarkTheme()
     val useDarkTheme =
         remember(darkTheme, isSystemInDarkTheme) {
@@ -554,19 +556,23 @@ fun OriginalLyrics(
         selectedIndices.clear()
     }
 
-    LaunchedEffect(lyrics) {
+    val latestSliderPositionProvider by rememberUpdatedState(sliderPositionProvider)
+    val latestLyricsOffset by rememberUpdatedState(currentSong?.song?.lyricsOffset ?: 0)
+    LaunchedEffect(lyrics, lines, showLyrics, lifecycleOwner) {
         if (lyrics.isNullOrEmpty() || !lyrics.startsWith("[")) {
             currentLineIndex = -1
             return@LaunchedEffect
         }
-        while (isActive) {
-            delay(8) // Faster update for word-by-word animation
-            val sliderPosition = sliderPositionProvider()
-            isSeeking = sliderPosition != null
-            val position = sliderPosition ?: playerConnection.player.currentPosition
-            currentPlaybackPosition = position
-            val lyricsOffset = currentSong?.song?.lyricsOffset ?: 0
-            currentLineIndex = findCurrentLineIndex(lines, position + lyricsOffset)
+        if (!showLyrics) return@LaunchedEffect
+        lifecycleOwner.lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
+            while (isActive) {
+                withFrameNanos { }
+                val sliderPosition = latestSliderPositionProvider()
+                isSeeking = sliderPosition != null
+                val position = sliderPosition ?: playerConnection.player.currentPosition
+                currentPlaybackPosition = position
+                currentLineIndex = findCurrentLineIndex(lines, position + latestLyricsOffset)
+            }
         }
     }
 
@@ -882,7 +888,6 @@ fun OriginalLyrics(
                     }
                 } else {
                     val lyricsOffset = currentSong?.song?.lyricsOffset?.toLong() ?: 0L
-                    val effectivePlaybackPosition = currentPlaybackPosition + lyricsOffset
 
                     itemsIndexed(
                         items = lines,
@@ -1083,6 +1088,9 @@ fun OriginalLyrics(
                             val subText = if (romanizeAsMain && isRomanizedAvailable) item.text else romanizedText
 
                             val hasWordTimings = if (romanizeAsMain && isRomanizedAvailable) false else item.words?.isNotEmpty() == true
+
+                            // Line-only lyrics do not need frame-by-frame text recomposition.
+                            val effectivePlaybackPosition = if (isActiveLine && hasWordTimings) currentPlaybackPosition + lyricsOffset else 0L
 
                             // Word-by-word animation styles
                             if (hasWordTimings && lyricsAnimationStyle == LyricsAnimationStyle.NONE) {
