@@ -1,4 +1,5 @@
 import re
+import os
 import subprocess
 import time
 import xml.etree.ElementTree as ET
@@ -6,7 +7,7 @@ from pathlib import Path
 
 OUT = Path('smoke')
 OUT.mkdir(exist_ok=True)
-PACKAGE = 'com.onyx.music'
+PACKAGE = os.environ.get('SONET_TEST_PACKAGE', 'com.onyx.music')
 ACTIVITY = PACKAGE + '/com.metrolist.music.MainActivity'
 
 

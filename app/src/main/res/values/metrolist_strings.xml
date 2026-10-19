@@ -1104,4 +1104,8 @@
     <string name="youtube_import_rejected">YouTube rejected the request. Your pending songs have been preserved.</string>
     <string name="youtube_import_rate_limit">YouTube is limiting requests. Wait a few minutes, then retry your pending songs.</string>
     <string name="youtube_page_connection_error">Could not load this YouTube page.</string>
+    <string name="sonet_diagnostic_export">Export diagnostic</string>
+    <string name="sonet_diagnostic_description">Save the latest YouTube Music requests and errors. Cookies, tokens and search terms are excluded. Reproduce the problem before exporting; closing the app clears the log.</string>
+    <string name="sonet_diagnostic_saved">Diagnostic saved. You can attach the text file to your support conversation.</string>
+    <string name="sonet_diagnostic_save_error">Could not save the diagnostic. Try another folder.</string>
 </resources>

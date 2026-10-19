@@ -4,6 +4,7 @@ import com.metrolist.innertube.models.MediaInfo
 import com.metrolist.innertube.models.ReturnYouTubeDislikeResponse
 import com.metrolist.innertube.models.YouTubeClient
 import com.metrolist.innertube.models.YouTubeLocale
+import com.metrolist.innertube.utils.YouTubeNetworkLog
 import com.metrolist.innertube.models.response.NextResponse
 import com.metrolist.innertubex.InnerTube as InnerTubeX
 import com.metrolist.innertubex.InnerTubeHttpException
@@ -33,6 +34,12 @@ import java.io.File
 import java.io.IOException
 import java.io.InputStream
 import java.net.Proxy
+import java.net.SocketTimeoutException
+import java.net.UnknownHostException
+import javax.net.ssl.SSLException
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
+import kotlinx.serialization.json.contentOrNull
 import java.util.Locale
 import java.util.concurrent.TimeUnit
 
@@ -159,6 +166,49 @@ class InnerTube(
 
             engine {
                 config {
+                    addInterceptor { chain ->
+                        val request = chain.request()
+                        val operation = request.url.encodedPath.substringAfterLast('/')
+                        if (request.url.host !in setOf("music.youtube.com", "www.youtube.com") ||
+                            !request.url.encodedPath.startsWith("/youtubei/v1/") ||
+                            operation !in setOf("search", "browse", "player", "next", "get_search_suggestions", "get_queue")) {
+                            chain.proceed(request)
+                        } else {
+                            val began = System.nanoTime()
+                            val authenticated = request.header("Authorization") != null ||
+                                request.header("Cookie").orEmpty().contains(Regex("(?:^|;\\s*)(?:SAPISID|SID|__Secure-1PAPISID)="))
+                            val secrets = request.headers.values("Cookie").flatMap { it.split(';') }
+                                .map { it.substringAfter('=', "").trim() } +
+                                listOfNotNull(request.header("Authorization"), request.header("X-Goog-Visitor-Id"))
+                            try {
+                                val response = chain.proceed(request)
+                                runCatching {
+                                    val message = if (!response.isSuccessful) {
+                                        runCatching {
+                                            Json.parseToJsonElement(response.peekBody(8192).string()).jsonObject["error"]
+                                                ?.jsonObject?.get("message")?.jsonPrimitive?.contentOrNull
+                                        }.getOrNull() ?: "Non-JSON or empty error response"
+                                    } else null
+                                    YouTubeNetworkLog.record(operation, (System.nanoTime() - began) / 1_000_000,
+                                        response.code, authenticated, if (response.isSuccessful) null else "HTTP", message, secrets)
+                                }
+                                response
+                            } catch (error: IOException) {
+                                runCatching {
+                                    val causes = generateSequence<Throwable>(error) { it.cause?.takeUnless { cause -> cause === it } }.take(12).toList()
+                                    val failure = when {
+                                        causes.any { it is UnknownHostException } -> "DNS"
+                                        causes.any { it is SSLException } -> "TLS"
+                                        causes.any { it is SocketTimeoutException } -> "TIMEOUT"
+                                        else -> "IO"
+                                    }
+                                    YouTubeNetworkLog.record(operation, (System.nanoTime() - began) / 1_000_000,
+                                        null, authenticated, failure)
+                                }
+                                throw error
+                            }
+                        }
+                    }
                     connectionPool(okhttp3.ConnectionPool(10, 5, TimeUnit.MINUTES))
                     connectTimeout(30, TimeUnit.SECONDS)
                     readTimeout(60, TimeUnit.SECONDS)

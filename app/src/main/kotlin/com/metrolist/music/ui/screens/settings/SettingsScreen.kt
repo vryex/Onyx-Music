@@ -46,6 +46,9 @@ import com.metrolist.music.ui.component.Material3SettingsGroup
 import com.metrolist.music.ui.component.Material3SettingsItem
 import com.metrolist.music.ui.utils.backToMain
 import com.metrolist.music.utils.rememberPreference
+import com.metrolist.music.utils.buildYouTubeDiagnosticReport
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import com.metrolist.music.ui.theme.importLyricsFont
 import kotlinx.coroutines.launch
 
@@ -75,6 +78,22 @@ fun SettingsScreen(navController: NavController, latestVersionName: String) {
     var showFontPicker by rememberSaveable { mutableStateOf(false) }
     val fontContext = LocalContext.current
     val fontScope = rememberCoroutineScope()
+    var diagnosticReport by rememberSaveable { mutableStateOf("") }
+    val diagnosticLauncher = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("text/plain")) { uri ->
+        if (uri != null) {
+            val report = diagnosticReport
+            fontScope.launch {
+                val saved = runCatching {
+                    withContext(Dispatchers.IO) {
+                        checkNotNull(fontContext.contentResolver.openOutputStream(uri, "wt")).bufferedWriter().use { it.write(report) }
+                    }
+                }.isSuccess
+                Toast.makeText(fontContext, fontContext.getString(
+                    if (saved) R.string.sonet_diagnostic_saved else R.string.sonet_diagnostic_save_error
+                ), Toast.LENGTH_LONG).show()
+            }
+        }
+    }
     val importFontLauncher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { pickedUri ->
         if (pickedUri != null) {
             fontScope.launch {
@@ -201,6 +220,15 @@ fun SettingsScreen(navController: NavController, latestVersionName: String) {
         Material3SettingsGroup(
             title = stringResource(R.string.settings_section_system),
             items = listOf(
+                Material3SettingsItem(
+                    icon = painterResource(R.drawable.storage),
+                    title = { Text(stringResource(R.string.sonet_diagnostic_export)) },
+                    description = { Text(stringResource(R.string.sonet_diagnostic_description)) },
+                    onClick = {
+                        diagnosticReport = buildYouTubeDiagnosticReport(fontContext)
+                        diagnosticLauncher.launch("Sonet-diagnostico-${System.currentTimeMillis()}.txt")
+                    }
+                ),
                 Material3SettingsItem(
                     icon = painterResource(R.drawable.info),
                     title = { Text(stringResource(R.string.about)) },

@@ -1,13 +1,31 @@
-name: Sonet Mobile Diagnostics
+name: Sonet Diagnostic APK
 on:
   push:
     branches: [fix/mobile-network-diagnostics]
+    paths:
+      - 'app/**'
+      - 'innertube/**'
+      - 'gradle/**'
+      - '*.gradle.kts'
+      - '.github/workflows/sonet-mobile-diagnostics.yml'
+      - '.github/scripts/sonet_diagnostic_export.py'
+  workflow_dispatch:
 permissions:
-  contents: read
+  contents: write
+concurrency:
+  group: sonet-diagnostic-${{ github.ref }}
+  cancel-in-progress: true
 jobs:
-  diagnostics-tests:
+  build:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 60
+    env:
+      METROLIST_APP_NAME: Sonet Diagnóstico
+      METROLIST_APPLICATION_ID: com.onyx.music.diagnostics
+      METROLIST_BUILD_COMMIT: ${{ github.sha }}
+      LASTFM_API_KEY: ${{ secrets.LASTFM_API_KEY }}
+      LASTFM_SECRET: ${{ secrets.LASTFM_SECRET }}
+      GRADLE_OPTS: -Dorg.gradle.jvmargs=-Xmx4g
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
@@ -18,16 +36,112 @@ jobs:
         with:
           packages: platform-tools
           log-accepted-android-sdk-licenses: false
-      - run: |
+      - name: Install SDK
+        run: |
           sdkmanager "platforms;android-37.0" "build-tools;36.0.0"
           if [ ! -e "$ANDROID_HOME/platforms/android-37" ]; then
             ln -s "$ANDROID_HOME/platforms/android-37.0" "$ANDROID_HOME/platforms/android-37"
           fi
       - uses: gradle/actions/setup-gradle@v4
-      - name: Run diagnostic privacy and retention tests
-        run: bash ./gradlew :innertube:testDebugUnitTest --tests '*YouTubeNetworkLogTest*' --console=plain --max-workers=2 -Pkotlin.compiler.execution.strategy=in-process
-      - uses: actions/upload-artifact@v4
-        if: always()
+      - name: Prepare debug build key
+        run: |
+          mkdir -p "$HOME/.android"
+          keytool -genkeypair -keystore "$HOME/.android/debug.keystore" -storepass android -keypass android -alias androiddebugkey -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Onyx CI Debug,O=Onyx,C=MX" -noprompt
+      - name: Regression tests and required debug build
+        run: |
+          bash ./gradlew :app:testFossDebugUnitTest :innertube:testDebugUnitTest :app:assembleFossDebug --console=plain --continue --max-workers=2 -Pkotlin.compiler.execution.strategy=in-process
+      - name: Upload debug APK for native video probe
+        uses: actions/upload-artifact@v4
         with:
-          name: Sonet-diagnostic-tests
-          path: innertube/build/test-results/
+          name: Sonet-diagnostic-debug
+          path: app/build/outputs/apk/**/debug/*.apk
+      - name: Optimized release build
+        run: bash ./gradlew :app:assembleIzzyRelease --console=plain --continue --max-workers=2 -Pkotlin.compiler.execution.strategy=in-process
+      - name: Sign and verify APK
+        env:
+          RELEASE_KEYSTORE: ${{ secrets.ONYX_KEYSTORE_BASE64 || secrets.KEYSTORE }}
+          RELEASE_ALIAS: ${{ secrets.ONYX_KEY_ALIAS || secrets.KEY_ALIAS }}
+          RELEASE_STORE_PASSWORD: ${{ secrets.ONYX_KEYSTORE_PASSWORD || secrets.KEYSTORE_PASSWORD }}
+          RELEASE_KEY_PASSWORD: ${{ secrets.ONYX_KEY_PASSWORD || secrets.KEY_PASSWORD }}
+        run: |
+          set -euo pipefail
+          mkdir -p app/keystore dist
+          if [ -n "$RELEASE_KEYSTORE" ]; then
+            printf '%s' "$RELEASE_KEYSTORE" | base64 -d > "$RUNNER_TEMP/onyx-signing.jks"
+            signing_file="$RUNNER_TEMP/onyx-signing.jks"
+          else
+            signing_file="$RUNNER_TEMP/onyx-ci.jks"
+            RELEASE_ALIAS=onyx-ci
+            RELEASE_STORE_PASSWORD=android
+            RELEASE_KEY_PASSWORD=android
+            export RELEASE_STORE_PASSWORD RELEASE_KEY_PASSWORD
+            if [ ! -f "$signing_file" ]; then
+              keytool -genkeypair -keystore "$signing_file" -storepass:env RELEASE_STORE_PASSWORD -keypass:env RELEASE_KEY_PASSWORD -alias "$RELEASE_ALIAS" -keyalg RSA -keysize 3072 -validity 10000 -dname "CN=Onyx CI Temporary,O=Onyx,C=MX" -noprompt
+            fi
+          fi
+          apk_file="$(find app/build/outputs/apk/izzy/release -name '*-unsigned.apk' -print -quit)"
+          test -n "$apk_file"
+          tools_dir="$ANDROID_HOME/build-tools/36.0.0"
+          "$tools_dir/zipalign" -p -f 4 "$apk_file" "$RUNNER_TEMP/onyx-aligned.apk"
+          "$tools_dir/apksigner" sign --ks "$signing_file" --ks-key-alias "$RELEASE_ALIAS" --ks-pass env:RELEASE_STORE_PASSWORD --key-pass env:RELEASE_KEY_PASSWORD --out dist/Sonet.apk "$RUNNER_TEMP/onyx-aligned.apk"
+          "$tools_dir/apksigner" verify --verbose --print-certs dist/Sonet.apk > dist/signature.txt
+          "$tools_dir/aapt" dump badging dist/Sonet.apk > dist/package.txt
+          grep -q "package: name='com.onyx.music.diagnostics'" dist/package.txt
+          if grep -q '^application-debuggable' dist/package.txt; then exit 1; fi
+          sha256sum dist/Sonet.apk > dist/SHA256SUMS.txt
+          cp "$apk_file" dist/Sonet-unsigned.apk
+          cp "$tools_dir/lib/apksigner.jar" dist/apksigner.jar
+          cat dist/signature.txt
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: Sonet-diagnostic-signed-release
+          path: dist/*
+          if-no-files-found: error
+      - name: Upload test reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: Sonet-diagnostic-test-reports
+          path: |
+            app/build/reports/tests/
+            app/build/test-results/
+            innertube/build/reports/tests/
+          if-no-files-found: ignore
+
+  smoke:
+    env:
+      SONET_TEST_PACKAGE: com.onyx.music.diagnostics
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: Sonet-diagnostic-signed-release
+          path: dist
+      - name: Enable emulator acceleration
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - name: Release smoke test
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          target: google_apis
+          arch: x86_64
+          profile: pixel_2
+          ram-size: 2048M
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none -no-snapshot
+          disable-animations: false
+          script: python3 .github/scripts/sonet_diagnostic_export.py
+      - name: Upload screenshots and runtime logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: Sonet-diagnostic-export-validation
+          path: smoke/
+          if-no-files-found: ignore
+
