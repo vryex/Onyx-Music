@@ -61,7 +61,7 @@ fun <E> ChipsRow(
     currentValue: E,
     onValueUpdate: (E) -> Unit,
     modifier: Modifier = Modifier,
-    containerColor: Color = MaterialTheme.colorScheme.surfaceContainer,
+    containerColor: Color = MaterialTheme.colorScheme.surfaceContainerHigh,
 ) {
     Row(
         modifier =
@@ -80,7 +80,7 @@ fun <E> ChipsRow(
                     containerColor = containerColor,
                 ),
                 onClick = { onValueUpdate(value) },
-                shape = RoundedCornerShape(16.dp),
+                shape = RoundedCornerShape(50.dp),
                 border = null
             )
 
@@ -99,7 +99,7 @@ fun <Int> ChoiceChipsRow(
     currentValue: Int,
     onValueUpdate: (Int) -> Unit,
     modifier: Modifier = Modifier,
-    containerColor: Color = MaterialTheme.colorScheme.surfaceContainer,
+    containerColor: Color = MaterialTheme.colorScheme.surfaceContainerHigh,
 ) {
     var expandIconDegree by remember { mutableFloatStateOf(0f) }
     val rotationAnimation by animateFloatAsState(
@@ -141,7 +141,7 @@ fun <Int> ChoiceChipsRow(
                         modifier = Modifier.graphicsLayer(rotationZ = rotationAnimation),
                     )
                 },
-                shape = RoundedCornerShape(16.dp),
+                shape = RoundedCornerShape(50.dp),
                 border = null,
                 colors = AssistChipDefaults.assistChipColors(
                     containerColor = containerColor,
@@ -198,7 +198,7 @@ fun <Int> ChoiceChipsRow(
                             containerColor = containerColor,
                         ),
                         onClick = { onValueUpdate(value) },
-                        shape = RoundedCornerShape(16.dp),
+                        shape = RoundedCornerShape(50.dp),
                         border = null
                     )
                 }

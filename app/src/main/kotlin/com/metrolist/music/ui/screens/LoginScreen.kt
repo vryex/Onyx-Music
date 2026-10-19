@@ -42,6 +42,10 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.ui.graphics.Color
+import com.metrolist.music.ui.theme.OnyxBrand
+import com.metrolist.music.ui.theme.onyxBackdrop
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -300,10 +304,11 @@ fun LoginScreen(
         modifier =
             Modifier
                 .windowInsetsPadding(LocalPlayerAwareWindowInsets.current)
-                .fillMaxSize(),
+                .fillMaxSize()
+                .onyxBackdrop(),
     ) {
         AndroidView(
-            modifier = Modifier.fillMaxSize(),
+            modifier = Modifier.fillMaxSize().padding(start = 12.dp, end = 12.dp, top = 76.dp, bottom = 10.dp).clip(RoundedCornerShape(25.dp)),
             factory = { webViewContext ->
                 WebView(webViewContext).apply {
                     webViewClient =
@@ -367,12 +372,9 @@ fun LoginScreen(
 
         TopAppBar(
             title = {
-                Text(
-                    stringResource(
-                        if (isSwitchingChannel) R.string.switch_youtube_channel else R.string.login,
-                    ),
-                )
+                OnyxBrand(subtitle = stringResource(if (isSwitchingChannel) R.string.switch_youtube_channel else R.string.login))
             },
+            colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent),
             navigationIcon = {
                 IconButton(
                     onClick = navController::navigateUp,
@@ -489,7 +491,7 @@ private fun YouTubeAccountPickerItem(
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(12.dp),
+        shape = RoundedCornerShape(24.dp),
         colors =
             CardDefaults.cardColors(
                 containerColor =
