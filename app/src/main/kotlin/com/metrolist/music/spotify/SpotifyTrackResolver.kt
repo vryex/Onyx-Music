@@ -125,7 +125,7 @@ internal class SpotifyTrackResolver(
     private suspend fun <T> retry(block: suspend () -> T): T {
         repeat(3) { attempt ->
             currentCoroutineContext().ensureActive()
-            try { return withTimeout(10_000L) { block() } }
+            try { return withTimeout(18_000L) { block() } }
             catch (error: TimeoutCancellationException) {
                 currentCoroutineContext().ensureActive()
                 if (attempt == 2) {

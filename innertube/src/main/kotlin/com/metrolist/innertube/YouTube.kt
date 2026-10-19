@@ -79,7 +79,7 @@ import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 import com.metrolist.innertube.pages.VideoSearchPage
-import com.metrolist.innertube.utils.publicSearchFallback
+import com.metrolist.innertube.utils.PublicSearchRouter
 import timber.log.Timber
 import java.io.FilterInputStream
 import java.io.InputStream
@@ -167,10 +167,12 @@ object YouTube {
         }
 
     // Background metadata resolution must never write to account search history.
+    private val publicSearchRouter = PublicSearchRouter(fallbackTimeoutMillis = 12_000)
+
     suspend fun searchSummary(
         query: String,
         recordSearchHistory: Boolean = false,
-    ): Result<SearchSummaryPage> = publicSearchFallback(
+    ): Result<SearchSummaryPage> = publicSearchRouter.search(
         primary = { searchMusicSummary(query, recordSearchHistory) },
         fallback = {
             searchVideos(query).map { result ->
@@ -335,7 +337,7 @@ object YouTube {
         recordSearchHistory: Boolean = false,
     ): Result<SearchResult> =
         if (filter == SearchFilter.FILTER_SONG || filter == SearchFilter.FILTER_VIDEO) {
-            publicSearchFallback(
+            publicSearchRouter.search(
                 primary = { searchMusic(query, filter, recordSearchHistory) },
                 fallback = {
                     searchVideos(query).map {
@@ -388,7 +390,8 @@ object YouTube {
         }
 
     suspend fun searchVideos(query: String? = null, continuation: String? = null): Result<SearchResult> = runCatching {
-        val response = innerTube.search(WEB, query = query, continuation = continuation, setLogin = false).body<JsonObject>()
+        val response = if (query != null && continuation == null) innerTube.searchWeb(query)
+            else innerTube.search(WEB, query = query, continuation = continuation, setLogin = false).body<JsonObject>()
         VideoSearchPage.parse(response)
     }
 

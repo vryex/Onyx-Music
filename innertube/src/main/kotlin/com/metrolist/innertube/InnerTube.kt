@@ -1,5 +1,7 @@
 package com.metrolist.innertube
 
+import com.metrolist.innertube.utils.PublicSearchRouter
+import com.metrolist.innertube.utils.YouTubeSearchHtml
 import com.metrolist.innertube.models.MediaInfo
 import com.metrolist.innertube.models.ReturnYouTubeDislikeResponse
 import com.metrolist.innertube.models.YouTubeClient
@@ -14,6 +16,7 @@ import io.ktor.client.plugins.HttpTimeout
 import io.ktor.client.plugins.compression.ContentEncoding
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.plugins.defaultRequest
+import io.ktor.client.request.prepareGet
 import io.ktor.client.request.get
 import io.ktor.client.request.header
 import io.ktor.client.request.url
@@ -23,6 +26,9 @@ import io.ktor.http.ContentType
 import io.ktor.http.contentType
 import io.ktor.http.isSuccess
 import io.ktor.serialization.kotlinx.json.json
+import io.ktor.utils.io.readBuffer
+import kotlinx.io.readByteArray
+import kotlinx.serialization.json.JsonObject
 import io.ktor.utils.io.jvm.javaio.toByteReadChannel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -48,6 +54,7 @@ class InnerTube(
     private var httpClient = client ?: createClient()
     private var innerTubeX = InnerTubeX(httpClient)
     private var transportGeneration = 0L
+    private var webSearchRouter = PublicSearchRouter()
 
     class ExtractionTransport internal constructor(
         val innerTube: InnerTubeX,
@@ -125,6 +132,7 @@ class InnerTube(
                 )
                 replacement.regionOverrideActive = session.regionOverrideActive
             }
+        webSearchRouter = PublicSearchRouter()
         transportGeneration++
     }
 
@@ -191,8 +199,33 @@ class InnerTube(
             }
         }
 
-    internal suspend fun searchWeb(query: String): kotlinx.serialization.json.JsonObject =
-        search(YouTubeClient.WEB, query = query).body()
+    internal suspend fun searchWeb(query: String): JsonObject = webSearchRouter.search(
+        primary = { runCatching { search(YouTubeClient.WEB, query = query).body<JsonObject>() } },
+        fallback = { runCatching { searchWebHtml(query) } },
+    ).getOrThrow()
+
+    private suspend fun searchWebHtml(query: String): JsonObject =
+        httpClient.prepareGet("https://www.youtube.com/results") {
+            url {
+                parameters.append("search_query", query)
+                parameters.append("hl", locale.hl)
+                parameters.append("gl", locale.gl)
+            }
+            headers["Accept"] = "text/html"
+            headers["Accept-Language"] = locale.hl
+            headers["User-Agent"] = "Mozilla/5.0 (X11; Linux x86_64; rv:140.0) Gecko/20100101 Firefox/140.0"
+        }.execute { response ->
+            response.requireSuccess("search:WEB_HTML")
+            val channel = response.bodyAsChannel()
+            try {
+                val maximumBytes = 4 * 1024 * 1024
+                val bytes = channel.readBuffer(maximumBytes.toLong() + 1).readByteArray()
+                require(bytes.size <= maximumBytes) { "YouTube HTML search response too large" }
+                withContext(Dispatchers.Default) { YouTubeSearchHtml.parse(bytes.toString(Charsets.UTF_8)) }
+            } finally {
+                channel.cancel(null)
+            }
+        }
 
     suspend fun search(
         client: YouTubeClient,
