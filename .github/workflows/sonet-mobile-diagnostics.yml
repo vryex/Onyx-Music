@@ -1,0 +1,33 @@
+name: Sonet Mobile Diagnostics
+on:
+  push:
+    branches: [fix/mobile-network-diagnostics]
+permissions:
+  contents: read
+jobs:
+  diagnostics-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: android-actions/setup-android@v4
+        with:
+          packages: platform-tools
+          log-accepted-android-sdk-licenses: false
+      - run: |
+          sdkmanager "platforms;android-37.0" "build-tools;36.0.0"
+          if [ ! -e "$ANDROID_HOME/platforms/android-37" ]; then
+            ln -s "$ANDROID_HOME/platforms/android-37.0" "$ANDROID_HOME/platforms/android-37"
+          fi
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Run diagnostic privacy and retention tests
+        run: bash ./gradlew :innertube:testDebugUnitTest --tests '*YouTubeNetworkLogTest*' --console=plain --max-workers=2 -Pkotlin.compiler.execution.strategy=in-process
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: Sonet-diagnostic-tests
+          path: innertube/build/test-results/
