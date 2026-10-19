@@ -9,6 +9,7 @@ android {
 
     defaultConfig {
         minSdk = 26
+        testInstrumentationRunner = "com.metrolist.innertube.MusicNetworkProbe"
     }
 
     compileOptions {
