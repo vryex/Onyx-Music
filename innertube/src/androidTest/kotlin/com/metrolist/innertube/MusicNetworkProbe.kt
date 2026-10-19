@@ -66,7 +66,8 @@ class MusicNetworkProbe : Instrumentation() {
                             addInterceptor { chain ->
                                 val request = chain.request()
                                 check(request.url.host == "music.youtube.com") { "Non-Music host rejected" }
-                                check(request.header("Cookie") == null && request.header("Authorization") == null)
+                                check(request.header("Authorization") == null)
+                                check(request.header("Cookie").orEmpty().split(';').all { it.isBlank() || it.trim().startsWith("PREF=") })
                                 val started = System.nanoTime()
                                 val response = chain.proceed(request)
                                 val entry = JSONObject()
@@ -105,7 +106,7 @@ class MusicNetworkProbe : Instrumentation() {
                             val began = System.nanoTime()
                             val result = runCatching {
                                 withTimeout(25_000) {
-                                    val response = transport.search(YouTubeClient.WEB_REMIX, "The Weeknd", filter)
+                                    val response = transport.search(YouTubeClient.WEB_REMIX, "The Weeknd", filter, setLogin = name != "songs")
                                     val body = JSONObject(response.bodyAsText())
                                     check(body.has("contents") || body.has("continuationContents")) { "No search contents" }
                                 }
