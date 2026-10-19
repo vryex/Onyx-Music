@@ -74,6 +74,7 @@ import androidx.navigation.NavController
 import coil3.compose.AsyncImage
 import com.metrolist.music.LocalDownloadUtil
 import com.metrolist.music.LocalPlayerAwareWindowInsets
+import com.metrolist.music.ui.theme.CollectionHeaderTint
 import com.metrolist.music.LocalPlayerConnection
 import com.metrolist.music.R
 import com.metrolist.music.constants.HideExplicitKey
@@ -190,6 +191,11 @@ fun CachePlaylistScreen(
     Box(
         modifier = Modifier.fillMaxSize(),
     ) {
+        CollectionHeaderTint(
+            artwork = (if (isPlaying) mediaMetadata?.thumbnailUrl else null)
+                ?: cachedSongs.firstOrNull()?.song?.thumbnailUrl,
+            scrollState = lazyListState,
+        )
         LazyColumn(
             state = lazyListState,
             contentPadding = LocalPlayerAwareWindowInsets.current.asPaddingValues(),
@@ -510,7 +516,7 @@ private fun CachePlaylistHeader(
         Text(
             text = stringResource(R.string.cached_playlist),
             style = MaterialTheme.typography.headlineMedium,
-            fontWeight = FontWeight.Bold,
+            fontWeight = FontWeight.Medium,
             textAlign = androidx.compose.ui.text.style.TextAlign.Center,
             maxLines = 2,
             overflow = TextOverflow.Ellipsis,

@@ -5,6 +5,7 @@
 
 package com.metrolist.music.ui.menu
 
+import androidx.compose.ui.graphics.Color
 import android.annotation.SuppressLint
 import android.content.Intent
 import android.content.res.Configuration
@@ -236,7 +237,7 @@ fun YouTubePlaylistMenu(
                             if (dbPlaylist?.playlist?.bookmarkedAt !=
                                 null
                             ) {
-                                MaterialTheme.colorScheme.error
+                                Color.White
                             } else {
                                 LocalContentColor.current
                             },

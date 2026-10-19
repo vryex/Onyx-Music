@@ -27,6 +27,9 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Stable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -64,13 +67,22 @@ fun BottomSheet(
     onDismiss: (() -> Unit)? = null,
     collapsedContent: @Composable BoxScope.() -> Unit,
     isExpandable: Boolean = true,
+    backgroundFollowsContent: Boolean = false,
+    retainExpandedContent: Boolean = false,
     content: @Composable BoxScope.() -> Unit,
 ) {
     val density = LocalDensity.current
+    var hasExpandedContent by remember { mutableStateOf(false) }
+    LaunchedEffect(state.isCollapsed, state.isDismissed) {
+        if (!state.isCollapsed && !state.isDismissed) hasExpandedContent = true
+    }
     
     Box(
         modifier = modifier
             .graphicsLayer {
+                if (backgroundFollowsContent) {
+                    translationY = (state.expandedBound - state.value).toPx().coerceAtLeast(0f)
+                }
                 // background fades during about 10%-61% progress
                 alpha = (1.4f * (state.progress.coerceAtLeast(0.1f) - 0.1f).pow(0.5f)).coerceIn(0f, 1f)
             }
@@ -131,10 +143,11 @@ fun BottomSheet(
         }
 
         // main content
-        if (!state.isCollapsed) {
+        if (!state.isCollapsed || (retainExpandedContent && hasExpandedContent)) {
             BoxWithConstraints(
                 modifier = Modifier
                     .fillMaxSize()
+                    .then(if (state.isCollapsed || state.isDismissed) Modifier.clearAndSetSemantics { } else Modifier)
                     .graphicsLayer {
                         alpha = ((state.progress - 0.15f) * 4).coerceIn(0f, 1f)
                     },

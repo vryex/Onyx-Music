@@ -165,11 +165,11 @@ fun AccountSettingsDialog(
                 modifier =
                     Modifier
                         .fillMaxWidth()
-                        .padding(top = 72.dp, start = 16.dp, end = 16.dp)
+                        .padding(top = 72.dp, start = 20.dp, end = 20.dp)
                         .clip(RoundedCornerShape(28.dp)),
                 shape = MaterialTheme.shapes.large,
-                color = MaterialTheme.colorScheme.surface,
-                tonalElevation = 8.dp,
+                color = androidx.compose.ui.graphics.Color(0xFF101010),
+                tonalElevation = 0.dp,
             ) {
                 AccountSettings(
                     navController = navController,

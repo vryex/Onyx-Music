@@ -6,6 +6,9 @@
 package com.metrolist.music.ui.component
 
 import androidx.annotation.DrawableRes
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
@@ -24,11 +27,19 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SmallFloatingActionButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.testTagsAsResourceId
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.metrolist.music.LocalPlayerSheetProgress
 import com.metrolist.music.LocalPlayerAwareWindowInsets
 import com.metrolist.music.R
 import com.metrolist.music.ui.utils.isScrollingUp
@@ -41,10 +52,14 @@ fun BoxScope.HideOnScrollFAB(
     onClick: () -> Unit,
     onRecognitionClick: (() -> Unit)? = null,
 ) {
+    val playerProgress = LocalPlayerSheetProgress.current
+    val playerCovered by remember(playerProgress) {
+        derivedStateOf { playerProgress() > 0.01f }
+    }
     AnimatedVisibility(
-        visible = visible && lazyListState.isScrollingUp(),
-        enter = slideInVertically { it },
-        exit = slideOutVertically { it },
+        visible = visible && lazyListState.isScrollingUp() && !playerCovered,
+        enter = fadeIn(tween(180)) + slideInVertically(tween(180)) { it },
+        exit = fadeOut(tween(150)) + slideOutVertically(tween(150)) { it },
         modifier =
         Modifier
             .align(Alignment.BottomEnd)
@@ -56,10 +71,12 @@ fun BoxScope.HideOnScrollFAB(
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
             modifier = Modifier.padding(16.dp)
+                .then(if (playerCovered) Modifier.clearAndSetSemantics {} else
+                    Modifier.semantics { testTagsAsResourceId = true }.testTag("sonet_page_actions"))
         ) {
             if (onRecognitionClick != null) {
                 SmallFloatingActionButton(
-                    onClick = onRecognitionClick,
+                    onClick = { if (!playerCovered) onRecognitionClick() },
                     containerColor = MaterialTheme.colorScheme.secondaryContainer,
                     contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
                     modifier = Modifier.size(40.dp)
@@ -73,7 +90,7 @@ fun BoxScope.HideOnScrollFAB(
                 Spacer(modifier = Modifier.height(12.dp))
             }
             FloatingActionButton(
-                onClick = onClick,
+                onClick = { if (!playerCovered) onClick() },
             ) {
                 Icon(
                     painter = painterResource(icon),

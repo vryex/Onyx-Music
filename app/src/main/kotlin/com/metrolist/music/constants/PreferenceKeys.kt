@@ -19,6 +19,9 @@ val DynamicThemeKey = booleanPreferencesKey("dynamicTheme")
 val SelectedThemeColorKey = intPreferencesKey("selectedThemeColor")
 val DarkModeKey = stringPreferencesKey("darkMode")
 val PureBlackKey = booleanPreferencesKey("pureBlack")
+/** Typeface for song lyrics only, never app navigation or UI. Keep the key for existing selections. */
+val SonetLyricsFontKey = stringPreferencesKey("sonetFont")
+val SonetLyricsFontLabelKey = stringPreferencesKey("sonetLyricsFontLabel")
 val PureBlackMiniPlayerKey = booleanPreferencesKey("pureBlackMiniPlayer")
 val MiniPlayerBackgroundStyleKey = stringPreferencesKey("miniPlayerBackgroundStyle")
 

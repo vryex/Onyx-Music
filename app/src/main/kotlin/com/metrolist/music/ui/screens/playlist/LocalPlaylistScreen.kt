@@ -106,6 +106,7 @@ import com.metrolist.music.LocalDatabase
 import com.metrolist.music.LocalDownloadUtil
 import com.metrolist.music.LocalNavController
 import com.metrolist.music.LocalPlayerAwareWindowInsets
+import com.metrolist.music.ui.theme.CollectionHeaderTint
 import com.metrolist.music.LocalPlayerConnection
 import com.metrolist.music.LocalSyncUtils
 import com.metrolist.music.R
@@ -474,6 +475,13 @@ fun LocalPlaylistScreen(
     Box(
         modifier = Modifier.fillMaxSize(),
     ) {
+        CollectionHeaderTint(
+            artwork = (if (isPlaying) mediaMetadata?.thumbnailUrl else null)
+                ?: playlist?.playlist?.thumbnailUrl
+                ?: playlist?.thumbnails?.firstOrNull()
+                ?: songs.firstOrNull()?.song?.song?.thumbnailUrl,
+            scrollState = lazyListState,
+        )
         LazyColumn(
             state = lazyListState,
             contentPadding = LocalPlayerAwareWindowInsets.current.union(WindowInsets.ime).asPaddingValues(),
@@ -1232,7 +1240,7 @@ fun LocalPlaylistHeader(
         Text(
             text = playlist.playlist.name,
             style = MaterialTheme.typography.headlineMedium,
-            fontWeight = FontWeight.Bold,
+            fontWeight = FontWeight.Medium,
             textAlign = TextAlign.Center,
             maxLines = 2,
             overflow = TextOverflow.Ellipsis,

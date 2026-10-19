@@ -21,13 +21,14 @@ import android.view.WindowManager
 import android.widget.Toast
 import androidx.fragment.app.FragmentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.animation.EnterTransition
+import androidx.compose.animation.ExitTransition
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInHorizontally
-import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.foundation.background
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
@@ -43,6 +44,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -133,6 +135,21 @@ import coil3.toBitmap
 import com.metrolist.innertube.YouTube
 import com.metrolist.innertube.models.SongItem
 import com.metrolist.innertube.models.WatchEndpoint
+import com.metrolist.music.constants.EnableBetterLyricsKey
+import com.metrolist.music.constants.EnableKugouKey
+import com.metrolist.music.constants.EnableLrcLibKey
+import com.metrolist.music.constants.EnableLyricsPlus
+import com.metrolist.music.constants.EnablePaxsenixKey
+import com.metrolist.music.constants.EnableZemerKey
+import com.metrolist.music.constants.HideExplicitKey
+import com.metrolist.music.constants.HideVideoSongsKey
+import com.metrolist.music.constants.HideYoutubeShortsKey
+import com.metrolist.music.constants.ProxyEnabledKey
+import com.metrolist.music.constants.ShowArtistDescriptionKey
+import com.metrolist.music.constants.ShowArtistSubscriberCountKey
+import com.metrolist.music.constants.ShowMonthlyListenersKey
+import com.metrolist.music.constants.ShowMostStatsPlaylistsKey
+import com.metrolist.music.constants.ShowWrappedCardKey
 import com.metrolist.music.constants.AppBarHeight
 import com.metrolist.music.constants.AppLanguageKey
 import com.metrolist.music.constants.CheckForUpdatesKey
@@ -384,6 +401,7 @@ class MainActivity : FragmentActivity() {
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         if (::navController.isInitialized) {
+            handleSpotifyImportIntent(intent, navController)
             handleWidgetTargetIntent(intent, navController)
             handleDeepLinkIntent(intent, navController)
         } else {
@@ -430,6 +448,26 @@ class MainActivity : FragmentActivity() {
         lifecycleScope.launch(Dispatchers.IO) {
             val preferences = dataStore.data.first()
             val currentVersion = BuildConfig.BASE_VERSION_NAME
+
+            // Restore hidden fixed content options for both new and existing users.
+            // Run off the main thread; leave appearance/misc preferences alone.
+            val onyxAlwaysOn = listOf(
+                ShowArtistDescriptionKey, ShowArtistSubscriberCountKey, ShowMonthlyListenersKey,
+                EnableLrcLibKey, EnableKugouKey, EnableBetterLyricsKey,
+                EnablePaxsenixKey, EnableLyricsPlus, EnableZemerKey,
+                ShowMostStatsPlaylistsKey
+            )
+            val onyxAlwaysOff = listOf(
+                ShowWrappedCardKey, ProxyEnabledKey, HideExplicitKey,
+                HideVideoSongsKey, HideYoutubeShortsKey, CheckForUpdatesKey
+            )
+            if (onyxAlwaysOn.any { preferences[it] != true } ||
+                onyxAlwaysOff.any { preferences[it] != false }) {
+                safeDataStoreEdit { settings ->
+                    onyxAlwaysOn.forEach { settings[it] = true }
+                    onyxAlwaysOff.forEach { settings[it] = false }
+                }
+            }
 
             // SimpMusic Removal Migration
             if (preferences[SimpMusicMigrationDoneKey] != true) {
@@ -684,7 +722,7 @@ class MainActivity : FragmentActivity() {
                 }
                 val (forceBottomNav) = rememberPreference(ForceBottomNavBarKey, defaultValue = false)
                 val (slimNav) = rememberPreference(SlimNavBarKey, defaultValue = false)
-                val (useNewMiniPlayerDesign) = rememberPreference(UseNewMiniPlayerDesignKey, defaultValue = true)
+                val useNewMiniPlayerDesign = true
                 val (defaultOpenTabInt) = rememberPreference(DefaultOpenTabKey, defaultValue = NavigationTab.HOME.name)
                 val defaultOpenTab = remember(defaultOpenTabInt) {
                     try {
@@ -849,13 +887,6 @@ class MainActivity : FragmentActivity() {
 
                     topAppBarScrollBehavior.state.resetHeightOffset()
 
-                    // Collapse player when navigating to equalizer
-                    if (navBackStackEntry?.destination?.route == "equalizer" &&
-                        playerBottomSheetState.isExpanded
-                    ) {
-                        playerBottomSheetState.collapseSoft()
-                    }
-
                     // Track previous tab for animations
                     navController.currentBackStackEntry?.destination?.route?.let {
                         setPreviousTab(it)
@@ -919,11 +950,13 @@ class MainActivity : FragmentActivity() {
 
                 LaunchedEffect(Unit) {
                     if (pendingIntent != null) {
+                        handleSpotifyImportIntent(pendingIntent!!, navController)
                         handleWidgetTargetIntent(pendingIntent!!, navController)
                         handleRecognitionIntent(pendingIntent!!, navController)
                         handleDeepLinkIntent(pendingIntent!!, navController)
                         pendingIntent = null
                     } else {
+                        handleSpotifyImportIntent(intent, navController)
                         handleWidgetTargetIntent(intent, navController)
                         handleRecognitionIntent(intent, navController)
                         handleDeepLinkIntent(intent, navController)
@@ -933,6 +966,7 @@ class MainActivity : FragmentActivity() {
                 DisposableEffect(Unit) {
                     val listener =
                         Consumer<Intent> { intent ->
+                            handleSpotifyImportIntent(intent, navController)
                             handleWidgetTargetIntent(intent, navController)
                             handleRecognitionIntent(intent, navController)
                             handleDeepLinkIntent(intent, navController)
@@ -962,7 +996,7 @@ class MainActivity : FragmentActivity() {
                         !(pauseListenHistory && eventCount == 0)
                     }
 
-                val baseBg = Color.Black
+                val baseBg = com.metrolist.music.ui.theme.MidnightCanvas
                 val artistNameAliases by ArtistNameAliases.aliases.collectAsStateWithLifecycle()
 
                 CompositionLocalProvider(
@@ -971,6 +1005,9 @@ class MainActivity : FragmentActivity() {
                     LocalContentColor provides if (pureBlack) Color.White else contentColorFor(MaterialTheme.colorScheme.surface),
                     LocalPlayerConnection provides playerConnection,
                     LocalPlayerAwareWindowInsets provides playerAwareWindowInsets,
+                    LocalPlayerSheetProgress provides remember(playerBottomSheetState) {
+                        { playerBottomSheetState.progress.coerceIn(0f, 1f) }
+                    },
                     LocalDownloadUtil provides downloadUtil,
                     LocalShimmerTheme provides ShimmerTheme,
                     LocalSyncUtils provides syncUtils,
@@ -988,67 +1025,71 @@ class MainActivity : FragmentActivity() {
                         topBar = {
                             AnimatedVisibility(
                                 visible = shouldShowTopBar,
-                                enter = fadeIn(animationSpec = tween(durationMillis = 300)),
-                                exit = fadeOut(animationSpec = tween(durationMillis = 200)),
+                                enter = EnterTransition.None,
+                                exit = ExitTransition.None,
                             ) {
                                 Row {
-                                    TopAppBar(
-                                        title = {
-                                            OnyxBrand(subtitle = currentTitleRes?.let { stringResource(it) })
-                                        },
-                                        actions = {
-                                            if (showHistoryButton) {
-                                                IconButton(onClick = { navController.navigate("history") }) {
-                                                    Icon(
-                                                        painter = painterResource(R.drawable.history),
-                                                        contentDescription = stringResource(R.string.history),
-                                                    )
-                                                }
-                                            }
-                                            IconButton(onClick = { navController.navigate("stats") }) {
-                                                Icon(
-                                                    painter = painterResource(R.drawable.stats),
-                                                    contentDescription = stringResource(R.string.stats),
-                                                )
-                                            }
-                                            if (listenTogetherInTopBar) {
-                                                IconButton(onClick = { navController.navigate("listen_together_from_topbar") }) {
-                                                    Icon(
-                                                        painter = painterResource(R.drawable.group_outlined),
-                                                        contentDescription = stringResource(R.string.together),
-                                                    )
-                                                }
-                                            }
+                                    androidx.compose.material3.CenterAlignedTopAppBar(
+                                        title = { OnyxBrand() },
+                                        navigationIcon = {
                                             IconButton(onClick = { showAccountDialog = true }) {
                                                 BadgedBox(badge = {
-                                                    if (latestVersionName != BuildConfig.BASE_VERSION_NAME) {
-                                                        Badge()
-                                                    }
+                                                    if (latestVersionName != BuildConfig.BASE_VERSION_NAME) Badge()
                                                 }) {
                                                     if (accountImageUrl != null) {
                                                         AsyncImage(
                                                             model = accountImageUrl,
                                                             contentDescription = stringResource(R.string.account),
-                                                            modifier =
-                                                                Modifier
-                                                                    .size(24.dp)
-                                                                    .clip(CircleShape),
+                                                            modifier = Modifier.size(28.dp).clip(RoundedCornerShape(8.dp)),
                                                         )
                                                     } else {
-                                                        Icon(
-                                                            painter = painterResource(R.drawable.account),
-                                                            contentDescription = stringResource(R.string.account),
-                                                            modifier = Modifier.size(24.dp),
+                                                        Icon(painterResource(R.drawable.account), stringResource(R.string.account))
+                                                    }
+                                                }
+                                            }
+                                        },
+                                        actions = {
+                                            var utilityMenu by remember { mutableStateOf(false) }
+                                            Box {
+                                                IconButton(onClick = { utilityMenu = true }) {
+                                                    Icon(painterResource(R.drawable.more_vert), stringResource(R.string.more_options))
+                                                }
+                                                androidx.compose.material3.DropdownMenu(
+                                                    expanded = utilityMenu,
+                                                    onDismissRequest = { utilityMenu = false },
+                                                ) {
+                                                    if (showHistoryButton) {
+                                                        androidx.compose.material3.DropdownMenuItem(
+                                                            text = { Text(stringResource(R.string.history)) },
+                                                            leadingIcon = { Icon(painterResource(R.drawable.history), null) },
+                                                            onClick = { utilityMenu = false; navController.navigate("history") },
                                                         )
                                                     }
+                                                    androidx.compose.material3.DropdownMenuItem(
+                                                        text = { Text(stringResource(R.string.stats)) },
+                                                        leadingIcon = { Icon(painterResource(R.drawable.stats), null) },
+                                                        onClick = { utilityMenu = false; navController.navigate("stats") },
+                                                    )
+                                                    if (listenTogetherInTopBar) {
+                                                        androidx.compose.material3.DropdownMenuItem(
+                                                            text = { Text(stringResource(R.string.together)) },
+                                                            leadingIcon = { Icon(painterResource(R.drawable.group_outlined), null) },
+                                                            onClick = { utilityMenu = false; navController.navigate("listen_together_from_topbar") },
+                                                        )
+                                                    }
+                                                    androidx.compose.material3.DropdownMenuItem(
+                                                        text = { Text(stringResource(R.string.settings)) },
+                                                        leadingIcon = { Icon(painterResource(R.drawable.settings), null) },
+                                                        onClick = { utilityMenu = false; navController.navigate("settings") },
+                                                    )
                                                 }
                                             }
                                         },
                                         scrollBehavior = topAppBarScrollBehavior,
                                         colors =
                                             TopAppBarDefaults.topAppBarColors(
-                                                containerColor = if (pureBlack) Color.Black else MaterialTheme.colorScheme.surface.copy(alpha = 0.92f),
-                                                scrolledContainerColor = if (pureBlack) Color.Black else MaterialTheme.colorScheme.surface.copy(alpha = 0.92f),
+                                                containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.96f),
+                                                scrolledContainerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.96f),
                                                 titleContentColor = MaterialTheme.colorScheme.onSurface,
                                                 actionIconContentColor = MaterialTheme.colorScheme.onSurfaceVariant,
                                                 navigationIconContentColor = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -1128,6 +1169,20 @@ class MainActivity : FragmentActivity() {
                                     }
                                 }
 
+                            // The search keyboard overlays our edge-to-edge window. Move ONLY the
+                            // collapsed sheet while typing; other routes keep their anchors.
+                            val searchImeBottomPx =
+                                if (currentRoute == Screens.Search.route) WindowInsets.ime.getBottom(density) else 0
+                            val searchPlayerKeyboardOffsetPx =
+                                if (searchImeBottomPx > 0 && playerBottomSheetState.isCollapsed) {
+                                    val restingBottomPx =
+                                        with(density) { (playerBottomSheetState.collapsedBound - MiniPlayerHeight).toPx() }
+                                    (searchImeBottomPx - restingBottomPx + with(density) { 8.dp.toPx() })
+                                        .coerceAtLeast(0f)
+                                } else {
+                                    0f
+                                }
+
                             // Pre-calculate values for graphicsLayer to avoid reading state during composition
                             val navBarTotalHeight = bottomInset + NavigationBarHeight
 
@@ -1138,6 +1193,9 @@ class MainActivity : FragmentActivity() {
                                             state = playerBottomSheetState,
                                             navController = navController,
                                             pureBlack = pureBlack,
+                                            modifier = Modifier.graphicsLayer {
+                                                translationY = -searchPlayerKeyboardOffsetPx
+                                            },
                                         )
                                     }
 
@@ -1170,7 +1228,8 @@ class MainActivity : FragmentActivity() {
                                                                 totalHeightPx * (1 - navBarHeightPx / NavigationBarHeight.toPx())
                                                             slideOffset + hideOffset
                                                         }
-                                                },
+                                                }
+                                                .padding(bottom = bottomInset),
                                     )
 
                                     Box(
@@ -1279,47 +1338,11 @@ class MainActivity : FragmentActivity() {
                                             NavigationTab.SEARCH -> Screens.Search
                                             NavigationTab.LIBRARY -> Screens.Library
                                         }.route,
-                                    enterTransition = {
-                                        val currentRouteIndex = routeIndexMap[targetState.destination.route] ?: -1
-                                        val previousRouteIndex = routeIndexMap[initialState.destination.route] ?: -1
-
-                                        if (currentRouteIndex == -1 || currentRouteIndex > previousRouteIndex) {
-                                            slideInHorizontally { it / 8 } + fadeIn(tween(130))
-                                        } else {
-                                            slideInHorizontally { -it / 8 } + fadeIn(tween(130))
-                                        }
-                                    },
-                                    exitTransition = {
-                                        val currentRouteIndex = routeIndexMap[initialState.destination.route] ?: -1
-                                        val targetRouteIndex = routeIndexMap[targetState.destination.route] ?: -1
-
-                                        if (targetRouteIndex == -1 || targetRouteIndex > currentRouteIndex) {
-                                            slideOutHorizontally { -it / 8 } + fadeOut(tween(130))
-                                        } else {
-                                            slideOutHorizontally { it / 8 } + fadeOut(tween(130))
-                                        }
-                                    },
-                                    popEnterTransition = {
-                                        val currentRouteIndex = routeIndexMap[targetState.destination.route] ?: -1
-                                        val previousRouteIndex = routeIndexMap[initialState.destination.route] ?: -1
-
-                                        if (previousRouteIndex != -1 && previousRouteIndex < currentRouteIndex) {
-                                            slideInHorizontally { it / 8 } + fadeIn(tween(130))
-                                        } else {
-                                            slideInHorizontally { -it / 8 } + fadeIn(tween(130))
-                                        }
-                                    },
-                                    popExitTransition = {
-                                        val currentRouteIndex = routeIndexMap[initialState.destination.route] ?: -1
-                                        val targetRouteIndex = routeIndexMap[targetState.destination.route] ?: -1
-
-                                        if (currentRouteIndex != -1 && currentRouteIndex < targetRouteIndex) {
-                                            slideOutHorizontally { -it / 8 } + fadeOut(tween(130))
-                                        } else {
-                                            slideOutHorizontally { it / 8 } + fadeOut(tween(130))
-                                        }
-                                    },
-                                    modifier = Modifier.nestedScroll(topAppBarScrollBehavior.nestedScrollConnection),
+                                    enterTransition = { fadeIn(tween(140, delayMillis = 90)) },
+                                    exitTransition = { fadeOut(tween(90)) },
+                                    popEnterTransition = { fadeIn(tween(140, delayMillis = 90)) },
+                                    popExitTransition = { fadeOut(tween(90)) },
+                                    modifier = Modifier.background(MaterialTheme.colorScheme.background).nestedScroll(topAppBarScrollBehavior.nestedScrollConnection),
                                 ) {
                                     navigationBuilder(
                                         navController = navController,
@@ -1332,6 +1355,8 @@ class MainActivity : FragmentActivity() {
                             }
                         }
                     }
+
+                    com.metrolist.music.ui.theme.OnyxLaunchIntro()
 
                     BottomSheetMenu(
                         state = LocalMenuState.current,
@@ -1455,6 +1480,13 @@ class MainActivity : FragmentActivity() {
             }
             }
         }
+    }
+
+    private fun handleSpotifyImportIntent(intent: Intent, navController: NavHostController) {
+        val key = com.metrolist.music.spotify.SpotifyImportForegroundService.EXTRA_OPEN_IMPORT
+        if (!intent.getBooleanExtra(key, false)) return
+        intent.removeExtra(key)
+        navController.navigate("spotify_import") { launchSingleTop = true }
     }
 
     /**
@@ -1656,3 +1688,5 @@ val LocalListenTogetherManager = staticCompositionLocalOf<com.metrolist.music.li
 val LocalChangelogState = staticCompositionLocalOf<MutableState<Boolean>> { error("No LocalChangelogState provided") }
 val LocalArtistNameAliases = staticCompositionLocalOf<Map<String, String>> { emptyMap() }
 val LocalIsPlayerExpanded = compositionLocalOf { false }
+
+val LocalPlayerSheetProgress = staticCompositionLocalOf<() -> Float> { { 0f } }

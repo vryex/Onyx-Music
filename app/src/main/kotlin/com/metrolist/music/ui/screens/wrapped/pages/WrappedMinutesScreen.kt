@@ -103,7 +103,7 @@ fun WrappedMinutesScreen(
             BoxWithConstraints(Modifier.fillMaxWidth().padding(horizontal = 16.dp)) {
                 val density = LocalDensity.current
                 val baseStyle = MaterialTheme.typography.displayLarge.copy(
-                    color = Color.White, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center,
+                    color = Color.White, fontWeight = FontWeight.Medium, textAlign = TextAlign.Center,
                     fontFamily = bbh_bartle, drawStyle = Stroke(with(density) { 2.dp.toPx() })
                 )
                 val textStyle = remember(totalMinutes, maxWidth) {
@@ -140,7 +140,7 @@ fun FormattedText(text: String, modifier: Modifier = Modifier, style: androidx.c
         var isBold = false
         for (part in parts) {
             if (part == "**") isBold = !isBold
-            else withStyle(SpanStyle(fontWeight = if (isBold) FontWeight.Bold else FontWeight.Normal)) { append(part) }
+            else withStyle(SpanStyle(fontWeight = if (isBold) FontWeight.Medium else FontWeight.Normal)) { append(part) }
         }
     }
     Text(annotatedString, modifier, style = style)

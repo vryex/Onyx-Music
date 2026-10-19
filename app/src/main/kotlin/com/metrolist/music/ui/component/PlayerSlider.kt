@@ -16,6 +16,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.lerp
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.DrawScope
@@ -29,7 +31,9 @@ fun PlayerSliderTrack(
     sliderState: SliderState,
     modifier: Modifier = Modifier,
     colors: SliderColors = SliderDefaults.colors(),
-    trackHeight: Dp = 4.dp
+    trackHeight: Dp = 4.dp,
+    accentColor: Color? = null,
+    bufferedFraction: Float = 0f,
 ) {
     val inactiveTrackColor = colors.inactiveTrackColor
     val activeTrackColor = colors.activeTrackColor
@@ -53,7 +57,7 @@ fun PlayerSliderTrack(
             activeTrackColor,
             inactiveTickColor,
             activeTickColor,
-            trackHeight
+            trackHeight, accentColor, bufferedFraction
         )
     }
 }
@@ -66,7 +70,9 @@ private fun DrawScope.drawTrack(
     activeTrackColor: Color,
     inactiveTickColor: Color,
     activeTickColor: Color,
-    trackHeight: Dp = 2.dp
+    trackHeight: Dp = 2.dp,
+    accentColor: Color? = null,
+    bufferedFraction: Float = 0f,
 ) {
     val isRtl = layoutDirection == LayoutDirection.Rtl
     val sliderLeft = Offset(0f, center.y)
@@ -92,13 +98,22 @@ private fun DrawScope.drawTrack(
                 (sliderEnd.x - sliderStart.x) * activeRangeStart,
         center.y
     )
-    drawLine(
-        activeTrackColor,
-        sliderValueStart,
-        sliderValueEnd,
-        trackStrokeWidth,
-        StrokeCap.Round
+    if (bufferedFraction > activeRangeEnd) drawLine(
+        activeTrackColor.copy(alpha = .18f), sliderStart,
+        Offset(sliderStart.x + (sliderEnd.x - sliderStart.x) * bufferedFraction.coerceIn(0f,1f), center.y),
+        trackStrokeWidth, StrokeCap.Round,
     )
+    if (accentColor != null && activeRangeEnd > 0f) {
+        drawLine(accentColor.copy(alpha = .2f), sliderValueStart, sliderValueEnd,
+            trackStrokeWidth + 4.dp.toPx(), StrokeCap.Round)
+        // Actually paint the playback progress in the cover's dominant hue, not white.
+        // The modest tint keeps dark album colors legible without recoloring controls.
+        drawLine(Brush.horizontalGradient(listOf(
+            lerp(accentColor, Color.White, .42f), lerp(accentColor, Color.White, .23f)
+        )), sliderValueStart, sliderValueEnd, trackStrokeWidth, StrokeCap.Round)
+    } else {
+        drawLine(activeTrackColor, sliderValueStart, sliderValueEnd, trackStrokeWidth, StrokeCap.Round)
+    }
     for (tick in tickFractions) {
         val outsideFraction = tick > activeRangeEnd || tick < activeRangeStart
         drawCircle(

@@ -5,6 +5,12 @@
 
 package com.metrolist.music.ui.component
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.ui.draw.clip
 import android.annotation.SuppressLint
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
@@ -64,30 +70,24 @@ fun <E> ChipsRow(
     containerColor: Color = MaterialTheme.colorScheme.surfaceContainerHigh,
 ) {
     Row(
-        modifier =
-        modifier
-            .fillMaxWidth()
-            .horizontalScroll(rememberScrollState())
-            .windowInsetsPadding(WindowInsets.systemBars.only(WindowInsetsSides.Horizontal)),
+        modifier.fillMaxWidth().horizontalScroll(rememberScrollState())
+            .windowInsetsPadding(WindowInsets.systemBars.only(WindowInsetsSides.Horizontal))
+            .padding(horizontal = 16.dp, vertical = 8.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        Spacer(Modifier.width(12.dp))
-
         chips.forEach { (value, label) ->
-            FilterChip(
-                label = { Text(label) },
-                selected = currentValue == value,
-                colors = FilterChipDefaults.filterChipColors(
-                    containerColor = containerColor,
-                    selectedContainerColor = MaterialTheme.colorScheme.primary,
-                    selectedLabelColor = MaterialTheme.colorScheme.onPrimary,
-                    labelColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                ),
-                onClick = { onValueUpdate(value) },
-                shape = RoundedCornerShape(50.dp),
-                border = null
-            )
-
-            Spacer(Modifier.width(8.dp))
+            val selected = currentValue == value
+            val fill = if (selected) Color.White else Color(0xFF2A2A2A)
+            androidx.compose.foundation.layout.Box(
+                Modifier.clip(RoundedCornerShape(50)).background(fill)
+                    .border(0.75.dp, if (selected) Color.Transparent else MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(50))
+                    .selectable(selected = selected, role = androidx.compose.ui.semantics.Role.Tab, onClick = { onValueUpdate(value) })
+                    .heightIn(min = 40.dp).padding(horizontal = 16.dp, vertical = 8.dp),
+                contentAlignment = androidx.compose.ui.Alignment.Center,
+            ) {
+                Text(label, style = MaterialTheme.typography.labelLarge,
+                    color = if (selected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface)
+            }
         }
     }
 }

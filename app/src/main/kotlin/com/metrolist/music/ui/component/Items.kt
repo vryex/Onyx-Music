@@ -7,6 +7,8 @@
 
 package com.metrolist.music.ui.component
 
+import com.metrolist.music.ui.theme.onyxGlass
+import com.metrolist.music.ui.theme.rememberHomeArtistTint
 import android.widget.Toast
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animate
@@ -15,12 +17,14 @@ import androidx.compose.animation.expandIn
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkOut
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.foundation.background
-import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.gestures.draggable
 import androidx.compose.foundation.gestures.rememberDraggableState
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -56,8 +60,12 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.testTagsAsResourceId
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.graphicsLayer
@@ -258,30 +266,37 @@ inline fun ListItem(
     isSelected: Boolean? = false,
     isActive: Boolean = false,
     isAvailable: Boolean = true,
+    showDivider: Boolean = true,
 ) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
-        modifier = if (isActive) {
-            modifier // playing highlight
-                .height(ListItemHeight)
-                .padding(horizontal = 8.dp)
-                .clip(RoundedCornerShape(16.dp))
-                .background(
-                    color = // selected active
-                        if (isSelected == true) MaterialTheme.colorScheme.primary.copy(alpha = 0.14f)
-                        else MaterialTheme.colorScheme.secondaryContainer
-                )
-        } else if (isSelected == true) {
-            modifier // inactive selected
-                .height(ListItemHeight)
-                .padding(horizontal = 8.dp)
-                .clip(RoundedCornerShape(16.dp))
-                .background(color = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f))
-        } else {
-            modifier // default
-                .height(ListItemHeight)
-                .padding(horizontal = 8.dp)
-        }
+        modifier = modifier
+            .height(ListItemHeight + 8.dp)
+            .padding(horizontal = 12.dp)
+            .clip(RoundedCornerShape(24.dp))
+            .background(
+                if (isSelected == true || isActive) MaterialTheme.colorScheme.surfaceContainerHigh
+                else Color.Transparent,
+            )
+            .drawWithContent {
+                drawContent()
+                if (showDivider) {
+                    drawLine(
+                        color = Color(0xFFA1A1A6).copy(alpha = 0.12f),
+                        start = Offset(72.dp.toPx(), size.height - 1.dp.toPx()),
+                        end = Offset(size.width - 8.dp.toPx(), size.height - 1.dp.toPx()),
+                        strokeWidth = 1.dp.toPx(),
+                    )
+                }
+                if (isActive || isSelected == true) {
+                    drawLine(
+                        color = Color(0xFFF5F5F7),
+                        start = Offset(1.dp.toPx(), size.height * 0.25f),
+                        end = Offset(1.dp.toPx(), size.height * 0.75f),
+                        strokeWidth = 2.dp.toPx(),
+                    )
+                }
+            }
     ) {
         Box(
             modifier = Modifier.padding(6.dp),
@@ -313,7 +328,7 @@ inline fun ListItem(
         Column(
             modifier = Modifier
                 .weight(1f)
-                .padding(horizontal = 6.dp)
+                .padding(horizontal = 10.dp)
         ) {
             Text(
                 text = title,
@@ -375,6 +390,7 @@ fun ListItem(
     trailingContent: @Composable RowScope.() -> Unit = {},
     isSelected: Boolean? = false,
     isActive: Boolean = false,
+    showDivider: Boolean = true,
 ) = ListItem(
     title = title,
     subtitle = {
@@ -394,7 +410,8 @@ fun ListItem(
     trailingContent = trailingContent,
     modifier = modifier,
     isSelected = isSelected,
-    isActive = isActive
+    isActive = isActive,
+    showDivider = showDivider,
 )
 
 @Composable
@@ -406,18 +423,23 @@ fun GridItem(
     thumbnailContent: @Composable BoxWithConstraintsScope.() -> Unit,
     thumbnailRatio: Float = 1f,
     fillMaxWidth: Boolean = false,
+    artistCardTint: Brush? = null,
 ) {
     val gridHeight = currentGridThumbnailHeight()
+    val cardShape = RoundedCornerShape(16.dp)
     Column(
-        modifier = if (fillMaxWidth) {
-            modifier
-                .padding(12.dp)
-                .fillMaxWidth()
-        } else {
-            modifier
-                .padding(12.dp)
-                .width(gridHeight * thumbnailRatio)
-        }
+        modifier = modifier
+            .padding(8.dp)
+            .then(if (fillMaxWidth) Modifier.fillMaxWidth() else Modifier.width(gridHeight * thumbnailRatio))
+            .then(
+                if (artistCardTint != null) {
+                    // Home artist cards reuse the artist-profile palette, not costly blur.
+                    Modifier.clip(cardShape).background(artistCardTint)
+                } else {
+                    Modifier.onyxGlass(cardShape, showBorder = false)
+                },
+            )
+            .padding(10.dp)
     ) {
         BoxWithConstraints(
             contentAlignment = Alignment.Center,
@@ -427,11 +449,12 @@ fun GridItem(
                 Modifier.height(gridHeight)
             }
                 .aspectRatio(thumbnailRatio)
+                .clip(RoundedCornerShape(16.dp))
         ) {
             thumbnailContent()
         }
 
-        Spacer(modifier = Modifier.height(6.dp))
+        Spacer(modifier = Modifier.height(12.dp))
 
         title()
 
@@ -452,6 +475,8 @@ fun GridItem(
     thumbnailContent: @Composable BoxWithConstraintsScope.() -> Unit,
     thumbnailRatio: Float = 1f,
     fillMaxWidth: Boolean = false,
+    titleMaxLines: Int = 1,
+    artistCardTint: Brush? = null,
 ) = GridItem(
     modifier = modifier,
     title = {
@@ -459,7 +484,7 @@ fun GridItem(
             text = title,
             style = MaterialTheme.typography.bodyLarge,
             fontWeight = FontWeight.Medium,
-            maxLines = 1,
+            maxLines = titleMaxLines,
             overflow = TextOverflow.Ellipsis,
             textAlign = TextAlign.Start,
             modifier = Modifier.fillMaxWidth()
@@ -474,9 +499,11 @@ fun GridItem(
             overflow = TextOverflow.Ellipsis,
         )
     },
+    badges = badges,
     thumbnailContent = thumbnailContent,
     thumbnailRatio = thumbnailRatio,
-    fillMaxWidth = fillMaxWidth
+    fillMaxWidth = fillMaxWidth,
+    artistCardTint = artistCardTint,
 )
 
 @Composable
@@ -604,7 +631,7 @@ fun SongGridItem(
             fontWeight = FontWeight.Medium,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.basicMarquee().fillMaxWidth()
+            modifier = Modifier.fillMaxWidth()
         )
     },
     subtitle = {
@@ -651,7 +678,7 @@ fun ArtistListItem(
             Icon(
                 painter = painterResource(R.drawable.favorite),
                 contentDescription = null,
-                tint = MaterialTheme.colorScheme.error,
+                tint = Color.White,
                 modifier = Modifier
                     .size(18.dp)
                     .padding(end = 2.dp),
@@ -685,6 +712,7 @@ fun ArtistListItem(
 fun ArtistGridItem(
     artist: Artist,
     modifier: Modifier = Modifier,
+    tintInHome: Boolean = false,
     badges: @Composable RowScope.() -> Unit = {
         if (artist.artist.bookmarkedAt != null) {
             Icon.Favorite()
@@ -711,6 +739,8 @@ fun ArtistGridItem(
         )
     },
     fillMaxWidth = fillMaxWidth,
+    titleMaxLines = if (tintInHome) 2 else 1,
+    artistCardTint = rememberHomeArtistTint(artist.artist.thumbnailUrl),
     modifier = modifier
 )
 
@@ -835,7 +865,7 @@ fun AlbumGridItem(
             fontWeight = FontWeight.Medium,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.basicMarquee().fillMaxWidth()
+            modifier = Modifier.fillMaxWidth()
         )
     },
      subtitle = {
@@ -934,7 +964,8 @@ fun PlaylistListItem(
     badges = badges,
     thumbnailContent = {
         PlaylistThumbnail(
-            thumbnails = playlist.thumbnails,
+            thumbnails = listOfNotNull(rememberPlaylistCover(playlist.playlist.name, playlist.id, autoPlaylist)
+                ?: playlist.thumbnails.firstOrNull()),
             size = ListThumbnailSize,
             placeHolder = {
                 val painter = when (playlist.playlist.name) {
@@ -993,76 +1024,43 @@ fun PlaylistGridItem(
         Icon.Download(downloadState)
     },
     fillMaxWidth: Boolean = false,
-) = GridItem(
-    title = {
-        Text(
-            text = playlist.playlist.name,
-            style = MaterialTheme.typography.bodyLarge,
-            fontWeight = FontWeight.Medium,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.basicMarquee().fillMaxWidth()
+) {
+    val artwork = rememberPlaylistCover(playlist.playlist.name, playlist.id, autoPlaylist)
+        ?: playlist.thumbnails.firstOrNull()
+    Box(
+        modifier = modifier.padding(8.dp)
+            .then(if (fillMaxWidth) Modifier.fillMaxWidth() else Modifier.width(currentGridThumbnailHeight()))
+            .aspectRatio(0.88f).clip(RoundedCornerShape(20.dp))
+            .background(MaterialTheme.colorScheme.surfaceContainer),
+    ) {
+        if (artwork != null) AsyncImage(
+            model = artwork.resize(720, 720), contentDescription = null,
+            contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize(),
         )
-    },
-    subtitle = {
-        val subtitle = if (autoPlaylist) {
-            ""
-        } else {
-            if (playlist.songCount == 0 && playlist.playlist.remoteSongCount != null) {
-                pluralStringResource(
-                    R.plurals.n_song,
-                    playlist.playlist.remoteSongCount,
-                    playlist.playlist.remoteSongCount
-                )
-            } else {
-                pluralStringResource(
-                    R.plurals.n_song,
-                    playlist.songCount,
-                    playlist.songCount
-                )
-            }
-        }
-        Text(
-            text = subtitle,
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.secondary,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis
-        )
-    },
-    badges = badges,
-    thumbnailContent = {
-        val width = maxWidth
-        PlaylistThumbnail(
-            thumbnails = playlist.thumbnails,
-            size = width,
-            placeHolder = {
-                val painter = when (playlist.playlist.name) {
-                    stringResource(R.string.liked) -> R.drawable.favorite_border
+        Box(Modifier.matchParentSize().background(Brush.verticalGradient(
+            0f to Color.Transparent, 0.35f to Color.Transparent, 1f to Color.Black.copy(alpha = .95f),
+        )))
+        Column(Modifier.align(Alignment.BottomStart).fillMaxWidth().padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            if (autoPlaylist) Icon(
+                painterResource(when (playlist.playlist.name) {
+                    stringResource(R.string.liked) -> R.drawable.favorite
                     stringResource(R.string.offline) -> R.drawable.offline
                     stringResource(R.string.cached_playlist) -> R.drawable.cached
-                    // R.drawable.backup as placeholder
-                    stringResource(R.string.uploaded_playlist) -> R.drawable.backup
-                    else -> if (autoPlaylist) R.drawable.trending_up else R.drawable.queue_music
-                }
-                Box(
-                    contentAlignment = Alignment.Center,
-                    modifier = Modifier.fillMaxSize()
-                ) {
-                    Icon(
-                        painter = painterResource(painter),
-                        contentDescription = null,
-                        tint = LocalContentColor.current.copy(alpha = 0.8f),
-                        modifier = Modifier.size(width / 2)
-                    )
-                }
-            },
-            shape = RoundedCornerShape(ThumbnailCornerRadius)
-        )
-    },
-    fillMaxWidth = fillMaxWidth,
-    modifier = modifier
-)
+                    stringResource(R.string.uploaded_playlist) -> R.drawable.upload
+                    else -> R.drawable.trending_up
+                }), null, tint = Color.White, modifier = Modifier.size(24.dp),
+            )
+            Text(playlist.playlist.name, style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Medium, color = Color.White, maxLines = 2, overflow = TextOverflow.Ellipsis)
+            if (!autoPlaylist) Row(verticalAlignment = Alignment.CenterVertically) {
+                badges()
+                Text(pluralStringResource(R.plurals.n_song, playlist.songCount, playlist.songCount),
+                    style = MaterialTheme.typography.bodySmall, color = Color.White.copy(alpha = .75f))
+            }
+        }
+    }
+}
 
 @Composable
 fun MediaMetadataListItem(
@@ -1126,6 +1124,7 @@ fun YouTubeListItem(
     isActive: Boolean = false,
     isPlaying: Boolean = false,
     isSwipeable: Boolean = true,
+    showDivider: Boolean = true,
     trailingContent: @Composable RowScope.() -> Unit = {},
     badges: @Composable RowScope.() -> Unit = {
         val database = LocalDatabase.current
@@ -1213,7 +1212,8 @@ fun YouTubeListItem(
             },
             trailingContent = trailingContent,
             modifier = modifier,
-            isActive = isActive
+            isActive = isActive,
+            showDivider = showDivider,
         )
     }
 
@@ -1259,6 +1259,7 @@ fun YouTubeGridItem(
     isActive: Boolean = false,
     isPlaying: Boolean = false,
     fillMaxWidth: Boolean = false,
+    tintArtistsInHome: Boolean = false,
 ) = GridItem(
     title = {
         Text(
@@ -1269,10 +1270,10 @@ fun YouTubeGridItem(
             },
             style = MaterialTheme.typography.bodyLarge,
             fontWeight = FontWeight.Medium,
-            maxLines = 1,
+            maxLines = if (item is ArtistItem && tintArtistsInHome) 2 else 1,
             overflow = TextOverflow.Ellipsis,
             textAlign = if (item is ArtistItem) TextAlign.Center else TextAlign.Start,
-            modifier = Modifier.basicMarquee().fillMaxWidth()
+            modifier = Modifier.fillMaxWidth()
         )
     },
      subtitle = {
@@ -1337,6 +1338,7 @@ fun YouTubeGridItem(
     },
     thumbnailRatio = thumbnailRatio,
     fillMaxWidth = fillMaxWidth,
+    artistCardTint = if (item is ArtistItem && tintArtistsInHome) rememberHomeArtistTint(item.thumbnail) else null,
     modifier = modifier
 )
 
@@ -1359,11 +1361,7 @@ fun LocalSongsGrid(
             color = MaterialTheme.colorScheme.secondary,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.basicMarquee(
-                iterations = 3,
-                initialDelayMillis = 1000,
-                velocity = 30.dp
-            )
+            modifier = Modifier
         )
     },
     badges = badges,
@@ -1401,21 +1399,18 @@ fun LocalArtistsGrid(
             color = MaterialTheme.colorScheme.secondary,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.basicMarquee(
-                iterations = 3,
-                initialDelayMillis = 1000,
-                velocity = 30.dp
-            )
+            modifier = Modifier
         )
     },
     badges = badges,
+    artistCardTint = rememberHomeArtistTint(thumbnailUrl),
     thumbnailContent = {
         LocalThumbnail(
             thumbnailUrl = thumbnailUrl,
             isActive = false,
             isPlaying = false,
             shape = CircleShape,
-            modifier = if (fillMaxWidth) Modifier.fillMaxWidth() else Modifier,
+            modifier = Modifier.fillMaxSize(),
             showCenterPlay = false,
             playButtonVisible = false
         )
@@ -1443,11 +1438,7 @@ fun LocalAlbumsGrid(
             color = MaterialTheme.colorScheme.secondary,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.basicMarquee(
-                iterations = 3,
-                initialDelayMillis = 1000,
-                velocity = 30.dp
-            )
+            modifier = Modifier
         )
     },
     badges = badges,
@@ -1457,7 +1448,7 @@ fun LocalAlbumsGrid(
             isActive = isActive,
             isPlaying = isPlaying,
             shape = RoundedCornerShape(ThumbnailCornerRadius),
-            modifier = if (fillMaxWidth) Modifier.fillMaxWidth() else Modifier,
+            modifier = Modifier.fillMaxSize(),
             showCenterPlay = false,
             playButtonVisible = true
         )
@@ -1930,8 +1921,9 @@ object Icon {
         Icon(
             painter = painterResource(R.drawable.favorite),
             contentDescription = null,
-            tint = MaterialTheme.colorScheme.error,
+            tint = Color.White,
             modifier = Modifier
+                .semantics { testTagsAsResourceId = true }.testTag("sonet_favorite_badge")
                 .size(18.dp)
                 .padding(end = 2.dp)
         )

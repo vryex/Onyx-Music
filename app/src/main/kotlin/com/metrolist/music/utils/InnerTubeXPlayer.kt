@@ -101,6 +101,24 @@ object InnerTubeXPlayer {
             Result.failure(error)
         }
 
+    /** Resolve the video track through the same authenticated/cipher-aware pipeline as audio. */
+    suspend fun videoStreamForPlayback(videoId: String): ExtractedStream {
+        val stream = requireNotNull(bundle().extractor.extract(
+            videoId = videoId,
+            hints = ContentHints(wantVideo = true, maxVideoHeight = 1080)
+                .withStreamCapabilities(allowHls = true, allowSabr = false, allowBoundedRange = true),
+            audioQuality = InnerTubeXAudioQuality.AUTO,
+        )) { "No playable video stream" }
+        check(!stream.videoUrl.isNullOrBlank()) { "Missing video track" }
+        check(stream.sabrVideoBootstrap == null) { "Unsupported video transport" }
+        if (stream.requireBoundedRange || stream.useRangeChunks) {
+            check((stream.videoContentLengthBytes ?: 0L) > 0L && stream.rangeChunkSizeBytes > 0L) {
+                "Missing video range metadata"
+            }
+        }
+        return stream
+    }
+
     internal fun markStreamClientFailed(
         videoId: String,
         clientName: String,

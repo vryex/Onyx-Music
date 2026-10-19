@@ -50,9 +50,14 @@ import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.text
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.PlatformTextStyle
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.text.drawText
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.rememberTextMeasurer
@@ -127,12 +132,14 @@ internal fun LyricsLine(
     bgVisible: Boolean,
     isSelected: Boolean,
     isSelectionModeActive: Boolean,
-    currentPositionState: Long,
+    playbackActive: Boolean,
     lyricsOffset: Long,
+    nextLineTimeMs: Long?,
     playerConnection: PlayerConnection,
     lyricsTextSize: Float,
     lyricsLineSpacing: Float,
     expressiveAccent: Color,
+    lyricsFontFamily: FontFamily,
     lyricsTextPosition: LyricsPosition,
     respectAgentPositioning: Boolean,
     isAutoScrollEnabled: Boolean,
@@ -214,7 +221,7 @@ internal fun LyricsLine(
                 } else inactiveAlpha
                 
                 val animatedAlpha by animateFloatAsState(targetAlpha, tween(250), label = "lyricsLineAlpha")
-                val lineColor = expressiveAccent.copy(alpha = if (item.isBackground) focusedAlpha else animatedAlpha)
+                val lineColor = Color.White.copy(alpha = if (item.isBackground) 0.35f else animatedAlpha * 0.75f)
                 
                 val romanizedTextState by item.romanizedTextFlow.collectAsStateWithLifecycle()
                 val isRomanizedAvailable = romanizedTextState != null
@@ -225,12 +232,13 @@ internal fun LyricsLine(
 
                 val lyricStyle = TextStyle(
                     fontSize = if (item.isBackground) (lyricsTextSize * 0.7f).sp else lyricsTextSize.sp,
-                    fontWeight = FontWeight.Bold,
+                    fontWeight = FontWeight.Medium,
                     fontStyle = if (item.isBackground) FontStyle.Italic else FontStyle.Normal,
                     lineHeight = if (item.isBackground) (lyricsTextSize * 0.7f * lyricsLineSpacing).sp else (lyricsTextSize * lyricsLineSpacing).sp,
                     letterSpacing = (-0.5).sp,
                     textAlign = agentTextAlign,
-                    fontFamily = MaterialTheme.typography.bodyLarge.fontFamily,
+                    fontFamily = lyricsFontFamily,
+                    shadow = null, // Do not color the whole line before its words are sung.
                     platformStyle = PlatformTextStyle(includeFontPadding = false),
                     lineHeightStyle = LineHeightStyle(
                         alignment = LineHeightStyle.Alignment.Center,
@@ -241,16 +249,18 @@ internal fun LyricsLine(
                 val effectiveWords = if (item.words?.isNotEmpty() == true) {
                     item.words
                 } else if (mainText != null) {
-                    remember(mainText, item.time) {
+                    remember(mainText, item.time, nextLineTimeMs) {
                         val words = mainText.split(Regex("\\s+")).filter { it.isNotBlank() }
-                        val wordDurationSec = 0.18
-                        val wordStaggerSec = 0.03
+                        // Line-timed tracks have no per-word timings. Approximate
+                        // a sweep across the line, rather than a 200ms color flash.
+                        val lineDurationMs = ((nextLineTimeMs ?: (item.time + 5000L)) - item.time)
+                            .coerceIn(1200L, 7500L)
                         val startTimeSec = item.time / 1000.0
                         words.mapIndexed { idx, wordText ->
                             WordTimestamp(
                                 text = wordText,
-                                startTime = startTimeSec + (idx * wordStaggerSec),
-                                endTime = startTimeSec + (idx * wordStaggerSec) + wordDurationSec,
+                                startTime = startTimeSec + lineDurationMs * idx / words.size / 1000.0,
+                                endTime = startTimeSec + lineDurationMs * (idx + 1) / words.size / 1000.0,
                                 hasTrailingSpace = idx < words.size - 1
                             )
                         }
@@ -262,8 +272,9 @@ internal fun LyricsLine(
                         mainText = mainText,
                         words = effectiveWords,
                         isActiveLine = isActiveLine,
-                        currentPositionState = currentPositionState,
+                        playbackActive = playbackActive,
                         lyricsOffset = lyricsOffset,
+                        nextLineTimeMs = nextLineTimeMs,
                         playerConnection = playerConnection,
                         lyricStyle = lyricStyle,
                         lineColor = lineColor,
@@ -285,7 +296,8 @@ internal fun LyricsLine(
                         Text(
                             text = it,
                             fontSize = 18.sp,
-                            color = expressiveAccent.copy(alpha = 0.6f),
+                            fontFamily = lyricsFontFamily,
+                            color = lineColor.copy(alpha = if (isActiveLine) 0.7f else 0.45f),
                             textAlign = agentTextAlign,
                             fontWeight = FontWeight.Normal,
                             modifier = Modifier.padding(top = 2.dp)
@@ -298,7 +310,8 @@ internal fun LyricsLine(
                     Text(
                         text = it,
                         fontSize = 16.sp,
-                        color = expressiveAccent.copy(alpha = 0.5f),
+                        fontFamily = lyricsFontFamily,
+                        color = lineColor.copy(alpha = if (isActiveLine) 0.6f else 0.4f),
                         textAlign = agentTextAlign,
                         fontWeight = FontWeight.Normal,
                         modifier = Modifier.padding(top = 4.dp)
@@ -326,8 +339,9 @@ private fun WordLevelLyrics(
     mainText: String,
     words: List<WordTimestamp>,
     isActiveLine: Boolean,
-    currentPositionState: Long,
+    playbackActive: Boolean,
     lyricsOffset: Long,
+    nextLineTimeMs: Long?,
     playerConnection: PlayerConnection,
     lyricStyle: TextStyle,
     lineColor: Color,
@@ -344,11 +358,12 @@ private fun WordLevelLyrics(
         }
     }
     
-    var smoothPosition by remember { mutableLongStateOf(currentPositionState + lyricsOffset) }
+    var smoothPosition by remember { mutableLongStateOf(playerConnection.player.currentPosition + lyricsOffset) }
     
-    LaunchedEffect(isActiveLine) {
-        if (isActiveLine) {
+    LaunchedEffect(isActiveLine, playbackActive, lyricsOffset) {
+        if (isActiveLine && playbackActive) {
             var lastPlayerPos = playerConnection.player.currentPosition
+            smoothPosition = lastPlayerPos + lyricsOffset
             var lastUpdateTime = System.currentTimeMillis()
             while (isActive) {
                 withFrameMillis {
@@ -365,11 +380,6 @@ private fun WordLevelLyrics(
         }
     }
     
-    LaunchedEffect(isActiveLine, currentPositionState) {
-        if (!isActiveLine) {
-            smoothPosition = currentPositionState + lyricsOffset
-        }
-    }
 
     val (effectiveWords, effectiveToOriginalIdx) = remember(words, isBackground) {
         words.flatMapIndexed { originalIdx, word ->
@@ -506,6 +516,19 @@ private fun WordLevelLyrics(
             )
         }
         
+        val clusterBounds = remember(layoutResult, clusterCharOffsets) {
+            clusterCharOffsets.map { layoutResult.getBoundingBox(it) }
+        }
+        val clusterLines = remember(layoutResult, clusterCharOffsets) {
+            IntArray(clusterCount) { layoutResult.getLineForOffset(clusterCharOffsets[it]) }
+        }
+        val wordWobbles = remember(words.size) { FloatArray(words.size) }
+        val lineCurrentPushes = remember(layoutResult.lineCount) { FloatArray(layoutResult.lineCount) }
+        val lineTotalPushes = remember(layoutResult.lineCount) { FloatArray(layoutResult.lineCount) }
+        val glowTypeface = remember {
+            android.graphics.Typeface.create(android.graphics.Typeface.DEFAULT, android.graphics.Typeface.BOLD)
+        }
+
         // Each layout corresponds to one grapheme cluster (the visual unit),
         // not one codepoint. Fixes Devanagari/Bengali matra fragmentation.
         val letterLayouts = remember(mainText, lyricStyle) {
@@ -516,6 +539,7 @@ private fun WordLevelLyrics(
         val drawWholeLine = remember(mainText) { mainText.containsRtl() || mainText.containsJoinedIndic() }
         
         Canvas(modifier = Modifier
+            .semantics { text = AnnotatedString(mainText) }
             .fillMaxWidth()
             .height(with(density) { layoutResult.size.height.toDp() })
             .graphicsLayer(
@@ -540,7 +564,7 @@ private fun WordLevelLyrics(
                         Triple(sungFactor, isWordSung, isWordActive)
                     }
 
-                    drawText(layoutResult, color = lineColor.copy(alpha = focusedAlpha))
+                    drawText(layoutResult, color = Color.White.copy(alpha = focusedAlpha))
 
                     effectiveWords.indices.forEach { wIdx ->
                         val (sungFactor, isWordSung, isWordActive) = wordFactors[wIdx]
@@ -554,7 +578,7 @@ private fun WordLevelLyrics(
                         for (i in 0 until clusterCount) {
                             if (wordIdxMap[i] == wIdx) {
                                 val charOffset = clusterCharOffsets[i]
-                                val bounds = layoutResult.getBoundingBox(charOffset)
+                                val bounds = clusterBounds[i]
                                 left = minOf(left, bounds.left)
                                 right = maxOf(right, bounds.right)
                                 top = minOf(top, bounds.top)
@@ -564,13 +588,17 @@ private fun WordLevelLyrics(
                         }
 
                         if (found) {
-                            if (isWordSung) {
-                                clipRect(left = left, top = top, right = right, bottom = bottom) {
+                            val progress = if (isWordSung) 1f else sungFactor
+                            if (progress > 0f) {
+                                val revealWidth = (right - left) * progress
+                                val rtl = mainText.containsRtl()
+                                clipRect(
+                                    left = if (rtl) right - revealWidth else left,
+                                    top = top,
+                                    right = if (rtl) right else left + revealWidth,
+                                    bottom = bottom
+                                ) {
                                     drawText(layoutResult, color = expressiveAccent)
-                                }
-                            } else if (isWordActive && sungFactor > 0f) {
-                                clipRect(left = left, top = top, right = right, bottom = bottom) {
-                                    drawText(layoutResult, color = expressiveAccent.copy(alpha = focusedAlpha + (1f - focusedAlpha) * sungFactor))
                                 }
                             }
                         }
@@ -590,7 +618,7 @@ private fun WordLevelLyrics(
                     Triple(sungFactor, word, isWordSung)
                 }
 
-                val wordWobbles = FloatArray(words.size)
+                wordWobbles.fill(0f)
                 words.forEachIndexed { wordIdx, word ->
                     val startMs = (word.startTime * 1000).toLong()
                     val timeSinceStart = (smoothPosition - startMs).toFloat()
@@ -601,14 +629,14 @@ private fun WordLevelLyrics(
                     wordWobbles[wordIdx] = wobble
                 }
 
-                val lineCurrentPushes = FloatArray(layoutResult.lineCount)
-                val lineTotalPushes = FloatArray(layoutResult.lineCount)
+                lineCurrentPushes.fill(0f)
+                lineTotalPushes.fill(0f)
                 
                 // Pre-calculate total pushes per line to handle alignment correctly.
                 // Iterate over cluster indices so each visual glyph unit is one slot.
                 for (i in 0 until clusterCount) {
                     val charOffset = clusterCharOffsets[i]
-                    val lineIdx = layoutResult.getLineForOffset(charOffset)
+                    val lineIdx = clusterLines[i]
                     val wordIdx = wordIdxMap[i]
                     val originalWordIdx = if (wordIdx != -1) effectiveToOriginalIdx[wordIdx] else -1
                     
@@ -654,7 +682,7 @@ private fun WordLevelLyrics(
                     } else 0f
 
                     val charScaleX = 1f + (wobble * 0.025f) + crescendoDeltaX + (nudgeScale * 0.3f)
-                    val charBounds = layoutResult.getBoundingBox(charOffset)
+                    val charBounds = clusterBounds[i]
                     lineTotalPushes[lineIdx] += charBounds.width * (charScaleX - 1f)
                 }
 
@@ -662,8 +690,8 @@ private fun WordLevelLyrics(
                 // glyph (including multi-codepoint Devanagari clusters) is one unit.
                 for (i in 0 until clusterCount) {
                     val charOffset = clusterCharOffsets[i]
-                    val lineIdx = layoutResult.getLineForOffset(charOffset)
-                    val charBounds = layoutResult.getBoundingBox(charOffset)
+                    val lineIdx = clusterLines[i]
+                    val charBounds = clusterBounds[i]
                     val wordIdx = wordIdxMap[i]
                     val originalWordIdx = if (wordIdx != -1) effectiveToOriginalIdx[wordIdx] else -1
                     
@@ -768,26 +796,17 @@ private fun WordLevelLyrics(
                                     glowPaint.maskFilter = BlurMaskFilter(baseGlowRadius, BlurMaskFilter.Blur.NORMAL)
                                     glowPaint.color = expressiveAccent.copy(alpha = glowAlpha).toArgb()
                                     glowPaint.textSize = lyricStyle.fontSize.toPx()
-                                    glowPaint.typeface = android.graphics.Typeface.create(android.graphics.Typeface.DEFAULT, android.graphics.Typeface.BOLD)
+                                    glowPaint.typeface = glowTypeface
                                     canvas.nativeCanvas.drawText(letterLayouts[i].layoutInput.text.text, 0f, letterLayouts[i].firstBaseline, glowPaint)
                                 }
                             }
                         }
-                        val baseAlpha = if (isWordSung || charLp > 0.99f) 1f else (focusedAlpha + (1f - focusedAlpha) * sungFactor)
-                        drawText(letterLayouts[i], color = expressiveAccent.copy(alpha = if (wordIdx == -1) focusedAlpha else baseAlpha))
-                        if (!isWordSung && charLp > 0f && charLp < 1f) {
-                            val fXL = charBounds.width * charLp
-                            val eW = (charBounds.width * 0.45f).coerceAtLeast(1f)
-                            val sWL = (fXL - eW).coerceAtLeast(0f)
-                            if (sWL > 0f) {
-                                clipRect(left = 0f, top = 0f, right = sWL, bottom = charBounds.height) { drawText(letterLayouts[i], color = expressiveAccent) }
-                            }
-                            for (j in 0 until 12) {
-                                val start = sWL + (j * eW / 12f)
-                                val end = (sWL + ((j + 1) * eW / 12f) + 0.5f).coerceAtMost(fXL)
-                                if (end > start) {
-                                    clipRect(left = start, top = 0f, right = end, bottom = charBounds.height) { drawText(letterLayouts[i], color = expressiveAccent.copy(alpha = 1f - (j + 0.5f) / 12f)) }
-                                }
+                        drawText(letterLayouts[i], color = Color.White.copy(alpha = focusedAlpha))
+                        // Reveal the cover color across each glyph according to its sung time.
+                        val fill = if (isWordSung) 1f else charLp.coerceIn(0f, 1f)
+                        if (wordIdx != -1 && fill > 0f) {
+                            clipRect(left = 0f, top = 0f, right = charBounds.width * fill, bottom = charBounds.height) {
+                                drawText(letterLayouts[i], color = expressiveAccent)
                             }
                         }
                     }

@@ -105,7 +105,7 @@ fun PlaylistPage() {
                 text = stringResource(R.string.wrapped_playlist_title, WrappedConstants.YEAR),
                 style = TextStyle(
                     fontSize = 22.sp,
-                    fontWeight = FontWeight.Bold,
+                    fontWeight = FontWeight.Medium,
                     color = Color.White
                 )
             )
@@ -123,7 +123,7 @@ fun PlaylistPage() {
                 when (playlistCreationState) {
                     is PlaylistCreationState.Idle -> Text(
                         text = stringResource(R.string.wrapped_create_playlist),
-                        style = TextStyle(color = Color.Black, fontWeight = FontWeight.Bold)
+                        style = TextStyle(color = Color.Black, fontWeight = FontWeight.Medium)
                     )
                     is PlaylistCreationState.Creating -> CircularProgressIndicator(
                         modifier = Modifier.size(24.dp),
@@ -132,7 +132,7 @@ fun PlaylistPage() {
                     )
                     is PlaylistCreationState.Success -> Text(
                         text = stringResource(R.string.wrapped_playlist_saved),
-                        style = TextStyle(color = Color.Black, fontWeight = FontWeight.Bold)
+                        style = TextStyle(color = Color.Black, fontWeight = FontWeight.Medium)
                     )
                 }
             }

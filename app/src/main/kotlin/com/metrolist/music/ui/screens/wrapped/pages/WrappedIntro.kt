@@ -193,7 +193,7 @@ fun WrappedIntro(onNext: () -> Unit) {
                 Text(
                     text = stringResource(id = R.string.wrapped_intro_button),
                     color = Color.Black,
-                    fontWeight = FontWeight.Bold,
+                    fontWeight = FontWeight.Medium,
                     modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp)
                 )
             }

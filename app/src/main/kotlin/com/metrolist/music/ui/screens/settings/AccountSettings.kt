@@ -108,7 +108,7 @@ fun AccountSettings(
 
     Column(
         modifier = Modifier
-            .background(MaterialTheme.colorScheme.surfaceContainer)
+            .background(androidx.compose.ui.graphics.Color(0xFF101010))
             .padding(16.dp)
             .verticalScroll(rememberScrollState())
     ) {
@@ -118,9 +118,11 @@ fun AccountSettings(
                 .padding(start = 8.dp, end = 8.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
+            Icon(painterResource(R.drawable.sonet_mark), null, Modifier.size(24.dp))
+            Spacer(Modifier.width(8.dp))
             Text(
                 text = stringResource(id = R.string.app_name),
-                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Medium),
                 modifier = Modifier.padding(start = 4.dp)
             )
             Spacer(modifier = Modifier.weight(1f))
@@ -318,7 +320,7 @@ fun AccountSettings(
         Spacer(Modifier.height(8.dp))
 
         Material3SettingsGroup(
-            items = listOf(
+            items = listOfNotNull(
                 Material3SettingsItem(
                     title = {
                         Text(
@@ -336,7 +338,7 @@ fun AccountSettings(
                         else showTokenEditor = true
                     }
                 ),
-                Material3SettingsItem(
+                if (isLoggedIn) Material3SettingsItem(
                     title = { Text(stringResource(R.string.more_content)) },
                     icon = painterResource(R.drawable.cached),
                     trailingContent = {
@@ -359,8 +361,8 @@ fun AccountSettings(
                         )
                     },
                     enabled = isLoggedIn
-                ),
-                Material3SettingsItem(
+                ) else null,
+                if (isLoggedIn) Material3SettingsItem(
                     title = { Text(stringResource(R.string.yt_sync)) },
                     icon = painterResource(R.drawable.cached),
                     trailingContent = {
@@ -380,7 +382,7 @@ fun AccountSettings(
                         )
                     },
                     enabled = isLoggedIn
-                )
+                ) else null
             ),
             useLowContrast = true
         )

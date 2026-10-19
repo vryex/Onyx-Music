@@ -1,5 +1,5 @@
 
-name: Onyx Music APK
+name: Sonet APK
 
 on:
   workflow_dispatch:
@@ -62,9 +62,9 @@ jobs:
             -noprompt
 
 
-      - name: Compilar Onyx Music
+      - name: Compilar Sonet
         env:
-          METROLIST_APP_NAME: Onyx Music
+          METROLIST_APP_NAME: Sonet
           METROLIST_APPLICATION_ID: com.onyx.music
         run: |
           bash ./gradlew :app:assembleIzzyDebug --stacktrace
@@ -72,6 +72,6 @@ jobs:
       - name: Subir APK
         uses: actions/upload-artifact@v4
         with:
-          name: Onyx-Music-APK
+          name: Sonet-APK
           path: app/build/outputs/apk/izzy/debug/*.apk
           if-no-files-found: error

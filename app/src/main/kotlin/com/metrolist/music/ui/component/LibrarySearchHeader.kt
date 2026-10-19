@@ -7,6 +7,9 @@ package com.metrolist.music.ui.component
 
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -53,7 +56,9 @@ fun LibrarySearchHeader(
 
     Row(
         verticalAlignment = Alignment.CenterVertically,
-        modifier = modifier.fillMaxWidth(),
+        modifier = modifier.fillMaxWidth()
+            .padding(end = 16.dp, top = 4.dp, bottom = 12.dp)
+            .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(24.dp)),
     ) {
         if (isSearchActive) {
             TextField(
@@ -66,7 +71,7 @@ fun LibrarySearchHeader(
                     )
                 },
                 singleLine = true,
-                shape = RoundedCornerShape(6.dp),
+                shape = RoundedCornerShape(24.dp),
                 textStyle = MaterialTheme.typography.titleMedium,
                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
                 keyboardActions = KeyboardActions(onSearch = { keyboardController?.hide() }),

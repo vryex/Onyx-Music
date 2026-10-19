@@ -324,7 +324,7 @@ fun LyricsImageCard(
                             text = mediaMetadata.title,
                             color = mainTextColor,
                             fontSize = 20.sp,
-                            fontWeight = FontWeight.Bold,
+                            fontWeight = FontWeight.Medium,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
                             modifier = Modifier.padding(bottom = 2.dp)
@@ -354,7 +354,7 @@ fun LyricsImageCard(
                     val availableHeight = maxHeight
                     val textStyle = TextStyle(
                         color = mainTextColor,
-                        fontWeight = FontWeight.Bold,
+                        fontWeight = FontWeight.Medium,
                         textAlign = textAlign,
                         letterSpacing = 0.005.em,
                     )
@@ -417,7 +417,7 @@ fun LyricsImageCard(
                         text = stringResource(R.string.app_name),
                         color = secondaryColor,
                         fontSize = 14.sp,
-                        fontWeight = FontWeight.Bold
+                        fontWeight = FontWeight.Medium
                     )
                 }
             }

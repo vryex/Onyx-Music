@@ -354,7 +354,7 @@ private fun VariantSelectionStep(
                     Text(
                         text = stringResource(R.string.wizard_save_profiles),
                         style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.SemiBold
+                        fontWeight = FontWeight.Medium
                     )
                 }
             }
@@ -395,7 +395,7 @@ private fun VariantItem(
                 Text(
                     text = variant.displayName.substringBefore(" - "),
                     style = MaterialTheme.typography.titleMedium,
-                    fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal
+                    fontWeight = if (isSelected) FontWeight.Medium else FontWeight.Normal
                 )
                 if (variant.sourceDisplay.isNotEmpty() || variant.rigDisplay.isNotEmpty()) {
                     Spacer(modifier = Modifier.height(4.dp))

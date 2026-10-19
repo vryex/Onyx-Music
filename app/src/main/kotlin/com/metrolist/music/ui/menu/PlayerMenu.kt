@@ -7,9 +7,6 @@ package com.metrolist.music.ui.menu
 
 import android.content.Context
 import android.content.Intent
-import android.media.audiofx.AudioEffect
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
 import android.content.res.Configuration
 import android.widget.Toast
 import androidx.annotation.DrawableRes
@@ -163,10 +160,6 @@ fun PlayerMenu(
     val pendingSuggestions by listenTogetherManager?.pendingSuggestions?.collectAsStateWithLifecycle(initialValue = emptyList())
         ?: remember { mutableStateOf(emptyList()) }
 
-    val systemEqLauncher = rememberLauncherForActivityResult(
-        ActivityResultContracts.StartActivityForResult()
-    ) { }
-
     AddToPlaylistDialog(
         isVisible = showChoosePlaylistDialog,
         onGetSong = {
@@ -212,7 +205,7 @@ fun PlayerMenu(
                     Text(
                         text = artist.name,
                         fontSize = 18.sp,
-                        fontWeight = FontWeight.Bold,
+                        fontWeight = FontWeight.Medium,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                     )
@@ -317,6 +310,17 @@ fun PlayerMenu(
             NewActionGrid(
                 actions =
                     listOfNotNull(
+                        NewAction(
+                            icon = { Icon(painterResource(R.drawable.share), null, Modifier.size(28.dp)) },
+                            text = stringResource(R.string.share),
+                            onClick = {
+                                context.startActivity(Intent.createChooser(Intent(Intent.ACTION_SEND).apply {
+                                    type = "text/plain"
+                                    putExtra(Intent.EXTRA_TEXT, "https://music.youtube.com/watch?v=" + mediaMetadata.id)
+                                }, null))
+                                onDismiss()
+                            },
+                        ),
                         if (!isListenTogetherGuest) {
                             NewAction(
                                 icon = {
@@ -676,23 +680,6 @@ fun PlayerMenu(
                         if (isQueueTrigger != true) {
                             add(
                                 Material3MenuItemData(
-                                    title = { Text(text = stringResource(R.string.equalizer)) },
-                                    description = { Text(text = stringResource(R.string.equalizer_desc)) },
-                                    icon = {
-                                        Icon(
-                                            painter = painterResource(R.drawable.equalizer),
-                                            contentDescription = null,
-                                            modifier = Modifier.size(24.dp),
-                                        )
-                                    },
-                                    onClick = {
-                                        navController.navigate("equalizer")
-                                        onDismiss()
-                                    },
-                                ),
-                            )
-                            add(
-                                Material3MenuItemData(
                                     title = { Text(text = stringResource(R.string.system_equalizer)) },
                                     description = { Text(text = stringResource(R.string.system_equalizer_desc)) },
                                     icon = {
@@ -703,17 +690,7 @@ fun PlayerMenu(
                                         )
                                     },
                                     onClick = {
-                                        val audioSessionId = playerConnection.player.audioSessionId
-                                        if (audioSessionId != C.AUDIO_SESSION_ID_UNSET && audioSessionId > 0) {
-                                            val intent = Intent(AudioEffect.ACTION_DISPLAY_AUDIO_EFFECT_CONTROL_PANEL).apply {
-                                                putExtra(AudioEffect.EXTRA_AUDIO_SESSION, audioSessionId)
-                                                putExtra(AudioEffect.EXTRA_PACKAGE_NAME, context.packageName)
-                                                putExtra(AudioEffect.EXTRA_CONTENT_TYPE, AudioEffect.CONTENT_TYPE_MUSIC)
-                                            }
-                                            if (intent.resolveActivity(context.packageManager) != null) {
-                                                systemEqLauncher.launch(intent)
-                                            }
-                                        }
+                                        com.metrolist.music.utils.openSystemEqualizer(context, playerConnection.player.audioSessionId)
                                         onDismiss()
                                     },
                                 ),
@@ -950,7 +927,7 @@ fun ListenTogetherDialog(
                     Text(
                         text = stringResource(R.string.listen_together),
                         style = MaterialTheme.typography.headlineSmall,
-                        fontWeight = FontWeight.Bold,
+                        fontWeight = FontWeight.Medium,
                         color = MaterialTheme.colorScheme.primary,
                     )
                     Spacer(modifier = Modifier.height(8.dp))
@@ -1029,7 +1006,7 @@ fun ListenTogetherDialog(
                         Text(
                             text = stringResource(R.string.manage_user),
                             style = MaterialTheme.typography.headlineSmall,
-                            fontWeight = FontWeight.Bold,
+                            fontWeight = FontWeight.Medium,
                             color = MaterialTheme.colorScheme.primary,
                         )
                         Text(
@@ -1075,7 +1052,7 @@ fun ListenTogetherDialog(
                             Text(
                                 text = stringResource(R.string.kick_user),
                                 style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.SemiBold,
+                                fontWeight = FontWeight.Medium,
                                 color = MaterialTheme.colorScheme.error,
                             )
                             Text(
@@ -1125,7 +1102,7 @@ fun ListenTogetherDialog(
                             Text(
                                 text = stringResource(R.string.permanently_kick_user),
                                 style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.SemiBold,
+                                fontWeight = FontWeight.Medium,
                                 color = MaterialTheme.colorScheme.onSurface,
                             )
                             Text(
@@ -1172,7 +1149,7 @@ fun ListenTogetherDialog(
                             Text(
                                 text = stringResource(R.string.transfer_ownership),
                                 style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.SemiBold,
+                                fontWeight = FontWeight.Medium,
                                 color = MaterialTheme.colorScheme.primary,
                             )
                             Text(
@@ -1261,7 +1238,7 @@ fun ListenTogetherDialog(
                             stringResource(R.string.listen_together)
                         },
                     style = MaterialTheme.typography.headlineSmall,
-                    fontWeight = FontWeight.Bold,
+                    fontWeight = FontWeight.Medium,
                     color = MaterialTheme.colorScheme.primary,
                 )
             }
@@ -1317,7 +1294,7 @@ fun ListenTogetherDialog(
                                     ConnectionState.DISCONNECTED -> stringResource(R.string.listen_together_disconnected)
                                 },
                             style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.SemiBold,
+                            fontWeight = FontWeight.Medium,
                             color =
                                 when (connectionState) {
                                     ConnectionState.CONNECTED -> MaterialTheme.colorScheme.primary
@@ -1351,7 +1328,7 @@ fun ListenTogetherDialog(
                                         containerColor = MaterialTheme.colorScheme.primary,
                                     ),
                             ) {
-                                Text(stringResource(R.string.connect), fontWeight = FontWeight.SemiBold)
+                                Text(stringResource(R.string.connect), fontWeight = FontWeight.Medium)
                             }
                         } else {
                             Button(
@@ -1362,13 +1339,13 @@ fun ListenTogetherDialog(
                                         containerColor = MaterialTheme.colorScheme.primary,
                                     ),
                             ) {
-                                Text(stringResource(R.string.disconnect), fontWeight = FontWeight.SemiBold)
+                                Text(stringResource(R.string.disconnect), fontWeight = FontWeight.Medium)
                             }
                             FilledTonalButton(
                                 onClick = { listenTogetherManager.forceReconnect() },
                                 modifier = Modifier.weight(1f),
                             ) {
-                                Text("Reconnect", fontWeight = FontWeight.SemiBold)
+                                Text("Reconnect", fontWeight = FontWeight.Medium)
                             }
                         }
                     }
@@ -1421,7 +1398,7 @@ fun ListenTogetherDialog(
                                     text = room.roomCode,
                                     style = MaterialTheme.typography.headlineLarge,
                                     color = MaterialTheme.colorScheme.primary,
-                                    fontWeight = FontWeight.Bold,
+                                    fontWeight = FontWeight.Medium,
                                     letterSpacing = 6.sp,
                                 )
                             }
@@ -1497,7 +1474,7 @@ fun ListenTogetherDialog(
                         Text(
                             text = stringResource(R.string.connected_users, connectedUsers.size),
                             style = MaterialTheme.typography.titleSmall,
-                            fontWeight = FontWeight.Bold,
+                            fontWeight = FontWeight.Medium,
                             color = MaterialTheme.colorScheme.primary,
                             modifier = Modifier.padding(bottom = 12.dp),
                         )
@@ -1545,7 +1522,7 @@ fun ListenTogetherDialog(
                                                 Text(
                                                     text = user.username.take(1).uppercase(),
                                                     style = MaterialTheme.typography.titleLarge,
-                                                    fontWeight = FontWeight.Bold,
+                                                    fontWeight = FontWeight.Medium,
                                                     color =
                                                         if (user.isHost) {
                                                             MaterialTheme.colorScheme.onPrimary
@@ -1593,7 +1570,7 @@ fun ListenTogetherDialog(
                                     Text(
                                         text = user.username,
                                         style = MaterialTheme.typography.labelMedium,
-                                        fontWeight = if (user.userId == userId) FontWeight.Bold else FontWeight.Medium,
+                                        fontWeight = if (user.userId == userId) FontWeight.Medium else FontWeight.Medium,
                                         color =
                                             if (user.isHost) {
                                                 MaterialTheme.colorScheme.primary
@@ -1634,7 +1611,7 @@ fun ListenTogetherDialog(
                         Text(
                             text = stringResource(R.string.pending_requests),
                             style = MaterialTheme.typography.titleSmall,
-                            fontWeight = FontWeight.Bold,
+                            fontWeight = FontWeight.Medium,
                             color = MaterialTheme.colorScheme.primary,
                             modifier = Modifier.padding(horizontal = 16.dp),
                         )
@@ -1672,7 +1649,7 @@ fun ListenTogetherDialog(
                                             Text(
                                                 text = request.username.take(1).uppercase(),
                                                 style = MaterialTheme.typography.titleMedium,
-                                                fontWeight = FontWeight.Bold,
+                                                fontWeight = FontWeight.Medium,
                                                 color = MaterialTheme.colorScheme.onSecondary,
                                             )
                                         }
@@ -1721,7 +1698,7 @@ fun ListenTogetherDialog(
                         Text(
                             text = stringResource(R.string.pending_suggestions),
                             style = MaterialTheme.typography.titleSmall,
-                            fontWeight = FontWeight.Bold,
+                            fontWeight = FontWeight.Medium,
                             color = MaterialTheme.colorScheme.primary,
                             modifier = Modifier.padding(horizontal = 16.dp),
                         )
@@ -1835,7 +1812,7 @@ fun ListenTogetherDialog(
                                 modifier = Modifier.size(18.dp),
                             )
                             Spacer(Modifier.width(8.dp))
-                            Text(stringResource(R.string.leave_room), fontWeight = FontWeight.SemiBold)
+                            Text(stringResource(R.string.leave_room), fontWeight = FontWeight.Medium)
                         }
                     }
                     Spacer(modifier = Modifier.height(16.dp))
@@ -1898,7 +1875,7 @@ fun ListenTogetherDialog(
                         Text(
                             text = stringResource(R.string.join_existing_room),
                             style = MaterialTheme.typography.titleSmall,
-                            fontWeight = FontWeight.Bold,
+                            fontWeight = FontWeight.Medium,
                             color = MaterialTheme.colorScheme.primary,
                         )
 
@@ -2029,7 +2006,7 @@ fun ListenTogetherDialog(
                                 modifier = Modifier.size(18.dp),
                             )
                             Spacer(Modifier.width(8.dp))
-                            Text(stringResource(R.string.create_room), fontWeight = FontWeight.SemiBold)
+                            Text(stringResource(R.string.create_room), fontWeight = FontWeight.Medium)
                         }
 
                         // Join Room button (right side - only visible when room code is complete)
@@ -2068,7 +2045,7 @@ fun ListenTogetherDialog(
                                     modifier = Modifier.size(18.dp),
                                 )
                                 Spacer(Modifier.width(8.dp))
-                                Text(stringResource(R.string.join_room), fontWeight = FontWeight.SemiBold)
+                                Text(stringResource(R.string.join_room), fontWeight = FontWeight.Medium)
                             }
                         }
                     }

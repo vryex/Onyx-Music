@@ -5,6 +5,7 @@
 
 package com.metrolist.music.ui.menu
 
+import androidx.compose.ui.graphics.Color
 import android.content.Intent
 import android.content.res.Configuration
 import androidx.compose.animation.core.animateFloatAsState
@@ -164,7 +165,7 @@ fun QueueMenu(
                     Text(
                         text = artist.name,
                         fontSize = 18.sp,
-                        fontWeight = FontWeight.Bold,
+                        fontWeight = FontWeight.Medium,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                         modifier = Modifier
@@ -241,7 +242,7 @@ fun QueueMenu(
                         if (isFavorite) R.drawable.favorite
                         else R.drawable.favorite_border
                     ),
-                    tint = if (isFavorite) MaterialTheme.colorScheme.error
+                    tint = if (isFavorite) Color.White
                     else LocalContentColor.current,
                     contentDescription = null,
                 )
