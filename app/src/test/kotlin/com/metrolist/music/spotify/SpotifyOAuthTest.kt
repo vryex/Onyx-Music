@@ -9,11 +9,36 @@ import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeout
 import okhttp3.HttpUrl.Companion.toHttpUrl
 import org.junit.Assert.*
+import org.junit.Before
 import org.junit.Test
 import java.net.Socket
 import java.net.ConnectException
+import java.net.BindException
+import java.net.InetSocketAddress
+import java.net.ServerSocket
 
 class SpotifyOAuthTest {
+    @Before fun waitForPreviousListenerToReleaseTheCallbackPort() = runBlocking {
+        // Closing a listener can race its blocked accept() on the previous test's IO worker.
+        withTimeout(3000) {
+            while (true) {
+                val available = withContext(Dispatchers.IO) {
+                    try {
+                        ServerSocket().use { socket ->
+                            socket.reuseAddress = true
+                            socket.bind(InetSocketAddress("127.0.0.1", 8888))
+                        }
+                        true
+                    } catch (_: BindException) {
+                        false
+                    }
+                }
+                if (available) break
+                delay(10)
+            }
+        }
+    }
+
     private fun send(query: String): String = Socket("127.0.0.1", 8888).use { socket ->
         socket.soTimeout = 4000
         socket.getOutputStream().write("GET /callback?$query HTTP/1.1\r\nHost: 127.0.0.1:8888\r\n\r\n".toByteArray())
