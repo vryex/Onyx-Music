@@ -37,15 +37,34 @@ for attempt in range(15):
     time.sleep(.5)
 else:
     raise AssertionError('Diagnostic file picker did not open')
-if any('show roots' in n.get('content-desc', '').lower() for n in picker.iter('node')):
+def tap_node(node):
+    x1, y1, x2, y2 = map(int, re.findall(r'\d+', node.get('bounds', '')))
+    adb('shell', 'input', 'tap', str((x1 + x2) // 2), str((y1 + y2) // 2))
+    time.sleep(1)
+
+if not any(n.get('resource-id', '').endswith('/breadcrumb_text') and n.get('text') == 'Downloads'
+           for n in picker.iter('node')):
     tap(picker, 'show roots')
     locations = snapshot('32-locations')
-    tap(locations, 'downloads')
+    downloads = next(n for n in locations.iter('node')
+                     if n.get('resource-id') == 'android:id/title' and n.get('text') == 'Downloads')
+    tap_node(downloads)
+picker = snapshot('32-folder-selected')
+if any(n.get('text') == 'Save to' for n in picker.iter('node')):
+    adb('shell', 'input', 'keyevent', 'KEYCODE_BACK')
+    time.sleep(1)
 picker = snapshot('32-save-location')
 filename = next((n.get('text', '') for n in picker.iter('node') if 'Sonet-diagnostico-' in n.get('text', '')), None)
 assert filename and filename.endswith('.txt'), 'Missing diagnostic filename'
-tap(picker, 'save')
-time.sleep(3)
+save = next(n for n in picker.iter('node') if n.get('resource-id') == 'android:id/button1' and n.get('enabled') == 'true')
+tap_node(save)
+for attempt in range(20):
+    if adb('shell', 'ls', '/sdcard/Download/' + filename, check=False).strip():
+        break
+    time.sleep(.5)
+else:
+    snapshot('33-export-not-created')
+    raise AssertionError('Save did not create the diagnostic file')
 report = adb('exec-out', 'cat', '/sdcard/Download/' + filename).decode()
 (out / 'exported-diagnostic.txt').write_text(report)
 assert 'Sonet network diagnostic' in report
