@@ -78,13 +78,12 @@ fun SettingsScreen(navController: NavController, latestVersionName: String) {
     var showFontPicker by rememberSaveable { mutableStateOf(false) }
     val fontContext = LocalContext.current
     val fontScope = rememberCoroutineScope()
-    var diagnosticReport by rememberSaveable { mutableStateOf("") }
     val diagnosticLauncher = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("text/plain")) { uri ->
         if (uri != null) {
-            val report = diagnosticReport
             fontScope.launch {
                 val saved = runCatching {
                     withContext(Dispatchers.IO) {
+                        val report = buildYouTubeDiagnosticReport(fontContext)
                         checkNotNull(fontContext.contentResolver.openOutputStream(uri, "wt")).bufferedWriter().use { it.write(report) }
                     }
                 }.isSuccess
@@ -225,7 +224,6 @@ fun SettingsScreen(navController: NavController, latestVersionName: String) {
                     title = { Text(stringResource(R.string.sonet_diagnostic_export)) },
                     description = { Text(stringResource(R.string.sonet_diagnostic_description)) },
                     onClick = {
-                        diagnosticReport = buildYouTubeDiagnosticReport(fontContext)
                         diagnosticLauncher.launch("Sonet-diagnostico-${System.currentTimeMillis()}.txt")
                     }
                 ),

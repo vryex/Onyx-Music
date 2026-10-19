@@ -47,6 +47,22 @@ jobs:
         run: |
           mkdir -p "$HOME/.android"
           keytool -genkeypair -keystore "$HOME/.android/debug.keystore" -storepass android -keypass android -alias androiddebugkey -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Onyx CI Debug,O=Onyx,C=MX" -noprompt
+      - name: Verify reflected-query privacy regression fails before the fix
+        run: |
+          set -euo pipefail
+          source_file=innertube/src/main/kotlin/com/metrolist/innertube/utils/YouTubeNetworkLog.kt
+          cp "$source_file" "$RUNNER_TEMP/network-log-fixed.kt"
+          trap 'cp "$RUNNER_TEMP/network-log-fixed.kt" "$source_file"' EXIT
+          git fetch --depth=1 origin 2afefa4037b32860bf6fd776416fac339f08aad1
+          git show 2afefa4037b32860bf6fd776416fac339f08aad1:"$source_file" > "$source_file"
+          set +e
+          bash ./gradlew :innertube:testDebugUnitTest --tests '*YouTubeNetworkLogTest.unrecognizedServerTextIsOmitted' --console=plain --max-workers=2 -Pkotlin.compiler.execution.strategy=in-process > "$RUNNER_TEMP/privacy-red.log" 2>&1
+          result=$?
+          set -e
+          cp "$RUNNER_TEMP/network-log-fixed.kt" "$source_file"
+          test "$result" -ne 0
+          grep -q 'unrecognizedServerTextIsOmitted FAILED' "$RUNNER_TEMP/privacy-red.log"
+          echo 'PASS: privacy regression detects reflected search terms in the previous recorder'
       - name: Regression tests and required debug build
         run: |
           bash ./gradlew :app:testFossDebugUnitTest :innertube:testDebugUnitTest :app:assembleFossDebug --console=plain --continue --max-workers=2 -Pkotlin.compiler.execution.strategy=in-process

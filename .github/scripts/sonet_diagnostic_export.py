@@ -9,8 +9,14 @@ adb, snapshot, tap, scroll = (h[k] for k in ['adb', 'snapshot', 'tap_label', 'sc
 package, activity, out = (h[k] for k in ['PACKAGE', 'ACTIVITY', 'OUT'])
 adb('shell', 'am', 'start', '-W', '-n', activity, '-a', 'android.intent.action.VIEW',
     '-d', 'https://music.youtube.com/search?q=The%20Weeknd')
-time.sleep(8)
-snapshot('30-diagnostic-search')
+for attempt in range(35):
+    search = snapshot('30-diagnostic-search-' + str(attempt))
+    texts = [n.get('text', '') for n in search.iter('node')]
+    if any(t in ('Top result', 'Could not load this YouTube page.') for t in texts):
+        break
+    time.sleep(2)
+else:
+    raise AssertionError('Search never produced a result or actionable error')
 adb('shell', 'input', 'keyevent', 'KEYCODE_BACK')
 tap(snapshot('30-back'), 'home')
 tap(snapshot('30-home'), 'more options')

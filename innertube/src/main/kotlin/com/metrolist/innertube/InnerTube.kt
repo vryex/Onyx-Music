@@ -37,9 +37,6 @@ import java.net.Proxy
 import java.net.SocketTimeoutException
 import java.net.UnknownHostException
 import javax.net.ssl.SSLException
-import kotlinx.serialization.json.jsonObject
-import kotlinx.serialization.json.jsonPrimitive
-import kotlinx.serialization.json.contentOrNull
 import java.util.Locale
 import java.util.concurrent.TimeUnit
 
@@ -177,20 +174,17 @@ class InnerTube(
                             val began = System.nanoTime()
                             val authenticated = request.header("Authorization") != null ||
                                 request.header("Cookie").orEmpty().contains(Regex("(?:^|;\\s*)(?:SAPISID|SID|__Secure-1PAPISID)="))
-                            val secrets = request.headers.values("Cookie").flatMap { it.split(';') }
-                                .map { it.substringAfter('=', "").trim() } +
-                                listOfNotNull(request.header("Authorization"), request.header("X-Goog-Visitor-Id"))
                             try {
                                 val response = chain.proceed(request)
                                 runCatching {
-                                    val message = if (!response.isSuccessful) {
-                                        runCatching {
-                                            Json.parseToJsonElement(response.peekBody(8192).string()).jsonObject["error"]
-                                                ?.jsonObject?.get("message")?.jsonPrimitive?.contentOrNull
-                                        }.getOrNull() ?: "Non-JSON or empty error response"
-                                    } else null
+                                    val format = response.header("Content-Type").orEmpty().substringBefore(';').lowercase()
+                                    val message = if (response.isSuccessful) null else when {
+                                        format == "application/json" -> "HTTP error response (JSON)"
+                                        format == "text/html" -> "HTTP error response (HTML)"
+                                        else -> "HTTP error response (OTHER)"
+                                    }
                                     YouTubeNetworkLog.record(operation, (System.nanoTime() - began) / 1_000_000,
-                                        response.code, authenticated, if (response.isSuccessful) null else "HTTP", message, secrets)
+                                        response.code, authenticated, if (response.isSuccessful) null else "HTTP", message)
                                 }
                                 response
                             } catch (error: IOException) {

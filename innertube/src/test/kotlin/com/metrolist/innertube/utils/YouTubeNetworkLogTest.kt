@@ -21,14 +21,19 @@ class YouTubeNetworkLogTest {
     @Test fun exportCannotRetainCredentialsUrlsOrUnknownOperationText() {
         val cookie = "very-private-cookie"
         YouTubeNetworkLog.record("search?query=private", 1, 403, true,
-            serverMessage = "$cookie Bearer secret-token SAPISIDHASH 123_private Cookie: SID=private; https://host/path?token=private person@example.com access_token=private",
-            secrets = listOf(cookie))
+            serverMessage = "$cookie Bearer secret-token SAPISIDHASH 123_private Cookie: SID=private; https://host/path?token=private person@example.com access_token=private")
         val item = YouTubeNetworkLog.snapshot().single()
         assertEquals("other", item.operation)
         val exported = item.serverMessage.orEmpty()
         for (secret in listOf(cookie, "secret-token", "123_private", "SID=private", "https://", "person@example.com", "access_token=private")) {
             assertFalse("Leaked $secret in $exported", exported.contains(secret))
         }
+    }
+
+    @Test fun unrecognizedServerTextIsOmitted() {
+        YouTubeNetworkLog.record("search", 25, 403, true,
+            serverMessage = "Invalid search query: private medical term")
+        assertNull(YouTubeNetworkLog.snapshot().single().serverMessage)
     }
 
     @Test fun retainsOnlyTheLastHundredEventsAndClearsThem() {
