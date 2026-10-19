@@ -180,6 +180,7 @@ object MusicTransportProbe {
 
     private fun newClient(transport: String, wire: AtomicReference<Wire>) = HttpClient(OkHttp) {
         expectSuccess = false
+        followRedirects = false
         install(ContentNegotiation) { json(Json { ignoreUnknownKeys = true; explicitNulls = false; encodeDefaults = true }) }
         install(ContentEncoding) { gzip(0.9F); deflate(0.8F) }
         install(HttpTimeout) { requestTimeoutMillis = 12_000; connectTimeoutMillis = 8_000; socketTimeoutMillis = 8_000 }
