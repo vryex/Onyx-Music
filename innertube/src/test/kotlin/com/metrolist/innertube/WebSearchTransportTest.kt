@@ -1,6 +1,5 @@
 package com.metrolist.innertube
 
-import com.metrolist.innertube.pages.VideoSearchPage
 import com.metrolist.innertubex.InnerTubeHttpException
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.mock.*
@@ -23,9 +22,9 @@ class WebSearchTransportTest {
         HttpClient(engine) { install(ContentNegotiation) { json() } }.use { client ->
             val transport = InnerTube(client).apply { cookie = "SAPISID=private"; visitorData = "private-visitor" }
             repeat(2) {
-                val result = VideoSearchPage.parse(transport.searchWeb("Artist & Song"))
+                val result = transport.searchWeb("Artist & Song")
                 assertEquals("abcdefghijk", result.items.single().id)
-                assertEquals("web-next", result.continuation)
+                assertNull("HTML recovery must not advertise pagination through a rejected API", result.continuation)
             }
             assertEquals(listOf(HttpMethod.Post, HttpMethod.Get, HttpMethod.Get), engine.requestHistory.map { it.method })
             engine.requestHistory.filter { it.method == HttpMethod.Get }.forEach { request ->
@@ -50,6 +49,29 @@ class WebSearchTransportTest {
                 assertTrue(result.isFailure)
                 assertFalse("Must reach and validate the independent HTML transport", result.exceptionOrNull() is InnerTubeHttpException)
             }
+        }
+    }
+
+
+    @Test fun healthyApiKeepsItsContinuationAndDoesNotFetchHtml() = runBlocking {
+        val engine = MockEngine { respond(data, headers = headersOf(HttpHeaders.ContentType, "application/json")) }
+        HttpClient(engine) { install(ContentNegotiation) { json() } }.use { client ->
+            val result = InnerTube(client).searchWeb("song")
+            assertEquals("web-next", result.continuation)
+            assertEquals(1, engine.requestHistory.size)
+            assertEquals(HttpMethod.Post, engine.requestHistory.single().method)
+        }
+    }
+
+    @Test fun windowAssignmentSupportsEmptyResultsWithoutInventingMatches() = runBlocking {
+        val empty = """{"contents":{"twoColumnSearchResultsRenderer":{"primaryContents":{"sectionListRenderer":{"contents":[]}}}}}"""
+        val engine = MockEngine { request ->
+            if (request.method == HttpMethod.Post) respond("denied", HttpStatusCode.Forbidden)
+            else respond("<script>window[\"ytInitialData\"] = $empty;</script>",
+                headers = headersOf(HttpHeaders.ContentType, "text/html"))
+        }
+        HttpClient(engine) { install(ContentNegotiation) { json() } }.use { client ->
+            assertTrue(InnerTube(client).searchWeb("no result").items.isEmpty())
         }
     }
 

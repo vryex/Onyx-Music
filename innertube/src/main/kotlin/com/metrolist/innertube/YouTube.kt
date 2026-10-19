@@ -390,9 +390,8 @@ object YouTube {
         }
 
     suspend fun searchVideos(query: String? = null, continuation: String? = null): Result<SearchResult> = runCatching {
-        val response = if (query != null && continuation == null) innerTube.searchWeb(query)
-            else innerTube.search(WEB, query = query, continuation = continuation, setLogin = false).body<JsonObject>()
-        VideoSearchPage.parse(response)
+        if (query != null && continuation == null) innerTube.searchWeb(query)
+        else VideoSearchPage.parse(innerTube.search(WEB, query = query, continuation = continuation, setLogin = false).body<JsonObject>())
     }
 
     suspend fun searchContinuation(

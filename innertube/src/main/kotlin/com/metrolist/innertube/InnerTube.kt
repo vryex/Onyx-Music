@@ -1,5 +1,7 @@
 package com.metrolist.innertube
 
+import com.metrolist.innertube.pages.SearchResult
+import com.metrolist.innertube.pages.VideoSearchPage
 import com.metrolist.innertube.utils.PublicSearchRouter
 import com.metrolist.innertube.utils.YouTubeSearchHtml
 import com.metrolist.innertube.models.MediaInfo
@@ -199,9 +201,12 @@ class InnerTube(
             }
         }
 
-    internal suspend fun searchWeb(query: String): JsonObject = webSearchRouter.search(
-        primary = { runCatching { search(YouTubeClient.WEB, query = query).body<JsonObject>() } },
-        fallback = { runCatching { searchWebHtml(query) } },
+    internal suspend fun searchWeb(query: String): SearchResult = webSearchRouter.search(
+        primary = { runCatching { VideoSearchPage.parse(search(YouTubeClient.WEB, query = query).body<JsonObject>()) } },
+        fallback = { runCatching {
+            // HTML pagination depends on the rejected POST API; do not offer an unusable next page.
+            VideoSearchPage.parse(searchWebHtml(query)).copy(continuation = null)
+        } },
     ).getOrThrow()
 
     private suspend fun searchWebHtml(query: String): JsonObject =
