@@ -29,7 +29,9 @@ class MusicTransportProbeTest {
             respond("{}", HttpStatusCode.ServiceUnavailable)
         }
         HttpClient(engine) { expectSuccess = false }.use { client ->
-            assertEquals(503, requestMusicProbe(client, YouTubeLocale("US", "en"), null).status.value)
+            requestMusicProbe(client, YouTubeLocale("US", "en"), null).execute { response ->
+                assertEquals(503, response.status.value)
+            }
         }
         assertEquals(1, engine.requestHistory.size)
     }

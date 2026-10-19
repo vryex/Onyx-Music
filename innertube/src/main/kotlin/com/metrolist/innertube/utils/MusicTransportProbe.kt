@@ -9,7 +9,7 @@ import io.ktor.client.plugins.HttpTimeout
 import io.ktor.client.plugins.compression.ContentEncoding
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.plugins.defaultRequest
-import io.ktor.client.request.post
+import io.ktor.client.request.preparePost
 import io.ktor.client.request.parameter
 import io.ktor.client.request.setBody
 import io.ktor.client.request.header
@@ -71,7 +71,7 @@ internal fun classifyMusicRejection(contentType: String, text: String): String {
 
 /** A single anonymous Music request, deliberately bypassing facade retry policy. */
 internal suspend fun requestMusicProbe(client: HttpClient, locale: YouTubeLocale, visitor: String?) =
-    client.post("https://music.youtube.com/youtubei/v1/search") {
+    client.preparePost("https://music.youtube.com/youtubei/v1/search") {
         val identity = YouTubeClient.WEB_REMIX
         val language = locale.hl.replace('_', '-')
         val regional = if ('-' in language || locale.gl.isEmpty()) language else "$language-${locale.gl}"
@@ -139,9 +139,11 @@ object MusicTransportProbe {
                         try {
                             withTimeout(15_000) {
                                 newClient(transport, wire).use { client ->
-                                    val response = requestMusicProbe(client, locale, visitor.takeIf { visitorMode == "CURRENT" })
-                                    val body = Json.parseToJsonElement(response.bodyAsText()).jsonObject
-                                    check(body["contents"] != null) { "Unexpected response structure" }
+                                    requestMusicProbe(client, locale, visitor.takeIf { visitorMode == "CURRENT" }).execute { response ->
+                                        if (response.status.value !in 200..299) throw IOException("Probe HTTP rejection")
+                                        val body = Json.parseToJsonElement(response.bodyAsText()).jsonObject
+                                        check(body["contents"] != null) { "Unexpected response structure" }
+                                    }
                                 }
                             }
                         } catch (error: TimeoutCancellationException) {
