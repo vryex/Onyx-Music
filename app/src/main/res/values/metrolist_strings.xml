@@ -1108,4 +1108,8 @@
     <string name="sonet_diagnostic_description">Save the latest YouTube Music requests and errors. Cookies, tokens and search terms are excluded. Reproduce the problem before exporting; closing the app clears the log.</string>
     <string name="sonet_diagnostic_saved">Diagnostic saved. You can attach the text file to your support conversation.</string>
     <string name="sonet_diagnostic_save_error">Could not save the diagnostic. Try another folder.</string>
+    <string name="sonet_connection_test">Run connection test</string>
+    <string name="sonet_connection_test_description">Compare eight YouTube Music requests automatically. Stay on this page until finished, then export the diagnostic.</string>
+    <string name="sonet_connection_test_running">Testing connection… %1$d/8 completed</string>
+    <string name="sonet_connection_test_complete">Connection test complete. Export the diagnostic to inspect the results.</string>
 </resources>

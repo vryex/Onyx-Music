@@ -5,6 +5,7 @@ import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
 import android.os.Build
 import com.metrolist.innertube.utils.YouTubeNetworkLog
+import com.metrolist.innertube.utils.MusicTransportProbe
 import com.metrolist.music.BuildConfig
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
@@ -32,6 +33,7 @@ fun buildYouTubeDiagnosticReport(context: Context): String {
         put("network", network)
         put("internetValidated", capabilities?.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED) == true)
         put("events", Json.encodeToJsonElement(YouTubeNetworkLog.snapshot()))
+        put("connectionProbe", Json.encodeToJsonElement(MusicTransportProbe.results.value))
     }
     return "Sonet network diagnostic\n" + Json { prettyPrint = true }.encodeToString(report)
 }

@@ -25,6 +25,8 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import com.metrolist.innertube.utils.MusicTransportProbe
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -78,6 +80,8 @@ fun SettingsScreen(navController: NavController, latestVersionName: String) {
     var showFontPicker by rememberSaveable { mutableStateOf(false) }
     val fontContext = LocalContext.current
     val fontScope = rememberCoroutineScope()
+    val connectionProbeRunning by MusicTransportProbe.running.collectAsState()
+    val connectionProbeResults by MusicTransportProbe.results.collectAsState()
     val diagnosticLauncher = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("text/plain")) { uri ->
         if (uri != null) {
             fontScope.launch {
@@ -220,8 +224,20 @@ fun SettingsScreen(navController: NavController, latestVersionName: String) {
             title = stringResource(R.string.settings_section_system),
             items = listOf(
                 Material3SettingsItem(
+                    icon = painterResource(R.drawable.restore),
+                    title = { Text(stringResource(R.string.sonet_connection_test)) },
+                    description = { Text(when {
+                        connectionProbeRunning -> stringResource(R.string.sonet_connection_test_running, connectionProbeResults.size)
+                        connectionProbeResults.size == 8 -> stringResource(R.string.sonet_connection_test_complete)
+                        else -> stringResource(R.string.sonet_connection_test_description)
+                    }) },
+                    enabled = !connectionProbeRunning,
+                    onClick = { fontScope.launch { MusicTransportProbe.run() } }
+                ),
+                Material3SettingsItem(
                     icon = painterResource(R.drawable.storage),
                     title = { Text(stringResource(R.string.sonet_diagnostic_export)) },
+                    enabled = !connectionProbeRunning,
                     description = { Text(stringResource(R.string.sonet_diagnostic_description)) },
                     onClick = {
                         diagnosticLauncher.launch("Sonet-diagnostico-${System.currentTimeMillis()}.txt")
