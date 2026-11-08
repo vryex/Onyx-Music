@@ -49,14 +49,31 @@ jobs:
         run: |
           bash ./gradlew :app:assembleIzzyRelease --stacktrace
 
+      - name: Generar llave de firma temporal
+        run: |
+          # Llave nueva en cada compilación (decisión de Brian 2026-11-08):
+          # no hay secreto KEYSTORE en el repo, así que se genera una llave
+          # temporal solo para firmar este APK. Cada compilación usa una
+          # llave distinta, así que para actualizar habrá que desinstalar
+          # la versión anterior primero.
+          SONET_KEYSTORE_PASSWORD="$(openssl rand -hex 16)"
+          echo "SONET_KEYSTORE_PASSWORD=$SONET_KEYSTORE_PASSWORD" >> "$GITHUB_ENV"
+          keytool -genkeypair -v \
+            -keystore "$GITHUB_WORKSPACE/sonet-release.keystore" \
+            -alias sonet -keyalg RSA -keysize 2048 -validity 10000 \
+            -storepass "$SONET_KEYSTORE_PASSWORD" \
+            -keypass "$SONET_KEYSTORE_PASSWORD" \
+            -dname "CN=Sonet, O=Sonet"
+          echo "SONET_KEYSTORE_B64=$(base64 -w0 "$GITHUB_WORKSPACE/sonet-release.keystore")" >> "$GITHUB_ENV"
+
       - name: Firmar APK
         uses: ilharp/sign-android-release@v2.0.0
         with:
           releaseDir: app/build/outputs/apk/izzy/release/
-          signingKey: ${{ secrets.KEYSTORE }}
-          keyAlias: ${{ secrets.KEY_ALIAS }}
-          keyStorePassword: ${{ secrets.KEYSTORE_PASSWORD }}
-          keyPassword: ${{ secrets.KEY_PASSWORD }}
+          signingKey: ${{ env.SONET_KEYSTORE_B64 }}
+          keyAlias: sonet
+          keyStorePassword: ${{ env.SONET_KEYSTORE_PASSWORD }}
+          keyPassword: ${{ env.SONET_KEYSTORE_PASSWORD }}
           buildToolsVersion: 36.0.0
 
       - name: Mover APK firmado
