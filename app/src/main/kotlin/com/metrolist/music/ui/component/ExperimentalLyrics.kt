@@ -776,7 +776,7 @@ fun ExperimentalLyrics(
                                                 .firstOrNull { !it.isBackground && it.time > item.time }?.time
                                         },
                                         playerConnection = playerConnection, lyricsTextSize = 36f, lyricsLineSpacing = 1.3f,
-                                        expressiveAccent = expressiveAccent, lyricsFontFamily = lyricsFontFamily, lyricsTextPosition = lyricsTextPosition,
+                                        expressiveAccent = Color.White, lyricsFontFamily = lyricsFontFamily, lyricsTextPosition = lyricsTextPosition,
                                         respectAgentPositioning = respectAgentPositioning, isAutoScrollEnabled = isAutoScrollEnabled,
                                         displayedCurrentLineIndex = deferredCurrentLineIndex, romanizeAsMain = romanizeAsMain,
                                         enabledLanguages = enabledLanguages, romanizeLyrics = currentSong?.romanizeLyrics == true,

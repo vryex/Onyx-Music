@@ -905,8 +905,21 @@ fun BottomSheetPlayer(
             ) {
                 Box(Modifier.weight(1f), contentAlignment = Alignment.CenterStart) {
                 if (LocalConfiguration.current.orientation != Configuration.ORIENTATION_LANDSCAPE) {
-                    // A layout anchor only. The bitmap is drawn once in the background.
-                    Box(Modifier.size(48.dp).onGloballyPositioned(artworkPlacement::placeTarget))
+                    if (showInlineLyrics && !mediaMetadata.thumbnailUrl.isNullOrBlank()) {
+                        // Lyrics mode: draw the small cover here, next to the
+                        // title. The background artwork is faded out in lyrics
+                        // mode (see PlayerArtwork), so this is the only cover.
+                        AsyncImage(
+                            model = mediaMetadata.thumbnailUrl?.resize(96, 96),
+                            contentDescription = null,
+                            contentScale = ContentScale.Crop,
+                            modifier = Modifier.size(48.dp).clip(RoundedCornerShape(12.dp))
+                                .graphicsLayer { alpha = lyricsMix.value },
+                        )
+                    } else {
+                        // A layout anchor only. The bitmap is drawn once in the background.
+                        Box(Modifier.size(48.dp).onGloballyPositioned(artworkPlacement::placeTarget))
+                    }
                 } else {
                     AsyncImage(
                         model = mediaMetadata.thumbnailUrl?.resize(96, 96),
@@ -1005,8 +1018,15 @@ fun BottomSheetPlayer(
                     }.semantics { selected = favorite },
                     contentColor = playerContentColor,
                 )
-                // Direct add-to-playlist and share, next to the like button,
-                // instead of hiding them behind the "···" menu only.
+                // Direct add-to-playlist, share and download, next to the like
+                // button, instead of hiding them behind the "···" menu only.
+                // They stay out of the row in lyrics mode: six 48dp buttons
+                // leave the title no width at all (the row is only ~360dp
+                // wide), so the title was measured at zero width and the
+                // whole metadata row looked empty. In lyrics mode the row
+                // keeps like / fullscreen / more, and these three stay in
+                // the player menu outside lyrics mode.
+                if (!showInlineLyrics) {
                 Spacer(Modifier.width(12.dp))
                 PlayerIconButton(
                     R.drawable.playlist_add,
@@ -1038,6 +1058,7 @@ fun BottomSheetPlayer(
                     },
                     contentColor = playerContentColor,
                 )
+                }
                 if (showInlineLyrics) {
                     Spacer(Modifier.width(12.dp))
                     PlayerIconButton(
@@ -1629,6 +1650,11 @@ fun InlineLyricsView(
                 .clip(RoundedCornerShape(12.dp)),
         contentAlignment = Alignment.Center,
     ) {
+        // Real dark scrim behind the lyrics. The pane must read as dark no
+        // matter how bright or colourful the cover is: without it the
+        // lines dissolve into the photo (pink line on a pink cover, next
+        // line invisible). Plain black only, no palette colour.
+        Box(Modifier.matchParentSize().background(Color.Black.copy(alpha = 0.75f)))
         when {
             lyrics == null -> {
                 if (playbackActive) SonetLoadingIndicator()

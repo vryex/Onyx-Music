@@ -77,7 +77,12 @@ internal fun PlayerArtwork(
                 translationX = if (hasTarget) target.left * t else 0f
                 translationY = if (hasTarget) target.top * t else 0f
                 transformOrigin = TransformOrigin(0f, 0f)
-                alpha = if (visibleInCoverMode) 1f else t
+                // In lyrics mode the cover fades out: the small cover lives
+                // in the metadata row instead, and the lyrics pane must not
+                // keep the bright photo behind the text. (The flight to the
+                // row anchor never lands in practice, so fading is what
+                // guarantees the lyrics pane is actually clear.)
+                alpha = if (visibleInCoverMode) 1f - t else t
                 shape = RoundedCornerShape(12.dp * t / minOf(sx, sy).coerceAtLeast(0.001f))
                 clip = true
                 compositingStrategy = CompositingStrategy.Offscreen
