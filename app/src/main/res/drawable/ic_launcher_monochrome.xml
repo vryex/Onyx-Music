@@ -3,8 +3,8 @@
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
-    <!-- Sonet · Logo A "S líquida" · MONOCROMO (Android 13+ themed icon).
-         Un solo color, sin gradiente ni fondo: el sistema lo tiñe. -->
+    <!-- Sonet · S BLANCA sobre ónix oscuro plano · MONOCROMO (Android 13+ themed icon).
+         Un solo color blanco, sin fondo: el sistema lo tiñe. -->
     <path
         android:pathData="M76,32 L52,32 C40,32 34,39 34,47 C34,55 41,59 52,61 L60,63 C71,65 78,69 78,77 C78,85 70,90 57,90 L34,90"
         android:fillColor="#00000000"

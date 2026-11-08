@@ -3,9 +3,8 @@
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
-    <!-- Sonet · Logo A "S líquida" · marca dentro de la app (About, splash,
-         loading). Un solo color: los usos la tiñen de blanco o del acento,
-         así que el gradiente no va aquí; la geometría es la S nueva. -->
+    <!-- Sonet · S BLANCA sobre ónix oscuro plano · marca dentro de la app (About, splash,
+         loading). S blanca pura: los usos la tiñen según el tema. -->
     <path
         android:pathData="M76,32 L52,32 C40,32 34,39 34,47 C34,55 41,59 52,61 L60,63 C71,65 78,69 78,77 C78,85 70,90 57,90 L34,90"
         android:fillColor="#00000000"
