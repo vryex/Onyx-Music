@@ -604,6 +604,7 @@ fun BottomSheetPlayer(
     val download by LocalDownloadUtil.current
         .getDownload(mediaMetadata?.id ?: "")
         .collectAsStateWithLifecycle(initialValue = null)
+    val downloadUtil = LocalDownloadUtil.current
 
     val sleepTimerEnabled =
         remember(
@@ -1032,8 +1033,8 @@ fun BottomSheetPlayer(
                     if (download?.state == Download.STATE_COMPLETED) R.drawable.offline else R.drawable.download,
                     stringResource(if (download?.state == Download.STATE_COMPLETED) R.string.remove_download else R.string.action_download),
                     onClick = {
-                        if (download?.state == Download.STATE_COMPLETED) LocalDownloadUtil.current.removeDownload(mediaMetadata.id)
-                        else LocalDownloadUtil.current.download(mediaMetadata)
+                        if (download?.state == Download.STATE_COMPLETED) downloadUtil.removeDownload(mediaMetadata.id)
+                        else downloadUtil.download(mediaMetadata)
                     },
                     contentColor = playerContentColor,
                 )

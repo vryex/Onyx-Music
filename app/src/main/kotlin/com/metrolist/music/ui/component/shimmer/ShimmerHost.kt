@@ -21,6 +21,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.CompositingStrategy
 import androidx.compose.ui.graphics.graphicsLayer
+import com.valentinilk.shimmer.ShimmerBounds
 import com.valentinilk.shimmer.defaultShimmerTheme
 import com.valentinilk.shimmer.rememberShimmer
 import com.valentinilk.shimmer.shimmer
@@ -35,7 +36,7 @@ fun ShimmerHost(
 ) {
     // The library themes via a Shimmer instance (rememberShimmer), not via a
     // parameter on Modifier.shimmer(); LocalShimmerTheme is the other route.
-    val shimmerInstance = rememberShimmer(theme = ShimmerTheme)
+    val shimmerInstance = rememberShimmer(shimmerBounds = ShimmerBounds.View, theme = ShimmerTheme)
     val baseModifier = modifier.shimmer(shimmerInstance)
 
     Column(
