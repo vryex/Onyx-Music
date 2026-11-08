@@ -106,6 +106,7 @@ import com.metrolist.music.ui.component.CreatePlaylistDialog
 import com.metrolist.music.ui.component.LibrarySearchEmptyPlaceholder
 import com.metrolist.music.ui.component.LibrarySearchHeader
 import com.metrolist.music.ui.component.LocalMenuState
+import com.metrolist.music.ui.component.onyxPageBackground
 import com.metrolist.music.ui.component.PlaylistGridItem
 import com.metrolist.music.ui.component.PlaylistListItem
 import com.metrolist.music.ui.component.SongGridItem
@@ -417,7 +418,7 @@ fun LibraryMixScreen(
 
             IconButton(
                 onClick = { isSearchActive = true },
-                modifier = Modifier.padding(start = 8.dp).size(40.dp),
+                modifier = Modifier.padding(start = 8.dp),
             ) {
                 Icon(
                     painter = painterResource(R.drawable.search),
@@ -429,7 +430,7 @@ fun LibraryMixScreen(
                 onClick = {
                     onViewTypeChange(viewType.toggle())
                 },
-                modifier = Modifier.padding(end = 8.dp).size(40.dp),
+                modifier = Modifier.padding(end = 8.dp),
             ) {
                 Icon(
                     painter =
@@ -487,7 +488,7 @@ fun LibraryMixScreen(
                 }
                 Column(
                     modifier = Modifier.weight(1.15f)
-                        .onyxGlass(RoundedCornerShape(16.dp), showBorder = false),
+                        .onyxGlass(RoundedCornerShape(24.dp), showBorder = false),
                 ) {
                     if (showDownloadedPlaylist) LibraryCollectionFeature(
                         title = downloadPlaylist.playlist.name, icon = R.drawable.offline,
@@ -512,7 +513,7 @@ fun LibraryMixScreen(
                 icon = R.drawable.library_music,
                 onClick = { navController.navigate("spotify_import") },
                 modifier = Modifier.fillMaxWidth()
-                    .onyxGlass(RoundedCornerShape(16.dp), showBorder = false)
+                    .onyxGlass(RoundedCornerShape(24.dp), showBorder = false)
                     .semantics { testTagsAsResourceId = true }.testTag("sonet_spotify_entry"),
             )
             Text(
@@ -531,6 +532,7 @@ fun LibraryMixScreen(
         modifier =
             Modifier
                 .fillMaxSize()
+                .onyxPageBackground(mediaMetadata?.thumbnailUrl)
                 .pullToRefresh(
                     state = pullRefreshState,
                     isRefreshing = isRefreshing,
@@ -583,7 +585,7 @@ fun LibraryMixScreen(
                                         ) {
                                             Icon(
                                                 painter = painterResource(R.drawable.more_vert),
-                                                contentDescription = null,
+                                                contentDescription = stringResource(R.string.more_options),
                                             )
                                         }
                                     },
@@ -633,7 +635,7 @@ fun LibraryMixScreen(
                                         ) {
                                             Icon(
                                                 painter = painterResource(R.drawable.more_vert),
-                                                contentDescription = null,
+                                                contentDescription = stringResource(R.string.more_options),
                                             )
                                         }
                                     },
@@ -686,7 +688,7 @@ fun LibraryMixScreen(
                                         ) {
                                             Icon(
                                                 painter = painterResource(R.drawable.more_vert),
-                                                contentDescription = null,
+                                                contentDescription = stringResource(R.string.more_options),
                                             )
                                         }
                                     },
@@ -729,7 +731,7 @@ fun LibraryMixScreen(
                                         ) {
                                             Icon(
                                                 painter = painterResource(R.drawable.more_vert),
-                                                contentDescription = null,
+                                                contentDescription = stringResource(R.string.more_options),
                                             )
                                         }
                                     },
@@ -989,7 +991,7 @@ private fun LibraryCollectionFeature(
     prominent: Boolean = false,
     artwork: String? = null,
 ) {
-    val shape = RoundedCornerShape(16.dp)
+    val shape = RoundedCornerShape(24.dp)
     if (prominent) {
         Box(
             modifier = modifier.height(208.dp).clip(shape)

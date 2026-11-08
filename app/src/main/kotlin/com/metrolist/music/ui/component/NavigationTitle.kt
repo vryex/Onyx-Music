@@ -9,7 +9,6 @@ import com.metrolist.music.ui.theme.onyxGlass
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -24,10 +23,10 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.systemBars
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -86,20 +85,22 @@ fun NavigationTitle(
         }
 
         onPlayAllClick?.let { playAllClick ->
-            OutlinedButton(
+            Button(
                 onClick = playAllClick,
                 shape = RoundedCornerShape(24.dp),
-                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
-                colors = ButtonDefaults.outlinedButtonColors(
-                    contentColor = MaterialTheme.colorScheme.primary
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = MaterialTheme.colorScheme.onPrimary
                 ),
-                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 2.dp),
+                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 2.dp),
                 modifier = Modifier
                     .height(48.dp)
             ) {
+                Icon(painterResource(R.drawable.play), null, Modifier.size(18.dp))
                 Text(
                     text = stringResource(R.string.play_all),
-                    style = MaterialTheme.typography.labelMedium
+                    style = MaterialTheme.typography.labelMedium,
+                    modifier = Modifier.padding(start = 8.dp)
                 )
             }
         }

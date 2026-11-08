@@ -10,10 +10,13 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
+import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
@@ -63,6 +66,14 @@ fun SongSelectDropdown(
                     selectedSong.value = null
                 },
                 label = { Text(titleT) },
+                shape = RoundedCornerShape(16.dp),
+                colors = TextFieldDefaults.colors(
+                    focusedContainerColor = MaterialTheme.colorScheme.surfaceContainer,
+                    unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainer,
+                    focusedIndicatorColor = androidx.compose.ui.graphics.Color.Transparent,
+                    unfocusedIndicatorColor = androidx.compose.ui.graphics.Color.Transparent,
+                    disabledIndicatorColor = androidx.compose.ui.graphics.Color.Transparent,
+                ),
                 modifier = Modifier
                     .weight(1f)
                     .onGloballyPositioned { coordinates ->
@@ -76,6 +87,8 @@ fun SongSelectDropdown(
         DropdownMenu(
             expanded = expanded,
             onDismissRequest = { expanded = false },
+            shape = RoundedCornerShape(16.dp),
+            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
             modifier = Modifier.width(with(density) { textFieldWidthPx.toDp() }),
             properties = PopupProperties(focusable = false)
         ) {
@@ -104,7 +117,7 @@ fun SongSelectDropdown(
                                     Text(
                                         text = it,
                                         maxLines = 1,
-                                        color = androidx.compose.ui.graphics.Color.Gray,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                                         overflow = TextOverflow.Ellipsis // Highly recommended for multi-artist names
                                     )
                                 }

@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -96,6 +97,7 @@ fun TimeTransfer(
                 Spacer(modifier = Modifier.height(12.dp))
 
                 Button(
+                    shape = RoundedCornerShape(24.dp),
                     onClick = {
                         val from = sourceSong.value?.id
                         val to = targetSong.value?.id

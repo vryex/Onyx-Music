@@ -11,7 +11,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -23,11 +22,11 @@ import com.metrolist.music.ui.utils.resize
 @Composable
 fun SpeedDialGridItem(item: YTItem, isPinned: Boolean, modifier: Modifier = Modifier,
     isActive: Boolean = false, isPlaying: Boolean = false) {
-    Row(modifier.fillMaxSize().clip(RoundedCornerShape(6.dp)).background(Color(0xFF282828)),
+    Row(modifier.fillMaxSize().clip(RoundedCornerShape(16.dp)).background(MaterialTheme.colorScheme.surfaceContainerHigh),
         verticalAlignment = Alignment.CenterVertically) {
         Box(Modifier.width(56.dp).fillMaxHeight()) {
             ItemThumbnail(item.thumbnail?.resize(200, 200), isActive, isPlaying,
-                if (item is ArtistItem) CircleShape else RoundedCornerShape(4.dp), Modifier.fillMaxSize())
+                if (item is ArtistItem) CircleShape else RoundedCornerShape(8.dp), Modifier.fillMaxSize())
         }
         Text(item.title, Modifier.weight(1f).padding(horizontal = 8.dp),
             style = MaterialTheme.typography.labelLarge, maxLines = 2, overflow = TextOverflow.Ellipsis)

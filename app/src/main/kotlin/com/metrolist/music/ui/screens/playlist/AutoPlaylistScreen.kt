@@ -34,6 +34,7 @@ import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Checkbox
@@ -506,14 +507,9 @@ fun AutoPlaylistScreen(
                 ),
     ) {
         CollectionHeaderTint(
-            // Liked playlist always derives its header tint from the first
-            // saved track, rather than an unrelated currently playing song.
-            artwork = if (playlistType == PlaylistType.LIKE) {
-                songs?.firstOrNull()?.song?.thumbnailUrl
-            } else {
-                (if (isPlaying) mediaMetadata?.thumbnailUrl else null)
-                    ?: songs?.firstOrNull()?.song?.thumbnailUrl
-            },
+            // Every auto playlist derives its header tint from its first
+            // saved track, never from an unrelated currently playing song.
+            artwork = songs?.firstOrNull()?.song?.thumbnailUrl,
             scrollState = state,
         )
         LazyColumn(
@@ -880,7 +876,7 @@ private fun AutoPlaylistHeader(
         ) {
             Surface(
                 modifier = Modifier.size(112.dp),
-                shape = RoundedCornerShape(16.dp),
+                shape = RoundedCornerShape(24.dp),
                 color = MaterialTheme.colorScheme.surfaceContainerHigh,
                 border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
             ) {
@@ -945,9 +941,9 @@ private fun AutoPlaylistHeader(
                         ),
                     )
                 },
-                shape = RoundedCornerShape(24.dp),
+                shape = CircleShape,
                 color = MaterialTheme.colorScheme.surfaceContainerHigh,
-                modifier = Modifier.size(52.dp),
+                modifier = Modifier.size(48.dp),
             ) {
                 Box(
                     modifier = Modifier.fillMaxSize(),
@@ -961,7 +957,7 @@ private fun AutoPlaylistHeader(
                 }
             }
 
-            // Primary playback action
+            // Primary playback action: 72dp primary circle, same as Album/Online/Local/Cache
             Surface(
                 enabled = songs.isNotEmpty(),
                 onClick = {
@@ -972,22 +968,20 @@ private fun AutoPlaylistHeader(
                         ),
                     )
                 },
-                color = MaterialTheme.colorScheme.surfaceContainerHigh,
-                shape = RoundedCornerShape(24.dp),
-                modifier = Modifier.weight(1f).height(52.dp),
+                color = MaterialTheme.colorScheme.primary,
+                shape = CircleShape,
+                modifier = Modifier.size(72.dp),
             ) {
-                Row(
-                    horizontalArrangement = Arrangement.Center,
-                    verticalAlignment = Alignment.CenterVertically,
+                Box(
+                    contentAlignment = Alignment.Center,
                     modifier = Modifier.fillMaxSize(),
                 ) {
                     Icon(
                         painter = painterResource(R.drawable.play),
                         contentDescription = stringResource(R.string.play),
-                        tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(24.dp),
+                        tint = MaterialTheme.colorScheme.onPrimary,
+                        modifier = Modifier.size(32.dp),
                     )
-                    Text(stringResource(R.string.play), modifier = Modifier.padding(start = 8.dp), fontWeight = FontWeight.Medium)
                 }
             }
 
@@ -1031,9 +1025,9 @@ private fun AutoPlaylistHeader(
                         )
                     }
                 },
-                shape = RoundedCornerShape(24.dp),
+                shape = CircleShape,
                 color = MaterialTheme.colorScheme.surfaceContainerHigh,
-                modifier = Modifier.size(52.dp),
+                modifier = Modifier.size(48.dp),
             ) {
                 Box(
                     modifier = Modifier.fillMaxSize(),

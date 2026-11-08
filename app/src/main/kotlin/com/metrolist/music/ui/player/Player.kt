@@ -86,15 +86,10 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ContainedLoadingIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.FilledIconButton
-import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedIconButton
@@ -102,7 +97,6 @@ import androidx.compose.material3.ProvideTextStyle
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderState
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.repeatOnLifecycle
@@ -114,7 +108,6 @@ import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -143,7 +136,6 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextLayoutResult
@@ -157,7 +149,6 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.window.DialogProperties
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
@@ -167,6 +158,7 @@ import androidx.lifecycle.ProcessLifecycleOwner
 import androidx.media3.common.C
 import androidx.media3.common.Player
 import androidx.media3.common.Player.STATE_ENDED
+import androidx.media3.exoplayer.offline.Download
 import androidx.navigation.NavController
 import androidx.palette.graphics.Palette
 import com.metrolist.music.LocalNavController
@@ -212,9 +204,11 @@ import com.metrolist.music.ui.component.LocalMenuState
 import com.metrolist.music.ui.component.Lyrics
 import com.metrolist.music.ui.component.PlayerSliderTrack
 import com.metrolist.music.ui.component.ResizableIconButton
+import com.metrolist.music.ui.component.SleepTimerCountdownDialog
 import com.metrolist.music.ui.component.SquigglySlider
 import com.metrolist.music.ui.component.WavySlider
 import com.metrolist.music.ui.component.rememberBottomSheetState
+import com.metrolist.music.ui.menu.AddToPlaylistDialog
 import com.metrolist.music.ui.menu.PlayerMenu
 import com.metrolist.music.ui.screens.settings.DarkMode
 import com.metrolist.music.ui.theme.PlayerColorExtractor
@@ -234,7 +228,6 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlin.math.max
-import kotlin.math.roundToInt
 import com.metrolist.music.ui.component.Icon as MIcon
 
 
@@ -247,6 +240,7 @@ fun BottomSheetPlayer(
     pureBlack: Boolean,
 ) {
     val context = LocalContext.current
+    val database = LocalDatabase.current
     val clipboardManager = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
     val menuState = LocalMenuState.current
     val sleepTimerDefaultSetTemplate = stringResource(R.string.sleep_timer_default_set)
@@ -643,128 +637,67 @@ fun BottomSheetPlayer(
     }
 
     val sleepTimerDefault by rememberPreference(SleepTimerDefaultKey, 30f)
-    var sleepTimerValue by remember { mutableFloatStateOf(sleepTimerDefault) }
-    val isAtDefault by remember {
-        derivedStateOf { sleepTimerValue.roundToInt() == sleepTimerDefault.roundToInt() }
-    }
-    LaunchedEffect(sleepTimerDefault) { sleepTimerValue = sleepTimerDefault }
     val sleepTimerStopAfterCurrentSong by rememberPreference(SleepTimerStopAfterCurrentSongKey, false)
     val sleepTimerFadeOut by rememberPreference(SleepTimerFadeOutKey, false)
 
-
+    // One-shot countdown lives in the shared SleepTimerCountdownDialog
+    // (ui/component/SettingsSleepTimerDialog.kt); this used to be a ~110-line
+    // copy of the same dialog, duplicated again in Queue.kt.
     if (showSleepTimerDialog) {
-        AlertDialog(
-            modifier = Modifier.padding(horizontal = 20.dp),
-            properties = DialogProperties(usePlatformDefaultWidth = false),
-            onDismissRequest = { showSleepTimerDialog = false },
-            icon = {
-                Icon(
-                    painter = painterResource(R.drawable.bedtime),
-                    contentDescription = null,
+        SleepTimerCountdownDialog(
+            defaultMinutes = sleepTimerDefault,
+            onStart = { minutes ->
+                showSleepTimerDialog = false
+                playerConnection.service.sleepTimer?.start(
+                    minute = minutes,
+                    stopAfterCurrentSong = sleepTimerStopAfterCurrentSong,
+                    fadeOut = sleepTimerFadeOut,
                 )
             },
-            title = { Text(stringResource(R.string.sleep_timer)) },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        showSleepTimerDialog = false
-                        playerConnection.service.sleepTimer?.start(
-                            minute = sleepTimerValue.roundToInt(),
-                            stopAfterCurrentSong = sleepTimerStopAfterCurrentSong,
-                            fadeOut = sleepTimerFadeOut,
-                        )
-                    },
-                ) {
-                    Text(stringResource(android.R.string.ok))
-                }
+            onStartEndOfSong = {
+                showSleepTimerDialog = false
+                playerConnection.service.sleepTimer?.start(minute = -1)
             },
-            dismissButton = {
-                TextButton(
-                    onClick = { showSleepTimerDialog = false },
-                ) {
-                    Text(stringResource(android.R.string.cancel))
-                }
-            },
-            text = {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text(
-                        text =
-                            pluralStringResource(
-                                R.plurals.minute,
-                                sleepTimerValue.roundToInt(),
-                                sleepTimerValue.roundToInt(),
-                            ),
-                        style = MaterialTheme.typography.bodyLarge,
-                    )
-
-                    Slider(
-                        value = sleepTimerValue,
-                        onValueChange = { sleepTimerValue = it },
-                        valueRange = 5f..120f,
-                        steps = (120 - 5) / 5 - 1,
-                    )
-
-                    Column(
-                        verticalArrangement = Arrangement.spacedBy(8.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                    ) {
-                        if (isAtDefault) {
-                            Button(
-                                onClick = {
-                                    scope.launch {
-                                        context.safeDataStoreEdit { settings ->
-                                            settings[SleepTimerDefaultKey] = sleepTimerValue
-                                        }
-                                    }
-                                    Toast.makeText(
-                                        context,
-                                        String.format(sleepTimerDefaultSetTemplate, sleepTimerValue.roundToInt()),
-                                        Toast.LENGTH_SHORT,
-                                    ).show()
-                                },
-                                colors = ButtonDefaults.buttonColors(
-                                    containerColor = MaterialTheme.colorScheme.primary,
-                                    contentColor = MaterialTheme.colorScheme.onPrimary,
-                                ),
-                            ) {
-                                Text(stringResource(R.string.set_as_default))
-                            }
-                        } else {
-                            OutlinedButton(
-                                onClick = {
-                                    scope.launch {
-                                        context.safeDataStoreEdit { settings ->
-                                            settings[SleepTimerDefaultKey] = sleepTimerValue
-                                        }
-                                    }
-                                    Toast.makeText(
-                                        context,
-                                        String.format(sleepTimerDefaultSetTemplate, sleepTimerValue.roundToInt()),
-                                        Toast.LENGTH_SHORT,
-                                    ).show()
-                                },
-                            ) {
-                                Text(stringResource(R.string.set_as_default))
-                            }
-                        }
-
-                        OutlinedButton(
-                            onClick = {
-                                showSleepTimerDialog = false
-                                playerConnection.service.sleepTimer?.start(minute = -1)
-                            },
-                        ) {
-                            Text(stringResource(R.string.end_of_song))
-                        }
+            onSetDefault = { minutes ->
+                scope.launch {
+                    context.safeDataStoreEdit { settings ->
+                        settings[SleepTimerDefaultKey] = minutes.toFloat()
                     }
                 }
+                Toast.makeText(
+                    context,
+                    String.format(sleepTimerDefaultSetTemplate, minutes),
+                    Toast.LENGTH_SHORT,
+                ).show()
             },
+            onDismiss = { showSleepTimerDialog = false },
         )
     }
 
     var showChoosePlaylistDialog by rememberSaveable {
         mutableStateOf(false)
     }
+
+    // Wires the (previously declared but never shown) add-to-playlist state
+    // to the real dialog, so the player can add the current song directly.
+    AddToPlaylistDialog(
+        isVisible = showChoosePlaylistDialog,
+        onGetSong = {
+            val current = mediaMetadata
+            if (current == null) {
+                emptyList()
+            } else {
+                database.withTransaction {
+                    insert(current)
+                }
+                listOf(current.id)
+            }
+        },
+        onGetSongIds = { mediaMetadata?.let { listOf(it.id) } ?: emptyList() },
+        onDismiss = {
+            showChoosePlaylistDialog = false
+        },
+    )
 
     val lifecycleOwner = LocalLifecycleOwner.current
     LaunchedEffect(playerConnection, isPlaying, isCasting, state.isExpanded, lifecycleOwner) {
@@ -1069,6 +1002,39 @@ fun BottomSheetPlayer(
                         scaleX = favoritePulse.value; scaleY = favoritePulse.value
                         rotationZ = favoriteRotation.value
                     }.semantics { selected = favorite },
+                    contentColor = playerContentColor,
+                )
+                // Direct add-to-playlist and share, next to the like button,
+                // instead of hiding them behind the "···" menu only.
+                Spacer(Modifier.width(12.dp))
+                PlayerIconButton(
+                    R.drawable.playlist_add,
+                    stringResource(R.string.add_to_playlist),
+                    onClick = { showChoosePlaylistDialog = true },
+                    contentColor = playerContentColor,
+                )
+                Spacer(Modifier.width(12.dp))
+                PlayerIconButton(
+                    R.drawable.share,
+                    stringResource(R.string.share),
+                    onClick = {
+                        context.startActivity(Intent.createChooser(Intent(Intent.ACTION_SEND).apply {
+                            type = "text/plain"
+                            putExtra(Intent.EXTRA_TEXT, "https://music.youtube.com/watch?v=" + mediaMetadata.id)
+                        }, null))
+                    },
+                    contentColor = playerContentColor,
+                )
+                // Direct download button: completed = remove, otherwise download.
+                // The in-progress state is shown with % in the "···" menu.
+                Spacer(Modifier.width(12.dp))
+                PlayerIconButton(
+                    if (download?.state == Download.STATE_COMPLETED) R.drawable.offline else R.drawable.download,
+                    stringResource(if (download?.state == Download.STATE_COMPLETED) R.string.remove_download else R.string.action_download),
+                    onClick = {
+                        if (download?.state == Download.STATE_COMPLETED) LocalDownloadUtil.current.removeDownload(mediaMetadata.id)
+                        else LocalDownloadUtil.current.download(mediaMetadata)
+                    },
                     contentColor = playerContentColor,
                 )
                 if (showInlineLyrics) {

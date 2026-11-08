@@ -78,7 +78,7 @@ fun DefaultDialog(
     ) {
         Surface(
             modifier = Modifier.padding(24.dp),
-            shape = AlertDialogDefaults.shape,
+            shape = RoundedCornerShape(24.dp),
             color = AlertDialogDefaults.containerColor,
             tonalElevation = AlertDialogDefaults.TonalElevation,
         ) {
@@ -166,9 +166,9 @@ fun AccountSettingsDialog(
                     Modifier
                         .fillMaxWidth()
                         .padding(top = 72.dp, start = 20.dp, end = 20.dp)
-                        .clip(RoundedCornerShape(28.dp)),
-                shape = MaterialTheme.shapes.large,
-                color = androidx.compose.ui.graphics.Color(0xFF101010),
+                        .clip(RoundedCornerShape(24.dp)),
+                shape = RoundedCornerShape(24.dp),
+                color = MaterialTheme.colorScheme.surfaceContainerLow,
                 tonalElevation = 0.dp,
             ) {
                 AccountSettings(
@@ -251,7 +251,7 @@ fun ListDialog(
     ) {
         Surface(
             modifier = Modifier.padding(24.dp),
-            shape = AlertDialogDefaults.shape,
+            shape = RoundedCornerShape(24.dp),
             color = AlertDialogDefaults.containerColor,
             tonalElevation = AlertDialogDefaults.TonalElevation,
         ) {

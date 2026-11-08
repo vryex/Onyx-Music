@@ -554,12 +554,24 @@ fun PlayerMenu(
 
                             Download.STATE_QUEUED, Download.STATE_DOWNLOADING -> {
                                 Material3MenuItemData(
-                                    title = { Text(text = stringResource(R.string.downloading)) },
+                                    title = {
+                                        val pct = download?.percentDownloaded?.takeIf { it >= 0f }?.toInt()
+                                        Text(text = if (pct != null) "${stringResource(R.string.downloading)} $pct%" else stringResource(R.string.downloading))
+                                    },
                                     icon = {
-                                        CircularProgressIndicator(
-                                            modifier = Modifier.size(24.dp),
-                                            strokeWidth = 2.dp,
-                                        )
+                                        val progress = download?.percentDownloaded?.takeIf { it >= 0f }?.div(100f)
+                                        if (progress != null) {
+                                            CircularProgressIndicator(
+                                                progress = { progress },
+                                                modifier = Modifier.size(24.dp),
+                                                strokeWidth = 2.dp,
+                                            )
+                                        } else {
+                                            CircularProgressIndicator(
+                                                modifier = Modifier.size(24.dp),
+                                                strokeWidth = 2.dp,
+                                            )
+                                        }
                                     },
                                     onClick = {
                                         DownloadService.sendRemoveDownload(
@@ -697,8 +709,28 @@ fun PlayerMenu(
                             )
                             add(
                                 Material3MenuItemData(
-                                    title = { Text(text = stringResource(R.string.advanced)) },
-                                    description = { Text(text = stringResource(R.string.advanced_desc)) },
+                                    // Discoverable speed entry: it used to be labelled only
+                                    // "Advanced", so the speed control was effectively hidden.
+                                    // Same dialog as before (tempo + pitch, or speed-only in
+                                    // varispeed mode); only the label now says what it does
+                                    // and shows the current speed.
+                                    title = {
+                                        Text(
+                                            text = stringResource(
+                                                if (varispeedMode) R.string.speed
+                                                else R.string.tempo_and_pitch
+                                            )
+                                        )
+                                    },
+                                    description = {
+                                        Text(
+                                            text = if (varispeedMode) {
+                                                "${playerConnection.player.playbackParameters.speed}×"
+                                            } else {
+                                                stringResource(R.string.advanced_desc)
+                                            }
+                                        )
+                                    },
                                     icon = {
                                         Icon(
                                             painter = painterResource(R.drawable.tune),

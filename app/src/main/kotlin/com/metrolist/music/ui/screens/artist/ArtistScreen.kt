@@ -43,6 +43,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import com.metrolist.music.ui.theme.onyxGlass
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -52,6 +53,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
@@ -72,6 +74,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.testTagsAsResourceId
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.unit.IntOffset
 import com.metrolist.music.ui.theme.rememberArtworkColor
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
@@ -170,6 +173,15 @@ fun ArtistScreen(
     fun playArtistQueue(queue: Queue) {
         playerConnection.playQueue(queue, source = displayArtistName)
     }
+    // Same copy-link action as the TopAppBar: reused by the header actions row.
+    val onShareArtistLink: () -> Unit = {
+        viewModel.artistPage?.artist?.shareLink?.let { link ->
+            val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+            val clip = ClipData.newPlainText("Artist Link", link)
+            clipboard.setPrimaryClip(clip)
+            Toast.makeText(context, R.string.link_copied, Toast.LENGTH_SHORT).show()
+        }
+    }
     val librarySongs by viewModel.librarySongs.collectAsStateWithLifecycle()
     val libraryAlbums by viewModel.libraryAlbums.collectAsStateWithLifecycle()
     val isChannelSubscribed by viewModel.isChannelSubscribed.collectAsStateWithLifecycle()
@@ -199,9 +211,9 @@ fun ArtistScreen(
         if (subscriptionColor.luminance() > 0.179f) Color.Black else Color.White
     val artistGradient = remember(artistColor) {
         Brush.verticalGradient(
-            0f to artistColor,
-            0.36f to artistColor.copy(alpha = 0.65f),
-            0.78f to Color.Black,
+            0f to lerp(Color.Black, artistColor, 0.45f),
+            0.36f to lerp(Color.Black, artistColor, 0.22f),
+            0.72f to lerp(Color.Black, artistColor, 0.05f),
             1f to Color.Black,
         )
     }
@@ -215,6 +227,91 @@ fun ArtistScreen(
     LaunchedEffect(libraryArtist) {
         // always show local page for local artists. Show local page remote artist when offline
         showLocal = libraryArtist?.artist?.isLocal == true
+    }
+
+    // Play-all availability and action, shared by the header play button and the FAB.
+    val canPlayAll =
+        !isGuest && (
+            (showLocal && librarySongs.isNotEmpty()) ||
+                (
+                    !showLocal && artistPage?.sections?.any {
+                        (it.items.firstOrNull() as? SongItem)?.album != null
+                    } == true
+                )
+        )
+
+    val onPlayAllClick: () -> Unit = {
+        if (!isGuest) {
+            if (showLocal) {
+                if (librarySongs.isNotEmpty()) {
+                    playArtistQueue(
+                        ListQueue(
+                            title = displayArtistName ?: "Unknown Artist",
+                            items = librarySongs.map { it.toMediaItem() },
+                        ),
+                    )
+                }
+            } else if (artistPage != null) {
+                val songSection =
+                    artistPage.sections.find { section ->
+                        (section.items.firstOrNull() as? SongItem)?.album != null
+                    }
+
+                val moreEndpoint = songSection?.moreEndpoint
+                if (moreEndpoint != null) {
+                    coroutineScope.launch(kotlinx.coroutines.Dispatchers.IO) {
+                        val result = YouTube.artistItems(moreEndpoint).getOrNull()
+                        withContext(kotlinx.coroutines.Dispatchers.Main) {
+                            if (result != null && result.items.isNotEmpty()) {
+                                val songs = result.items.filterIsInstance<SongItem>().map { it.toMediaItem() }
+                                playArtistQueue(
+                                    ListQueue(
+                                        title = displayArtistName ?: artistPage.artist.title,
+                                        items = songs,
+                                    ),
+                                )
+                            } else {
+                                // Fallback to loaded items
+                                val songs = songSection.items.filterIsInstance<SongItem>().map { it.toMediaItem() }
+                                if (songs.isNotEmpty()) {
+                                    playArtistQueue(
+                                        ListQueue(
+                                            title = displayArtistName ?: artistPage.artist.title,
+                                            items = songs,
+                                        ),
+                                    )
+                                }
+                            }
+                        }
+                    }
+                } else if (songSection != null) {
+                    // Use loaded items if no more endpoint
+                    val songs = songSection.items.filterIsInstance<SongItem>().map { it.toMediaItem() }
+                    playArtistQueue(
+                        ListQueue(
+                            title = displayArtistName ?: artistPage.artist.title,
+                            items = songs,
+                        ),
+                    )
+                } else {
+                    // Fallback to shuffle endpoint (stripped) if no song section found
+                    val shuffleEndpoint = artistPage.artist.shuffleEndpoint
+                    if (shuffleEndpoint != null) {
+                        val endpoint =
+                            if (shuffleEndpoint.playlistId != null) {
+                                WatchEndpoint(
+                                    playlistId = shuffleEndpoint.playlistId,
+                                    params = null, // Remove shuffle params to play in order
+                                    videoId = null, // Ensure videoId is null to start from beginning of playlist
+                                )
+                            } else {
+                                shuffleEndpoint
+                            }
+                        playArtistQueue(YouTubeQueue(endpoint))
+                    }
+                }
+            }
+        }
     }
 
     Box(
@@ -305,9 +402,56 @@ fun ArtistScreen(
                                         LiquidIconButton(R.drawable.radio, stringResource(R.string.radio),
                                             { playArtistQueue(YouTubeQueue(radioEndpoint)) })
                                     }
-                                    artistPage?.artist?.shuffleEndpoint?.let { shuffleEndpoint ->
-                                        LiquidIconButton(R.drawable.shuffle, stringResource(R.string.shuffle),
-                                            { playArtistQueue(YouTubeQueue(shuffleEndpoint)) }, emphasized = true, showBorder = false)
+                                }
+                            }
+                        }
+                        // Canonical collection actions, same order/sizes as Album/Playlist:
+                        // shuffle 48dp, play 72dp primary circle, share 48dp.
+                        val artistShuffleEndpoint =
+                            if (!showLocal && !isGuest) artistPage?.artist?.shuffleEndpoint else null
+                        if (canPlayAll || artistShuffleEndpoint != null) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp),
+                                horizontalArrangement = Arrangement.spacedBy(16.dp, Alignment.CenterHorizontally),
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                artistShuffleEndpoint?.let { shuffleEndpoint ->
+                                    Surface(
+                                        onClick = { playArtistQueue(YouTubeQueue(shuffleEndpoint)) },
+                                        shape = CircleShape,
+                                        color = MaterialTheme.colorScheme.surfaceContainerHigh,
+                                        modifier = Modifier.size(48.dp),
+                                    ) {
+                                        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                                            Icon(painterResource(R.drawable.shuffle), stringResource(R.string.shuffle), Modifier.size(24.dp))
+                                        }
+                                    }
+                                }
+                                if (canPlayAll) {
+                                    Surface(
+                                        onClick = onPlayAllClick,
+                                        color = MaterialTheme.colorScheme.primary,
+                                        shape = CircleShape,
+                                        modifier = Modifier.size(72.dp),
+                                    ) {
+                                        Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
+                                            Icon(
+                                                painter = painterResource(R.drawable.play),
+                                                contentDescription = stringResource(R.string.play),
+                                                tint = MaterialTheme.colorScheme.onPrimary,
+                                                modifier = Modifier.size(32.dp),
+                                            )
+                                        }
+                                    }
+                                }
+                                Surface(
+                                    onClick = onShareArtistLink,
+                                    shape = CircleShape,
+                                    color = MaterialTheme.colorScheme.surfaceContainerHigh,
+                                    modifier = Modifier.size(48.dp),
+                                ) {
+                                    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                                        Icon(painterResource(R.drawable.share), stringResource(R.string.share), Modifier.size(24.dp))
                                     }
                                 }
                             }
@@ -743,17 +887,6 @@ fun ArtistScreen(
             },
         )
 
-        // Play All FAB (Stacked above Library/Local FAB if visible)
-        val canPlayAll =
-            !isGuest && (
-                (showLocal && librarySongs.isNotEmpty()) ||
-                    (
-                        !showLocal && artistPage?.sections?.any {
-                            (it.items.firstOrNull() as? SongItem)?.album != null
-                        } == true
-                    )
-            )
-
         if (canPlayAll) {
             androidx.compose.animation.AnimatedVisibility(
                 visible = isScrollingUp,
@@ -770,80 +903,6 @@ fun ArtistScreen(
                         // If the other FAB is visible.
                         .padding(bottom = if (showLocalFab) 64.dp else 0.dp),
             ) {
-                val onPlayAllClick: () -> Unit = {
-                    if (!isGuest) {
-                        if (showLocal) {
-                            if (librarySongs.isNotEmpty()) {
-                                playArtistQueue(
-                                    ListQueue(
-                                        title = displayArtistName ?: "Unknown Artist",
-                                        items = librarySongs.map { it.toMediaItem() },
-                                    ),
-                                )
-                            }
-                        } else if (artistPage != null) {
-                            val songSection =
-                                artistPage.sections.find { section ->
-                                    (section.items.firstOrNull() as? SongItem)?.album != null
-                                }
-
-                            val moreEndpoint = songSection?.moreEndpoint
-                            if (moreEndpoint != null) {
-                                coroutineScope.launch(kotlinx.coroutines.Dispatchers.IO) {
-                                    val result = YouTube.artistItems(moreEndpoint).getOrNull()
-                                    withContext(kotlinx.coroutines.Dispatchers.Main) {
-                                        if (result != null && result.items.isNotEmpty()) {
-                                            val songs = result.items.filterIsInstance<SongItem>().map { it.toMediaItem() }
-                                            playArtistQueue(
-                                                ListQueue(
-                                                    title = displayArtistName ?: artistPage.artist.title,
-                                                    items = songs,
-                                                ),
-                                            )
-                                        } else {
-                                            // Fallback to loaded items
-                                            val songs = songSection.items.filterIsInstance<SongItem>().map { it.toMediaItem() }
-                                            if (songs.isNotEmpty()) {
-                                                playArtistQueue(
-                                                    ListQueue(
-                                                        title = displayArtistName ?: artistPage.artist.title,
-                                                        items = songs,
-                                                    ),
-                                                )
-                                            }
-                                        }
-                                    }
-                                }
-                            } else if (songSection != null) {
-                                // Use loaded items if no more endpoint
-                                val songs = songSection.items.filterIsInstance<SongItem>().map { it.toMediaItem() }
-                                playArtistQueue(
-                                    ListQueue(
-                                        title = displayArtistName ?: artistPage.artist.title,
-                                        items = songs,
-                                    ),
-                                )
-                            } else {
-                                // Fallback to shuffle endpoint (stripped) if no song section found
-                                val shuffleEndpoint = artistPage.artist.shuffleEndpoint
-                                if (shuffleEndpoint != null) {
-                                    val endpoint =
-                                        if (shuffleEndpoint.playlistId != null) {
-                                            WatchEndpoint(
-                                                playlistId = shuffleEndpoint.playlistId,
-                                                params = null, // Remove shuffle params to play in order
-                                                videoId = null, // Ensure videoId is null to start from beginning of playlist
-                                            )
-                                        } else {
-                                            shuffleEndpoint
-                                        }
-                                    playArtistQueue(YouTubeQueue(endpoint))
-                                }
-                            }
-                        }
-                    }
-                }
-
                 if (showLocalFab) {
                     androidx.compose.material3.SmallFloatingActionButton(
                         modifier = Modifier.padding(16.dp).offset(x = (-4).dp), // Align center with standard FAB (56dp vs 48dp)
@@ -893,14 +952,7 @@ fun ArtistScreen(
         },
         actions = {
             IconButton(
-                onClick = {
-                    viewModel.artistPage?.artist?.shareLink?.let { link ->
-                        val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-                        val clip = ClipData.newPlainText("Artist Link", link)
-                        clipboard.setPrimaryClip(clip)
-                        Toast.makeText(context, R.string.link_copied, Toast.LENGTH_SHORT).show()
-                    }
-                },
+                onClick = onShareArtistLink,
             ) {
                 Icon(
                     painterResource(R.drawable.link),

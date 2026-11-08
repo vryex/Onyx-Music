@@ -235,9 +235,9 @@ internal fun LyricsShareDialog(
     val context = LocalContext.current
     BasicAlertDialog(onDismissRequest = onDismiss) {
         Card(
-            shape = MaterialTheme.shapes.medium,
+            shape = RoundedCornerShape(24.dp),
             elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
             modifier = Modifier.padding(16.dp).fillMaxWidth(0.85f)
         ) {
             Column(Modifier.padding(20.dp)) {
@@ -340,7 +340,7 @@ internal fun LyricsColorPickerDialog(
     }
 
     BasicAlertDialog(onDismissRequest = onDismiss) {
-        Card(shape = RoundedCornerShape(20.dp), modifier = Modifier.fillMaxWidth().padding(20.dp)) {
+        Card(shape = RoundedCornerShape(24.dp), modifier = Modifier.fillMaxWidth().padding(20.dp)) {
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 modifier = Modifier.verticalScroll(rememberScrollState()).padding(20.dp)

@@ -17,7 +17,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.grid.GridCells
@@ -27,6 +26,7 @@ import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
@@ -55,6 +55,7 @@ import androidx.navigation.NavController
 import androidx.navigation.compose.currentBackStackEntryAsState
 import com.metrolist.innertube.utils.parseCookieString
 import com.metrolist.music.LocalPlayerAwareWindowInsets
+import com.metrolist.music.LocalPlayerConnection
 import com.metrolist.music.R
 import com.metrolist.music.constants.CONTENT_TYPE_HEADER
 import com.metrolist.music.constants.CONTENT_TYPE_PLAYLIST
@@ -80,6 +81,7 @@ import com.metrolist.music.ui.component.LibrarySearchHeader
 import com.metrolist.music.ui.component.LibraryPlaylistGridItem
 import com.metrolist.music.ui.component.LibraryPlaylistListItem
 import com.metrolist.music.ui.component.LocalMenuState
+import com.metrolist.music.ui.component.onyxPageBackground
 import com.metrolist.music.ui.component.PlaylistGridItem
 import com.metrolist.music.ui.component.PlaylistListItem
 import com.metrolist.music.ui.component.SortHeader
@@ -113,6 +115,8 @@ fun LibraryPlaylistsScreen(
     val menuState = LocalMenuState.current
     val haptic = LocalHapticFeedback.current
     val keyboardController = LocalSoftwareKeyboardController.current
+    val playerConnection = LocalPlayerConnection.current ?: return
+    val mediaMetadata by playerConnection.mediaMetadata.collectAsStateWithLifecycle()
 
     val coroutineScope = rememberCoroutineScope()
 
@@ -369,7 +373,7 @@ fun LibraryPlaylistsScreen(
 
             IconButton(
                 onClick = { isSearchActive = true },
-                modifier = Modifier.padding(start = 8.dp).size(40.dp),
+                modifier = Modifier.padding(start = 8.dp),
             ) {
                 Icon(
                     painter = painterResource(R.drawable.search),
@@ -381,7 +385,7 @@ fun LibraryPlaylistsScreen(
                 onClick = {
                     onViewTypeChange(viewType.toggle())
                 },
-                modifier = Modifier.padding(end = 8.dp).size(40.dp),
+                modifier = Modifier.padding(end = 8.dp),
             ) {
                 Icon(
                     painter =
@@ -403,7 +407,7 @@ fun LibraryPlaylistsScreen(
     }
 
     Box(
-        modifier = Modifier.fillMaxSize(),
+        modifier = Modifier.fillMaxSize().onyxPageBackground(mediaMetadata?.thumbnailUrl),
     ) {
         when (viewType) {
             LibraryViewType.LIST -> {
@@ -542,6 +546,9 @@ fun LibraryPlaylistsScreen(
 
         // Always visible + button (no scroll hiding)
         FloatingActionButton(
+            shape = RoundedCornerShape(24.dp),
+            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+            contentColor = MaterialTheme.colorScheme.primary,
             onClick = { showCreatePlaylistDialog = true },
             modifier = Modifier
                 .align(Alignment.BottomEnd)

@@ -175,7 +175,7 @@ fun AddToPlaylistDialogOnline(
                 )
                 FilledTonalButton(
                     onClick = { showCreatePlaylistDialog = true },
-                    shape = RoundedCornerShape(50),
+                    shape = RoundedCornerShape(24.dp),
                     interactionSource = interactionSource,
                     colors = ButtonDefaults.filledTonalButtonColors(
                         containerColor = MaterialTheme.colorScheme.primaryContainer,

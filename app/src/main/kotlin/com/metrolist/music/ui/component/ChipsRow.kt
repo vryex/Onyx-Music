@@ -77,12 +77,12 @@ fun <E> ChipsRow(
     ) {
         chips.forEach { (value, label) ->
             val selected = currentValue == value
-            val fill = if (selected) Color.White else Color(0xFF2A2A2A)
+            val fill = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceContainerHigh
             androidx.compose.foundation.layout.Box(
                 Modifier.clip(RoundedCornerShape(50)).background(fill)
                     .border(0.75.dp, if (selected) Color.Transparent else MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(50))
                     .selectable(selected = selected, role = androidx.compose.ui.semantics.Role.Tab, onClick = { onValueUpdate(value) })
-                    .heightIn(min = 40.dp).padding(horizontal = 16.dp, vertical = 8.dp),
+                    .heightIn(min = 48.dp).padding(horizontal = 16.dp, vertical = 8.dp),
                 contentAlignment = androidx.compose.ui.Alignment.Center,
             ) {
                 Text(label, style = MaterialTheme.typography.labelLarge,

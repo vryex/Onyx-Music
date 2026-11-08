@@ -25,10 +25,12 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -78,7 +80,7 @@ fun SpotifyImportScreen(navController: NavController, viewModel: SpotifyImportVi
         } else viewModel.import()
     }
     val picker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri -> uri?.let(viewModel::chooseFile) }
-    if (showHelp) AlertDialog(onDismissRequest = { showHelp = false },
+    if (showHelp) AlertDialog(shape = RoundedCornerShape(24.dp), containerColor = MaterialTheme.colorScheme.surfaceContainerHigh, onDismissRequest = { showHelp = false },
         title = { Text(stringResource(R.string.spotify_import_export_help)) },
         text = { Text(stringResource(R.string.spotify_import_export_steps)) },
         confirmButton = { TextButton(onClick = { showHelp = false }) { Text(stringResource(R.string.spotify_import_help_done)) } })
@@ -94,7 +96,7 @@ fun SpotifyImportScreen(navController: NavController, viewModel: SpotifyImportVi
             item { Text(stringResource(R.string.spotify_import_description)) }
             item { Text(stringResource(R.string.spotify_import_background_help)) }
             if (notificationDenied) item { Text(stringResource(R.string.spotify_import_notification_denied), modifier = Modifier.testTag("sonet_spotify_notification_denied")) }
-            item { Button(modifier = Modifier.testTag("sonet_spotify_connect"), enabled = !state.busy, onClick = {
+            item { Button(shape = RoundedCornerShape(24.dp), modifier = Modifier.testTag("sonet_spotify_connect"), enabled = !state.busy, onClick = {
                 viewModel.connect(acceptedMessage, rejectedMessage) { url ->
                     try { CustomTabsIntent.Builder().build().launchUrl(context, Uri.parse(url)) }
                     catch (_: android.content.ActivityNotFoundException) { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url))) }
@@ -114,7 +116,7 @@ fun SpotifyImportScreen(navController: NavController, viewModel: SpotifyImportVi
                     Text(stringResource(R.string.spotify_import_preview, state.validSongs, state.skippedRows))
                     state.preview.forEach { Text(it) }
                 } }
-                item { Button(modifier = Modifier.testTag(if (state.resumable) "sonet_spotify_resume" else "sonet_spotify_import_button"), enabled = !state.busy && state.pendingSongs != 0, onClick = startImport) {
+                item { Button(shape = RoundedCornerShape(24.dp), modifier = Modifier.testTag(if (state.resumable) "sonet_spotify_resume" else "sonet_spotify_import_button"), enabled = !state.busy && state.pendingSongs != 0, onClick = startImport) {
                     Text(stringResource(if (state.resumable) R.string.spotify_import_resume else if (state.complete || state.cancelled || state.error != null) R.string.spotify_import_retry else R.string.spotify_import_start))
                 } }
             }

@@ -12,7 +12,6 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.grid.GridCells
@@ -49,6 +48,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavController
 import androidx.navigation.compose.currentBackStackEntryAsState
 import com.metrolist.music.LocalPlayerAwareWindowInsets
+import com.metrolist.music.LocalPlayerConnection
 import com.metrolist.music.R
 import com.metrolist.music.constants.ArtistFilter
 import com.metrolist.music.constants.ArtistFilterKey
@@ -70,6 +70,7 @@ import com.metrolist.music.ui.component.LibrarySearchEmptyPlaceholder
 import com.metrolist.music.ui.component.LibrarySearchHeader
 import com.metrolist.music.ui.component.LocalMenuState
 import com.metrolist.music.ui.component.SortHeader
+import com.metrolist.music.ui.component.onyxPageBackground
 import com.metrolist.music.utils.rememberEnumPreference
 import com.metrolist.music.utils.rememberPreference
 import com.metrolist.music.viewmodels.LibraryArtistsViewModel
@@ -87,6 +88,8 @@ fun LibraryArtistsScreen(
     val haptic = LocalHapticFeedback.current
     val keyboardController = LocalSoftwareKeyboardController.current
     val coroutineScope = rememberCoroutineScope()
+    val playerConnection = LocalPlayerConnection.current ?: return
+    val mediaMetadata by playerConnection.mediaMetadata.collectAsStateWithLifecycle()
     var viewType by rememberEnumPreference(ArtistViewTypeKey, LibraryViewType.GRID)
 
     var filter by rememberEnumPreference(ArtistFilterKey, ArtistFilter.LIKED)
@@ -106,7 +109,7 @@ fun LibraryArtistsScreen(
                 selected = true,
                 colors = FilterChipDefaults.filterChipColors(containerColor = MaterialTheme.colorScheme.surface),
                 onClick = onDeselect,
-                shape = RoundedCornerShape(16.dp),
+                shape = RoundedCornerShape(24.dp),
                 leadingIcon = {
                     Icon(painter = painterResource(R.drawable.close), contentDescription = "")
                 },
@@ -195,7 +198,7 @@ fun LibraryArtistsScreen(
 
             IconButton(
                 onClick = { isSearchActive = true },
-                modifier = Modifier.padding(start = 8.dp).size(40.dp),
+                modifier = Modifier.padding(start = 8.dp),
             ) {
                 Icon(
                     painter = painterResource(R.drawable.search),
@@ -207,7 +210,7 @@ fun LibraryArtistsScreen(
                 onClick = {
                     viewType = viewType.toggle()
                 },
-                modifier = Modifier.padding(end = 8.dp).size(40.dp),
+                modifier = Modifier.padding(end = 8.dp),
             ) {
                 Icon(
                     painter =
@@ -229,7 +232,7 @@ fun LibraryArtistsScreen(
     }
 
     Box(
-        modifier = Modifier.fillMaxSize(),
+        modifier = Modifier.fillMaxSize().onyxPageBackground(mediaMetadata?.thumbnailUrl),
     ) {
         when (viewType) {
             LibraryViewType.LIST ->

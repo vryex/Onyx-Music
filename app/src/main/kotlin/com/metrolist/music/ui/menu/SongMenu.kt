@@ -926,12 +926,24 @@ fun SongMenu(
 
                             Download.STATE_QUEUED, Download.STATE_DOWNLOADING -> {
                                 Material3MenuItemData(
-                                    title = { Text(text = stringResource(R.string.downloading)) },
+                                    title = {
+                                        val pct = download?.percentDownloaded?.takeIf { it >= 0f }?.toInt()
+                                        Text(text = if (pct != null) "${stringResource(R.string.downloading)} $pct%" else stringResource(R.string.downloading))
+                                    },
                                     icon = {
-                                        CircularProgressIndicator(
-                                            modifier = Modifier.size(24.dp),
-                                            strokeWidth = 2.dp,
-                                        )
+                                        val progress = download?.percentDownloaded?.takeIf { it >= 0f }?.div(100f)
+                                        if (progress != null) {
+                                            CircularProgressIndicator(
+                                                progress = { progress },
+                                                modifier = Modifier.size(24.dp),
+                                                strokeWidth = 2.dp,
+                                            )
+                                        } else {
+                                            CircularProgressIndicator(
+                                                modifier = Modifier.size(24.dp),
+                                                strokeWidth = 2.dp,
+                                            )
+                                        }
                                     },
                                     onClick = {
                                         DownloadService.sendRemoveDownload(

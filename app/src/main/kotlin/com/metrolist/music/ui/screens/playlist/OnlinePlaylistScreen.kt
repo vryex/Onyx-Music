@@ -94,6 +94,7 @@ import com.metrolist.music.db.entities.PlaylistEntity
 import com.metrolist.music.db.entities.PlaylistSongMap
 import com.metrolist.music.models.toMediaMetadata
 import com.metrolist.music.playback.queues.YouTubePlaylistQueue
+import com.metrolist.music.ui.component.EmptyPlaceholder
 import com.metrolist.music.ui.component.ExpandableText
 import com.metrolist.music.ui.component.IconButton
 import com.metrolist.music.ui.component.LocalMenuState
@@ -193,8 +194,7 @@ fun OnlinePlaylistScreen(
 
     Box(Modifier.fillMaxSize()) {
         CollectionHeaderTint(
-            artwork = (if (isPlaying) mediaMetadata?.thumbnailUrl else null)
-                ?: playlist?.thumbnail,
+            artwork = playlist?.thumbnail,
             scrollState = lazyListState,
         )
         LazyColumn(
@@ -237,18 +237,10 @@ fun OnlinePlaylistScreen(
                     }
                 } else if (!isLoading && songs.isEmpty()) {
                     item(key = "empty_placeholder") {
-                        Box(
-                            modifier =
-                                Modifier
-                                    .fillParentMaxSize()
-                                    .padding(32.dp),
-                            contentAlignment = Alignment.Center,
-                        ) {
-                            Text(
-                                text = stringResource(R.string.playlist_is_empty),
-                                style = MaterialTheme.typography.bodyLarge,
-                            )
-                        }
+                        EmptyPlaceholder(
+                            icon = R.drawable.music_note,
+                            text = stringResource(R.string.playlist_is_empty),
+                        )
                     }
                 }
             } else {
@@ -518,10 +510,10 @@ private fun OnlinePlaylistHeader(
                     .size(240.dp)
                     .shadow(
                         elevation = 24.dp,
-                        shape = RoundedCornerShape(3.dp),
+                        shape = RoundedCornerShape(24.dp),
                         spotColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.3f),
                     ),
-            shape = RoundedCornerShape(3.dp),
+            shape = RoundedCornerShape(24.dp),
         ) {
             AsyncImage(
                 model = ImageRequest.Builder(LocalContext.current).data(playlist.thumbnail?.resize(1080, 1080)).build(),
@@ -665,7 +657,7 @@ private fun OnlinePlaylistHeader(
                     }
                 },
                 shape = CircleShape,
-                color = MaterialTheme.colorScheme.surfaceVariant,
+                color = MaterialTheme.colorScheme.surfaceContainerHigh,
                 modifier = Modifier.size(48.dp),
             ) {
                 Box(
@@ -733,7 +725,7 @@ private fun OnlinePlaylistHeader(
                     }
                 },
                 shape = CircleShape,
-                color = MaterialTheme.colorScheme.surfaceVariant,
+                color = MaterialTheme.colorScheme.surfaceContainerHigh,
                 modifier = Modifier.size(48.dp),
             ) {
                 Box(

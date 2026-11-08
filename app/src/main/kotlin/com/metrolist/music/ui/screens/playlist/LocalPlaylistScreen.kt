@@ -476,8 +476,7 @@ fun LocalPlaylistScreen(
         modifier = Modifier.fillMaxSize(),
     ) {
         CollectionHeaderTint(
-            artwork = (if (isPlaying) mediaMetadata?.thumbnailUrl else null)
-                ?: playlist?.playlist?.thumbnailUrl
+            artwork = playlist?.playlist?.thumbnailUrl
                 ?: playlist?.thumbnails?.firstOrNull()
                 ?: songs.firstOrNull()?.song?.song?.thumbnailUrl,
             scrollState = lazyListState,
@@ -1065,9 +1064,9 @@ fun LocalPlaylistHeader(
                                 .size(240.dp)
                                 .shadow(
                                     elevation = 16.dp,
-                                    shape = RoundedCornerShape(3.dp),
+                                    shape = RoundedCornerShape(24.dp),
                                 ),
-                        shape = RoundedCornerShape(3.dp),
+                        shape = RoundedCornerShape(24.dp),
                         color = MaterialTheme.colorScheme.surfaceVariant,
                     ) {
                         Box(
@@ -1091,10 +1090,10 @@ fun LocalPlaylistHeader(
                                 .size(240.dp)
                                 .shadow(
                                     elevation = 24.dp,
-                                    shape = RoundedCornerShape(3.dp),
+                                    shape = RoundedCornerShape(24.dp),
                                     spotColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.3f),
                                 ),
-                        shape = RoundedCornerShape(3.dp),
+                        shape = RoundedCornerShape(24.dp),
                     ) {
                         AsyncImage(
                             model = overrideThumbnail.value ?: playlist.thumbnails[0],
@@ -1160,10 +1159,10 @@ fun LocalPlaylistHeader(
                                 .size(240.dp)
                                 .shadow(
                                     elevation = 24.dp,
-                                    shape = RoundedCornerShape(3.dp),
+                                    shape = RoundedCornerShape(24.dp),
                                     spotColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.3f),
                                 ),
-                        shape = RoundedCornerShape(3.dp),
+                        shape = RoundedCornerShape(24.dp),
                     ) {
                         Box(modifier = Modifier.fillMaxSize()) {
                             listOf(
@@ -1328,6 +1327,42 @@ fun LocalPlaylistHeader(
             horizontalArrangement = Arrangement.spacedBy(16.dp, Alignment.CenterHorizontally),
             verticalAlignment = Alignment.CenterVertically,
         ) {
+            // Like Button - Smaller secondary button, first like in Album/Online
+            Surface(
+                onClick = {
+                    database.query {
+                        update(playlist.playlist.toggleLike())
+                    }
+                },
+                shape = CircleShape,
+                color = MaterialTheme.colorScheme.surfaceContainerHigh,
+                modifier = Modifier.size(48.dp),
+            ) {
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Icon(
+                        painter =
+                            painterResource(
+                                if (liked) {
+                                    R.drawable.favorite
+                                } else {
+                                    R.drawable.favorite_border
+                                },
+                            ),
+                        contentDescription = null,
+                        tint =
+                            if (liked) {
+                                Color.White
+                            } else {
+                                MaterialTheme.colorScheme.onSurfaceVariant
+                            },
+                        modifier = Modifier.size(24.dp),
+                    )
+                }
+            }
+
             // Shuffle Button - Smaller secondary button
             Surface(
                 onClick = {
@@ -1339,7 +1374,7 @@ fun LocalPlaylistHeader(
                     )
                 },
                 shape = CircleShape,
-                color = MaterialTheme.colorScheme.surfaceVariant,
+                color = MaterialTheme.colorScheme.surfaceContainerHigh,
                 modifier = Modifier.size(48.dp),
             ) {
                 Box(
@@ -1437,7 +1472,7 @@ fun LocalPlaylistHeader(
                     }
                 },
                 shape = CircleShape,
-                color = MaterialTheme.colorScheme.surfaceVariant,
+                color = MaterialTheme.colorScheme.surfaceContainerHigh,
                 modifier = Modifier.size(48.dp),
             ) {
                 Box(

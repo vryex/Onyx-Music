@@ -377,6 +377,17 @@ fun OnlineSearchScreen(
             }
         }
 
+        if (viewState.history.isNotEmpty()) {
+            item(key = "history_header") {
+                Text(
+                    text = stringResource(R.string.history),
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp).padding(top = 12.dp, bottom = 4.dp),
+                )
+            }
+        }
+
         items(viewState.history, key = { "history_${it.query}" }) { history ->
             SuggestionItem(
                 query = history.query,

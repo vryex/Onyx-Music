@@ -150,6 +150,7 @@ import com.metrolist.music.utils.recentlyHeardSongs
 import com.metrolist.music.ui.component.OnyxHomeHero
 import com.metrolist.music.ui.component.OnyxHomeObservatory
 import com.metrolist.music.ui.component.OnyxHomeShortcuts
+import com.metrolist.music.ui.component.onyxPageBackground
 import com.metrolist.music.ui.component.OnyxQuickAccessItem
 import com.metrolist.music.ui.component.NavigationTitle
 import com.metrolist.music.ui.component.SongGridItem
@@ -247,7 +248,7 @@ fun CommunityPlaylistCard(
             CardDefaults.cardColors(
                 containerColor = containerColor,
             ),
-        shape = RoundedCornerShape(16.dp),
+        shape = RoundedCornerShape(24.dp),
         onClick = onClick,
     ) {
         Column(
@@ -265,7 +266,7 @@ fun CommunityPlaylistCard(
                     modifier =
                         Modifier
                             .size(100.dp)
-                            .clip(RoundedCornerShape(12.dp)),
+                            .clip(RoundedCornerShape(16.dp)),
                 ) {
                     Column(modifier = Modifier.fillMaxSize()) {
                         Row(modifier = Modifier.weight(1f)) {
@@ -344,7 +345,7 @@ fun CommunityPlaylistCard(
                                 ArtistNameAliases.resolve(artistNameAliases, it.id, it.name)
                             }.orEmpty(),
                         style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                         maxLines = 1,
                     )
                 }
@@ -363,7 +364,7 @@ fun CommunityPlaylistCard(
                             Modifier
                                 .fillMaxWidth()
                                 .padding(vertical = 4.dp)
-                                .clip(RoundedCornerShape(12.dp))
+                                .clip(RoundedCornerShape(16.dp))
                                 .combinedClickable(onClick = { onSongClick(song) }),
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(12.dp),
@@ -374,7 +375,7 @@ fun CommunityPlaylistCard(
                             modifier =
                                 Modifier
                                     .size(56.dp)
-                                    .clip(RoundedCornerShape(12.dp)),
+                                    .clip(RoundedCornerShape(16.dp)),
                             contentScale = ContentScale.Crop,
                         )
                         Column(modifier = Modifier.weight(1f)) {
@@ -389,7 +390,7 @@ fun CommunityPlaylistCard(
                                     ArtistNameAliases.resolve(artistNameAliases, it.id, it.name)
                                 },
                                 style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f),
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 maxLines = 1,
                                 overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
                             )
@@ -535,7 +536,7 @@ fun DailyDiscoverCard(
         modifier =
             modifier
                 .fillMaxSize()
-                .clip(RoundedCornerShape(16.dp))
+                .clip(RoundedCornerShape(24.dp))
                 .combinedClickable(
                     onClick = onClick,
                     onLongClick = {
@@ -554,7 +555,7 @@ fun DailyDiscoverCard(
             CardDefaults.cardColors(
                 containerColor = MaterialTheme.colorScheme.surfaceVariant,
             ),
-        shape = RoundedCornerShape(16.dp),
+        shape = RoundedCornerShape(24.dp),
     ) {
         BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
             AsyncImage(
@@ -618,7 +619,7 @@ fun DailyDiscoverCard(
                                     }
                                 },
                             style = MaterialTheme.typography.bodyMedium,
-                            color = Color.White.copy(alpha = 0.7f),
+                            color = Color.White.copy(alpha = 0.85f),
                         )
                     }
 
@@ -645,7 +646,7 @@ fun DailyDiscoverCard(
                             ),
                         style = MaterialTheme.typography.bodySmall,
                         fontWeight = androidx.compose.ui.text.font.FontWeight.Medium,
-                        color = Color.White.copy(alpha = 0.6f),
+                        color = Color.White.copy(alpha = 0.8f),
                         maxLines = 1,
                         overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
                     )
@@ -1195,7 +1196,7 @@ fun HomeScreen(
         },
     ) {
         BoxWithConstraints(
-            modifier = Modifier.fillMaxSize(),
+            modifier = Modifier.fillMaxSize().onyxPageBackground(mediaMetadata?.thumbnailUrl),
             contentAlignment = Alignment.TopStart,
         ) {
             val horizontalLazyGridItemWidthFactor = if (maxWidth * 0.475f >= 320.dp) 0.475f else 0.9f
@@ -1328,8 +1329,8 @@ fun HomeScreen(
                             ) {
                                 items(5) {
                                     TextPlaceholder(
-                                        height = 30.dp,
-                                        shape = RoundedCornerShape(16.dp),
+                                        height = 48.dp,
+                                        shape = RoundedCornerShape(24.dp),
                                         modifier = Modifier.width(72.dp),
                                     )
                                 }
@@ -1500,6 +1501,7 @@ fun HomeScreen(
                                     CardDefaults.cardColors(
                                         containerColor = MaterialTheme.colorScheme.surfaceVariant,
                                     ),
+                                shape = RoundedCornerShape(24.dp),
                             ) {
                                 Box(
                                     modifier =

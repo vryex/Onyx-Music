@@ -54,6 +54,7 @@ import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Slider
+import androidx.compose.material3.Snackbar
 import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
@@ -67,7 +68,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
@@ -113,12 +113,12 @@ import com.metrolist.music.extensions.move
 import com.metrolist.music.extensions.toggleRepeatMode
 import com.metrolist.music.listentogether.RoomRole
 import com.metrolist.music.models.MediaMetadata
-import com.metrolist.music.ui.component.ActionPromptDialog
 import com.metrolist.music.ui.component.BottomSheet
 import com.metrolist.music.ui.component.BottomSheetState
 import com.metrolist.music.ui.component.LocalBottomSheetPageState
 import com.metrolist.music.ui.component.LocalMenuState
 import com.metrolist.music.ui.component.MediaMetadataListItem
+import com.metrolist.music.ui.component.SleepTimerCountdownDialog
 import com.metrolist.music.ui.menu.PlayerMenu
 import com.metrolist.music.ui.menu.QueueMenu
 import com.metrolist.music.ui.menu.SelectionMediaMetadataMenu
@@ -136,10 +136,8 @@ import sh.calvin.reorderable.rememberReorderableLazyListState
 import kotlin.math.roundToInt
 import com.metrolist.music.constants.SleepTimerDefaultKey
 import android.widget.Toast
-import androidx.compose.runtime.derivedStateOf
 import com.metrolist.music.constants.SleepTimerFadeOutKey
 import com.metrolist.music.constants.SleepTimerStopAfterCurrentSongKey
-import androidx.compose.runtime.derivedStateOf
 import androidx.compose.material3.Button
 
 
@@ -227,11 +225,6 @@ fun Queue(
     val coroutineScope = rememberCoroutineScope()
     var showSleepTimerDialog by remember { mutableStateOf(false) }
     val sleepTimerDefault by rememberPreference(SleepTimerDefaultKey, 30f)
-    var sleepTimerValue by remember { mutableFloatStateOf(sleepTimerDefault) }
-    val isAtDefault by remember {
-        derivedStateOf { sleepTimerValue.roundToInt() == sleepTimerDefault.roundToInt() }
-    }
-    LaunchedEffect(sleepTimerDefault) { sleepTimerValue = sleepTimerDefault }
     val sleepTimerStopAfterCurrentSong by rememberPreference(SleepTimerStopAfterCurrentSongKey, false)
     val sleepTimerFadeOut by rememberPreference(SleepTimerFadeOutKey, false)
     val sleepTimerEnabled = remember(
@@ -412,116 +405,33 @@ fun Queue(
             }
 
             if (showSleepTimerDialog) {
-                ActionPromptDialog(
-                    titleBar = {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.Center,
-                        ) {
-                            Text(
-                                text = stringResource(R.string.sleep_timer),
-                                overflow = TextOverflow.Ellipsis,
-                                maxLines = 1,
-                                style = MaterialTheme.typography.headlineSmall,
-                            )
-                        }
-                    },
-                    onDismiss = { showSleepTimerDialog = false },
-                    onConfirm = {
+                SleepTimerCountdownDialog(
+                    defaultMinutes = sleepTimerDefault,
+                    onStart = { minutes ->
                         showSleepTimerDialog = false
                         playerConnection.service.sleepTimer?.start(
-                            minute = sleepTimerValue.roundToInt(),
+                            minute = minutes,
                             stopAfterCurrentSong = sleepTimerStopAfterCurrentSong,
                             fadeOut = sleepTimerFadeOut,
                         )
                     },
-                    onCancel = {
+                    onStartEndOfSong = {
                         showSleepTimerDialog = false
+                        playerConnection.service.sleepTimer?.start(minute = -1)
                     },
-                    onReset = {
-                        sleepTimerValue = sleepTimerDefault
-                    },
-                    content = {
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Text(
-                                text =
-                                    pluralStringResource(
-                                        R.plurals.minute,
-                                        sleepTimerValue.roundToInt(),
-                                        sleepTimerValue.roundToInt(),
-                                    ),
-                                style = MaterialTheme.typography.bodyLarge,
-                            )
-
-                            Spacer(Modifier.height(16.dp))
-
-                            Slider(
-                                value = sleepTimerValue,
-                                onValueChange = { sleepTimerValue = it },
-                                valueRange = 5f..120f,
-                                steps = (120 - 5) / 5 - 1,
-                                modifier = Modifier.fillMaxWidth(),
-                            )
-
-                            Spacer(Modifier.height(8.dp))
-
-                            Column(
-                                verticalArrangement = Arrangement.spacedBy(8.dp),
-                                horizontalAlignment = Alignment.CenterHorizontally,
-                            ) {
-                                if (isAtDefault) {
-                                    Button(
-                                        onClick = {
-                                            coroutineScope.launch {
-                                                context.safeDataStoreEdit { settings ->
-                                                    settings[SleepTimerDefaultKey] = sleepTimerValue
-                                                }
-                                            }
-                                            Toast.makeText(
-                                                context,
-                                                String.format(sleepTimerDefaultSetTemplate, sleepTimerValue.roundToInt()),
-                                                Toast.LENGTH_SHORT,
-                                            ).show()
-                                        },
-                                        colors = androidx.compose.material3.ButtonDefaults.buttonColors(
-                                            containerColor = MaterialTheme.colorScheme.primary,
-                                            contentColor = MaterialTheme.colorScheme.onPrimary,
-                                        ),
-                                    ) {
-                                        Text(stringResource(R.string.set_as_default))
-                                    }
-                                } else {
-                                    OutlinedButton(
-                                        onClick = {
-                                            coroutineScope.launch {
-                                                context.safeDataStoreEdit { settings ->
-                                                    settings[SleepTimerDefaultKey] = sleepTimerValue
-                                                }
-                                            }
-                                            Toast.makeText(
-                                                context,
-                                                String.format(sleepTimerDefaultSetTemplate, sleepTimerValue.roundToInt()),
-                                                Toast.LENGTH_SHORT,
-                                            ).show()
-                                        },
-                                    ) {
-                                        Text(stringResource(R.string.set_as_default))
-                                    }
-                                }
-
-                                OutlinedButton(
-                                    onClick = {
-                                        showSleepTimerDialog = false
-                                        playerConnection.service.sleepTimer?.start(
-                                            minute = -1,
-                                        )
-                                    },
-                                ) {
-                                    Text(stringResource(R.string.end_of_song))
-                                }
+                    onSetDefault = { minutes ->
+                        coroutineScope.launch {
+                            context.safeDataStoreEdit { settings ->
+                                settings[SleepTimerDefaultKey] = minutes.toFloat()
                             }
                         }
+                        Toast.makeText(
+                            context,
+                            String.format(sleepTimerDefaultSetTemplate, minutes),
+                            Toast.LENGTH_SHORT,
+                        ).show()
                     },
+                    onDismiss = { showSleepTimerDialog = false },
                 )
             }
         },
@@ -1148,6 +1058,15 @@ fun Queue(
 
         SnackbarHost(
             hostState = snackbarHostState,
+            snackbar = { data ->
+                Snackbar(
+                    snackbarData = data,
+                    shape = RoundedCornerShape(24.dp),
+                    containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+                    contentColor = MaterialTheme.colorScheme.onSurface,
+                    actionColor = MaterialTheme.colorScheme.primary,
+                )
+            },
             modifier =
                 Modifier
                     .padding(

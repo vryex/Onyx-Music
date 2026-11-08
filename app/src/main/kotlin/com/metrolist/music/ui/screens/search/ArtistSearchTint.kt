@@ -43,7 +43,7 @@ internal fun Modifier.artistSearchTint(item: YTItem): Modifier {
     // avatar nor the title, menus, dividers or scroll positions.
     return this.drawBehind {
         val inset = 8.dp.toPx()
-        val corner = 22.dp.toPx()
+        val corner = 24.dp.toPx()
         drawRoundRect(
             brush = gradient,
             topLeft = Offset(inset, 0f),

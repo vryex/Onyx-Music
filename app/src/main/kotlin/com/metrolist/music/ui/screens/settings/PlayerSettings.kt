@@ -11,15 +11,11 @@ import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
-import androidx.compose.material3.Slider
-import androidx.compose.material3.Switch
-import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
@@ -43,6 +39,7 @@ import com.metrolist.music.constants.AudioOffload
 import com.metrolist.music.constants.AudioTrackPlaybackParamsKey
 import com.metrolist.music.constants.AudioQuality
 import com.metrolist.music.constants.AudioQualityKey
+import com.metrolist.music.constants.DownloadQualityKey
 import com.metrolist.music.constants.AutoDownloadOnLikeKey
 import com.metrolist.music.constants.CrossfadeDurationKey
 import com.metrolist.music.constants.CrossfadeEnabledKey
@@ -75,6 +72,8 @@ import com.metrolist.music.ui.component.EnumDialog
 import com.metrolist.music.ui.component.IconButton
 import com.metrolist.music.ui.component.Material3SettingsGroup
 import com.metrolist.music.ui.component.Material3SettingsItem
+import com.metrolist.music.ui.component.OnyxSlider
+import com.metrolist.music.ui.component.OnyxSwitch
 import com.metrolist.music.ui.utils.backToMain
 import com.metrolist.music.utils.rememberEnumPreference
 import com.metrolist.music.utils.rememberPreference
@@ -101,6 +100,10 @@ fun PlayerSettings(
     val playerConnection = LocalPlayerConnection.current
     val (audioQuality, onAudioQualityChange) = rememberEnumPreference(
         AudioQualityKey,
+        defaultValue = AudioQuality.AUTO
+    )
+    val (downloadQuality, onDownloadQualityChange) = rememberEnumPreference(
+        DownloadQualityKey,
         defaultValue = AudioQuality.AUTO
     )
     val (crossfadeEnabled, onCrossfadeEnabledChange) = rememberPreference(
@@ -231,6 +234,10 @@ fun PlayerSettings(
         mutableStateOf(false)
     }
 
+    var showDownloadQualityDialog by remember {
+        mutableStateOf(false)
+    }
+
     var showLoudnessLevelDialog by remember {
         mutableStateOf(false)
     }
@@ -266,6 +273,28 @@ fun PlayerSettings(
             current = loudnessLevel,
             values = LoudnessLevel.values().toList(),
             valueText = { getLoudnessLevelLabel(it) }
+        )
+    }
+
+    // Download quality is its own setting now: changing it does not
+    // re-download songs that are already downloaded.
+    if (showDownloadQualityDialog) {
+        EnumDialog(
+            onDismiss = { showDownloadQualityDialog = false },
+            onSelect = {
+                onDownloadQualityChange(it)
+                showDownloadQualityDialog = false
+            },
+            title = stringResource(R.string.download_quality),
+            current = downloadQuality,
+            values = AudioQuality.values().toList(),
+            valueText = {
+                when (it) {
+                    AudioQuality.AUTO -> stringResource(R.string.audio_quality_auto)
+                    AudioQuality.HIGH -> stringResource(R.string.audio_quality_high)
+                    AudioQuality.LOW -> stringResource(R.string.audio_quality_low)
+                }
+            }
         )
     }
 
@@ -305,22 +334,27 @@ fun PlayerSettings(
                     onClick = { showAudioQualityDialog = true }
                 ))
                 add(Material3SettingsItem(
+                    icon = painterResource(R.drawable.download),
+                    title = { Text(stringResource(R.string.download_quality)) },
+                    description = {
+                        Text(
+                            when (downloadQuality) {
+                                AudioQuality.AUTO -> stringResource(R.string.audio_quality_auto)
+                                AudioQuality.HIGH -> stringResource(R.string.audio_quality_high)
+                                AudioQuality.LOW -> stringResource(R.string.audio_quality_low)
+                            }
+                        )
+                    },
+                    onClick = { showDownloadQualityDialog = true }
+                ))
+                add(Material3SettingsItem(
                     icon = painterResource(R.drawable.linear_scale),
                     title = { Text(stringResource(R.string.crossfade)) },
                     description = { Text(stringResource(R.string.crossfade_desc)) },
                     trailingContent = {
-                        Switch(
+                        OnyxSwitch(
                             checked = crossfadeEnabled,
                             onCheckedChange = onCrossfadeEnabledChange,
-                            thumbContent = {
-                                Icon(
-                                    painter = painterResource(
-                                        id = if (crossfadeEnabled) R.drawable.check else R.drawable.close
-                                    ),
-                                    contentDescription = null,
-                                    modifier = Modifier.size(SwitchDefaults.IconSize)
-                                )
-                            }
                         )
                     },
                     onClick = { onCrossfadeEnabledChange(!crossfadeEnabled) }
@@ -332,7 +366,7 @@ fun PlayerSettings(
                         description = {
                             Column {
                                 Text(pluralStringResource(R.plurals.seconds, crossfadeDuration.toInt(), crossfadeDuration.toInt()))
-                                Slider(
+                                OnyxSlider(
                                     value = crossfadeDuration,
                                     onValueChange = onCrossfadeDurationChange,
                                     valueRange = 1f..15f,
@@ -346,18 +380,9 @@ fun PlayerSettings(
                         title = { Text(stringResource(R.string.crossfade_gapless)) },
                         description = { Text(stringResource(R.string.crossfade_gapless_desc)) },
                         trailingContent = {
-                            Switch(
+                            OnyxSwitch(
                                 checked = crossfadeGapless,
                                 onCheckedChange = onCrossfadeGaplessChange,
-                                thumbContent = {
-                                    Icon(
-                                        painter = painterResource(
-                                            id = if (crossfadeGapless) R.drawable.check else R.drawable.close
-                                        ),
-                                        contentDescription = null,
-                                        modifier = Modifier.size(SwitchDefaults.IconSize)
-                                    )
-                                }
                             )
                         },
                         onClick = { onCrossfadeGaplessChange(!crossfadeGapless) }
@@ -369,7 +394,7 @@ fun PlayerSettings(
                     description = {
                         Column {
                             Text(historyDuration.roundToInt().toString())
-                            Slider(
+                            OnyxSlider(
                                 value = historyDuration,
                                 onValueChange = onHistoryDurationChange,
                                 valueRange = 1f..100f
@@ -382,18 +407,9 @@ fun PlayerSettings(
                     title = { Text(stringResource(R.string.skip_silence)) },
                     description = { Text(stringResource(R.string.skip_silence_desc)) },
                     trailingContent = {
-                        Switch(
+                        OnyxSwitch(
                             checked = skipSilence,
                             onCheckedChange = onSkipSilenceChange,
-                            thumbContent = {
-                                Icon(
-                                    painter = painterResource(
-                                        id = if (skipSilence) R.drawable.check else R.drawable.close
-                                    ),
-                                    contentDescription = null,
-                                    modifier = Modifier.size(SwitchDefaults.IconSize)
-                                )
-                            }
                         )
                     },
                     onClick = { onSkipSilenceChange(!skipSilence) }
@@ -403,19 +419,10 @@ fun PlayerSettings(
                     title = { Text(stringResource(R.string.skip_silence_instant)) },
                     description = { Text(stringResource(R.string.skip_silence_instant_desc)) },
                     trailingContent = {
-                        Switch(
+                        OnyxSwitch(
                             checked = skipSilenceInstant,
                             onCheckedChange = { onSkipSilenceInstantChange(it) },
                             enabled = skipSilence,
-                            thumbContent = {
-                                Icon(
-                                    painter = painterResource(
-                                        id = if (skipSilenceInstant) R.drawable.check else R.drawable.close
-                                    ),
-                                    contentDescription = null,
-                                    modifier = Modifier.size(SwitchDefaults.IconSize)
-                                )
-                            }
                         )
                     },
                     onClick = { if (skipSilence) onSkipSilenceInstantChange(!skipSilenceInstant) }
@@ -432,18 +439,9 @@ fun PlayerSettings(
                     icon = painterResource(R.drawable.volume_up),
                     title = { Text(stringResource(R.string.audio_normalization)) },
                     trailingContent = {
-                        Switch(
+                        OnyxSwitch(
                             checked = audioNormalization,
                             onCheckedChange = onAudioNormalizationChange,
-                            thumbContent = {
-                                Icon(
-                                    painter = painterResource(
-                                        id = if (audioNormalization) R.drawable.check else R.drawable.close
-                                    ),
-                                    contentDescription = null,
-                                    modifier = Modifier.size(SwitchDefaults.IconSize)
-                                )
-                            }
                         )
                     },
                     onClick = { onAudioNormalizationChange(!audioNormalization) }
@@ -468,19 +466,10 @@ fun PlayerSettings(
                         )
                     },
                     trailingContent = {
-                        Switch(
+                        OnyxSwitch(
                             checked = if (crossfadeEnabled) false else audioOffload,
                             onCheckedChange = onAudioOffloadChange,
                             enabled = !crossfadeEnabled,
-                            thumbContent = {
-                                Icon(
-                                    painter = painterResource(
-                                        id = if (!crossfadeEnabled && audioOffload) R.drawable.check else R.drawable.close
-                                    ),
-                                    contentDescription = null,
-                                    modifier = Modifier.size(SwitchDefaults.IconSize)
-                                )
-                            }
                         )
                     },
                     onClick = { if (!crossfadeEnabled) onAudioOffloadChange(!audioOffload) }
@@ -494,18 +483,9 @@ fun PlayerSettings(
                         )
                     },
                     trailingContent = {
-                        Switch(
+                        OnyxSwitch(
                             checked = varispeed,
                             onCheckedChange = onVarispeedChange,
-                            thumbContent = {
-                                Icon(
-                                    painter = painterResource(
-                                        id = if (varispeed) R.drawable.check else R.drawable.close
-                                    ),
-                                    contentDescription = null,
-                                    modifier = Modifier.size(SwitchDefaults.IconSize)
-                                )
-                            }
                         )
                     },
                     onClick = { onVarispeedChange(!varispeed) }
@@ -517,18 +497,9 @@ fun PlayerSettings(
                         Text(stringResource(R.string.audio_track_playback_params_description))
                     },
                     trailingContent = {
-                        Switch(
+                        OnyxSwitch(
                             checked = audioTrackPlaybackParams,
                             onCheckedChange = onAudioTrackPlaybackParamsChange,
-                            thumbContent = {
-                                Icon(
-                                    painter = painterResource(
-                                        id = if (audioTrackPlaybackParams) R.drawable.check else R.drawable.close
-                                    ),
-                                    contentDescription = null,
-                                    modifier = Modifier.size(SwitchDefaults.IconSize)
-                                )
-                            }
                         )
                     },
                     onClick = { onAudioTrackPlaybackParamsChange(!audioTrackPlaybackParams) }
@@ -540,18 +511,9 @@ fun PlayerSettings(
                         title = { Text(stringResource(R.string.google_cast)) },
                         description = { Text(stringResource(R.string.google_cast_description)) },
                         trailingContent = {
-                            Switch(
+                            OnyxSwitch(
                                 checked = enableGoogleCast,
                                 onCheckedChange = onEnableGoogleCastChange,
-                                thumbContent = {
-                                    Icon(
-                                        painter = painterResource(
-                                            id = if (enableGoogleCast) R.drawable.check else R.drawable.close
-                                        ),
-                                        contentDescription = null,
-                                        modifier = Modifier.size(SwitchDefaults.IconSize)
-                                    )
-                                }
                             )
                         },
                         onClick = { onEnableGoogleCastChange(!enableGoogleCast) }
@@ -562,18 +524,9 @@ fun PlayerSettings(
                     title = { Text(stringResource(R.string.seek_seconds_addup)) },
                     description = { Text(stringResource(R.string.seek_seconds_addup_description)) },
                     trailingContent = {
-                        Switch(
+                        OnyxSwitch(
                             checked = seekExtraSeconds,
                             onCheckedChange = onSeekExtraSeconds,
-                            thumbContent = {
-                                Icon(
-                                    painter = painterResource(
-                                        id = if (seekExtraSeconds) R.drawable.check else R.drawable.close
-                                    ),
-                                    contentDescription = null,
-                                    modifier = Modifier.size(SwitchDefaults.IconSize)
-                                )
-                            }
                         )
                     },
                     onClick = { onSeekExtraSeconds(!seekExtraSeconds) }
@@ -651,24 +604,20 @@ fun PlayerSettings(
                         title = { Text(stringResource(R.string.enable_automatic_sleeptimer)) },
                         description = { Text(stringResource(R.string.sleeptimer_description)) },
                         trailingContent = {
-                            Switch(
+                            OnyxSwitch(
                                 checked = sleepTimerEnabled,
                                 onCheckedChange = onSleepTimerEnabledChange,
-                                thumbContent = {
-                                    Icon(
-                                        painter = painterResource(
-                                            id = if (sleepTimerEnabled) R.drawable.check else R.drawable.close
-                                        ),
-                                        contentDescription = null,
-                                        modifier = Modifier.size(SwitchDefaults.IconSize)
-                                    )
-                                }
                             )
                         },
                         onClick = { onSleepTimerEnabledChange(!sleepTimerEnabled) }
                     )
                 )
 
+                    // Single row to configure the schedule: it opens the dialog.
+                    // (It used to carry a second Switch bound to the same
+                    // sleepTimerEnabled preference as the row above, whose
+                    // onCheckedChange only opened this dialog instead of
+                    // toggling anything.)
                     add(
                         Material3SettingsItem(
                             icon = painterResource(R.drawable.baseline_event_repeat_24),
@@ -676,21 +625,6 @@ fun PlayerSettings(
                             description = {
                                 Text(
                                     stringResource(R.string.sleep_timer_repeat_description)
-                                )
-                            },
-                            trailingContent = {
-                                Switch(
-                                    checked = sleepTimerEnabled,
-                                    onCheckedChange = {showSleepTimerDialog = true},
-                                    thumbContent = {
-                                        Icon(
-                                            painter = painterResource(
-                                                id = if (sleepTimerEnabled) R.drawable.check else R.drawable.close
-                                            ),
-                                            contentDescription = null,
-                                            modifier = Modifier.size(SwitchDefaults.IconSize)
-                                        )
-                                    }
                                 )
                             },
                             onClick = { showSleepTimerDialog = true }
@@ -704,18 +638,9 @@ fun PlayerSettings(
                         title = { Text(stringResource(R.string.sleep_timer_stop_after_current_song_title)) },
                         description = { Text(stringResource(R.string.sleep_timer_stop_after_current_song_description)) },
                         trailingContent = {
-                            Switch(
+                            OnyxSwitch(
                                 checked = sleepTimerStopAfterCurrentSong,
                                 onCheckedChange = onSleepTimerStopAfterCurrentSongChange,
-                                thumbContent = {
-                                    Icon(
-                                        painter = painterResource(
-                                            id = if (sleepTimerStopAfterCurrentSong) R.drawable.check else R.drawable.close
-                                        ),
-                                        contentDescription = null,
-                                        modifier = Modifier.size(SwitchDefaults.IconSize)
-                                    )
-                                }
                             )
                         },
                         onClick = { onSleepTimerStopAfterCurrentSongChange(!sleepTimerStopAfterCurrentSong) }
@@ -728,18 +653,9 @@ fun PlayerSettings(
                         title = { Text(stringResource(R.string.sleep_timer_fade_out_title)) },
                         description = { Text(stringResource(R.string.sleep_timer_fade_out_description)) },
                         trailingContent = {
-                            Switch(
+                            OnyxSwitch(
                                 checked = sleepTimerFadeOut,
                                 onCheckedChange = onSleepTimerFadeOutChange,
-                                thumbContent = {
-                                    Icon(
-                                        painter = painterResource(
-                                            id = if (sleepTimerFadeOut) R.drawable.check else R.drawable.close
-                                        ),
-                                        contentDescription = null,
-                                        modifier = Modifier.size(SwitchDefaults.IconSize)
-                                    )
-                                }
                             )
                         },
                         onClick = { onSleepTimerFadeOutChange(!sleepTimerFadeOut) }
@@ -763,18 +679,9 @@ fun PlayerSettings(
                     title = { Text(stringResource(R.string.persistent_queue)) },
                     description = { Text(stringResource(R.string.persistent_queue_desc)) },
                     trailingContent = {
-                        Switch(
+                        OnyxSwitch(
                             checked = persistentQueue,
                             onCheckedChange = onPersistentQueueChange,
-                            thumbContent = {
-                                Icon(
-                                    painter = painterResource(
-                                        id = if (persistentQueue) R.drawable.check else R.drawable.close
-                                    ),
-                                    contentDescription = null,
-                                    modifier = Modifier.size(SwitchDefaults.IconSize)
-                                )
-                            }
                         )
                     },
                     onClick = { onPersistentQueueChange(!persistentQueue) }
@@ -784,18 +691,9 @@ fun PlayerSettings(
                     title = { Text(stringResource(R.string.auto_load_more)) },
                     description = { Text(stringResource(R.string.auto_load_more_desc)) },
                     trailingContent = {
-                        Switch(
+                        OnyxSwitch(
                             checked = autoLoadMore,
                             onCheckedChange = onAutoLoadMoreChange,
-                            thumbContent = {
-                                Icon(
-                                    painter = painterResource(
-                                        id = if (autoLoadMore) R.drawable.check else R.drawable.close
-                                    ),
-                                    contentDescription = null,
-                                    modifier = Modifier.size(SwitchDefaults.IconSize)
-                                )
-                            }
                         )
                     },
                     onClick = { onAutoLoadMoreChange(!autoLoadMore) }
@@ -805,18 +703,9 @@ fun PlayerSettings(
                     title = { Text(stringResource(R.string.auto_radio_queue)) },
                     description = { Text(stringResource(R.string.auto_radio_queue_desc)) },
                     trailingContent = {
-                        Switch(
+                        OnyxSwitch(
                             checked = autoRadioQueue,
                             onCheckedChange = onAutoRadioQueueChange,
-                            thumbContent = {
-                                Icon(
-                                    painter = painterResource(
-                                        id = if (autoRadioQueue) R.drawable.check else R.drawable.close
-                                    ),
-                                    contentDescription = null,
-                                    modifier = Modifier.size(SwitchDefaults.IconSize)
-                                )
-                            }
                         )
                     },
                     onClick = { onAutoRadioQueueChange(!autoRadioQueue) }
@@ -826,18 +715,9 @@ fun PlayerSettings(
                     title = { Text(stringResource(R.string.autoplay)) },
                     description = { Text(stringResource(R.string.autoplay_desc)) },
                     trailingContent = {
-                        Switch(
+                        OnyxSwitch(
                             checked = autoplay,
                             onCheckedChange = onAutoplayChange,
-                            thumbContent = {
-                                Icon(
-                                    painter = painterResource(
-                                        id = if (autoplay) R.drawable.check else R.drawable.close
-                                    ),
-                                    contentDescription = null,
-                                    modifier = Modifier.size(SwitchDefaults.IconSize)
-                                )
-                            }
                         )
                     },
                     onClick = { onAutoplayChange(!autoplay) }
@@ -847,18 +727,9 @@ fun PlayerSettings(
                     title = { Text(stringResource(R.string.disable_load_more_when_repeat_all)) },
                     description = { Text(stringResource(R.string.disable_load_more_when_repeat_all_desc)) },
                     trailingContent = {
-                        Switch(
+                        OnyxSwitch(
                             checked = disableLoadMoreWhenRepeatAll,
                             onCheckedChange = onDisableLoadMoreWhenRepeatAllChange,
-                            thumbContent = {
-                                Icon(
-                                    painter = painterResource(
-                                        id = if (disableLoadMoreWhenRepeatAll) R.drawable.check else R.drawable.close
-                                    ),
-                                    contentDescription = null,
-                                    modifier = Modifier.size(SwitchDefaults.IconSize)
-                                )
-                            }
                         )
                     },
                     onClick = { onDisableLoadMoreWhenRepeatAllChange(!disableLoadMoreWhenRepeatAll) }
@@ -868,18 +739,9 @@ fun PlayerSettings(
                     title = { Text(stringResource(R.string.auto_download_on_like)) },
                     description = { Text(stringResource(R.string.auto_download_on_like_desc)) },
                     trailingContent = {
-                        Switch(
+                        OnyxSwitch(
                             checked = autoDownloadOnLike,
                             onCheckedChange = onAutoDownloadOnLikeChange,
-                            thumbContent = {
-                                Icon(
-                                    painter = painterResource(
-                                        id = if (autoDownloadOnLike) R.drawable.check else R.drawable.close
-                                    ),
-                                    contentDescription = null,
-                                    modifier = Modifier.size(SwitchDefaults.IconSize)
-                                )
-                            }
                         )
                     },
                     onClick = { onAutoDownloadOnLikeChange(!autoDownloadOnLike) }
@@ -889,18 +751,9 @@ fun PlayerSettings(
                     title = { Text(stringResource(R.string.enable_similar_content)) },
                     description = { Text(stringResource(R.string.similar_content_desc)) },
                     trailingContent = {
-                        Switch(
+                        OnyxSwitch(
                             checked = similarContentEnabled,
                             onCheckedChange = similarContentEnabledChange,
-                            thumbContent = {
-                                Icon(
-                                    painter = painterResource(
-                                        id = if (similarContentEnabled) R.drawable.check else R.drawable.close
-                                    ),
-                                    contentDescription = null,
-                                    modifier = Modifier.size(SwitchDefaults.IconSize)
-                                )
-                            }
                         )
                     },
                     onClick = { similarContentEnabledChange(!similarContentEnabled) }
@@ -910,18 +763,9 @@ fun PlayerSettings(
                     title = { Text(stringResource(R.string.persistent_shuffle_title)) },
                     description = { Text(stringResource(R.string.persistent_shuffle_desc)) },
                     trailingContent = {
-                        Switch(
+                        OnyxSwitch(
                             checked = persistentShuffleAcrossQueues,
                             onCheckedChange = onPersistentShuffleAcrossQueuesChange,
-                            thumbContent = {
-                                Icon(
-                                    painter = painterResource(
-                                        id = if (persistentShuffleAcrossQueues) R.drawable.check else R.drawable.close
-                                    ),
-                                    contentDescription = null,
-                                    modifier = Modifier.size(SwitchDefaults.IconSize)
-                                )
-                            }
                         )
                     },
                     onClick = { onPersistentShuffleAcrossQueuesChange(!persistentShuffleAcrossQueues) }
@@ -931,18 +775,9 @@ fun PlayerSettings(
                     title = { Text(stringResource(R.string.remember_shuffle_and_repeat)) },
                     description = { Text(stringResource(R.string.remember_shuffle_and_repeat_desc)) },
                     trailingContent = {
-                        Switch(
+                        OnyxSwitch(
                             checked = rememberShuffleAndRepeat,
                             onCheckedChange = onRememberShuffleAndRepeatChange,
-                            thumbContent = {
-                                Icon(
-                                    painter = painterResource(
-                                        id = if (rememberShuffleAndRepeat) R.drawable.check else R.drawable.close
-                                    ),
-                                    contentDescription = null,
-                                    modifier = Modifier.size(SwitchDefaults.IconSize)
-                                )
-                            }
                         )
                     },
                     onClick = { onRememberShuffleAndRepeatChange(!rememberShuffleAndRepeat) }
@@ -952,18 +787,9 @@ fun PlayerSettings(
                     title = { Text(stringResource(R.string.shuffle_playlist_first)) },
                     description = { Text(stringResource(R.string.shuffle_playlist_first_desc)) },
                     trailingContent = {
-                        Switch(
+                        OnyxSwitch(
                             checked = shufflePlaylistFirst,
                             onCheckedChange = onShufflePlaylistFirstChange,
-                            thumbContent = {
-                                Icon(
-                                    painter = painterResource(
-                                        id = if (shufflePlaylistFirst) R.drawable.check else R.drawable.close
-                                    ),
-                                    contentDescription = null,
-                                    modifier = Modifier.size(SwitchDefaults.IconSize)
-                                )
-                            }
                         )
                     },
                     onClick = { onShufflePlaylistFirstChange(!shufflePlaylistFirst) }
@@ -973,18 +799,9 @@ fun PlayerSettings(
                     title = { Text(stringResource(R.string.prevent_duplicate_tracks_in_queue)) },
                     description = { Text(stringResource(R.string.prevent_duplicate_tracks_in_queue_desc)) },
                     trailingContent = {
-                        Switch(
+                        OnyxSwitch(
                             checked = preventDuplicateTracksInQueue,
                             onCheckedChange = onPreventDuplicateTracksInQueueChange,
-                            thumbContent = {
-                                Icon(
-                                    painter = painterResource(
-                                        id = if (preventDuplicateTracksInQueue) R.drawable.check else R.drawable.close
-                                    ),
-                                    contentDescription = null,
-                                    modifier = Modifier.size(SwitchDefaults.IconSize)
-                                )
-                            }
                         )
                     },
                     onClick = { onPreventDuplicateTracksInQueueChange(!preventDuplicateTracksInQueue) }
@@ -994,18 +811,9 @@ fun PlayerSettings(
                     title = { Text(stringResource(R.string.auto_skip_next_on_error)) },
                     description = { Text(stringResource(R.string.auto_skip_next_on_error_desc)) },
                     trailingContent = {
-                        Switch(
+                        OnyxSwitch(
                             checked = autoSkipNextOnError,
                             onCheckedChange = onAutoSkipNextOnErrorChange,
-                            thumbContent = {
-                                Icon(
-                                    painter = painterResource(
-                                        id = if (autoSkipNextOnError) R.drawable.check else R.drawable.close
-                                    ),
-                                    contentDescription = null,
-                                    modifier = Modifier.size(SwitchDefaults.IconSize)
-                                )
-                            }
                         )
                     },
                     onClick = { onAutoSkipNextOnErrorChange(!autoSkipNextOnError) }
@@ -1022,18 +830,9 @@ fun PlayerSettings(
                     icon = painterResource(R.drawable.clear_all),
                     title = { Text(stringResource(R.string.stop_music_on_task_clear)) },
                     trailingContent = {
-                        Switch(
+                        OnyxSwitch(
                             checked = stopMusicOnTaskClear,
                             onCheckedChange = onStopMusicOnTaskClearChange,
-                            thumbContent = {
-                                Icon(
-                                    painter = painterResource(
-                                        id = if (stopMusicOnTaskClear) R.drawable.check else R.drawable.close
-                                    ),
-                                    contentDescription = null,
-                                    modifier = Modifier.size(SwitchDefaults.IconSize)
-                                )
-                            }
                         )
                     },
                     onClick = { onStopMusicOnTaskClearChange(!stopMusicOnTaskClear) }
@@ -1042,18 +841,9 @@ fun PlayerSettings(
                     icon = painterResource(R.drawable.volume_off_pause),
                     title = { Text(stringResource(R.string.pause_music_when_media_is_muted)) },
                     trailingContent = {
-                        Switch(
+                        OnyxSwitch(
                             checked = pauseOnMute,
                             onCheckedChange = onPauseOnMuteChange,
-                            thumbContent = {
-                                Icon(
-                                    painter = painterResource(
-                                        id = if (pauseOnMute) R.drawable.check else R.drawable.close
-                                    ),
-                                    contentDescription = null,
-                                    modifier = Modifier.size(SwitchDefaults.IconSize)
-                                )
-                            }
                         )
                     },
                     onClick = { onPauseOnMuteChange(!pauseOnMute) }
@@ -1062,18 +852,9 @@ fun PlayerSettings(
                     icon = painterResource(R.drawable.bluetooth),
                     title = { Text(stringResource(R.string.resume_on_bluetooth_connect)) },
                     trailingContent = {
-                        Switch(
+                        OnyxSwitch(
                             checked = resumeOnBluetoothConnect,
                             onCheckedChange = onResumeOnBluetoothConnectChange,
-                            thumbContent = {
-                                Icon(
-                                    painter = painterResource(
-                                        id = if (resumeOnBluetoothConnect) R.drawable.check else R.drawable.close
-                                    ),
-                                    contentDescription = null,
-                                    modifier = Modifier.size(SwitchDefaults.IconSize)
-                                )
-                            }
                         )
                     },
                     onClick = { onResumeOnBluetoothConnectChange(!resumeOnBluetoothConnect) }
@@ -1082,18 +863,9 @@ fun PlayerSettings(
                     icon = painterResource(R.drawable.screenshot),
                     title = { Text(stringResource(R.string.keep_screen_on_when_player_is_expanded)) },
                     trailingContent = {
-                        Switch(
+                        OnyxSwitch(
                             checked = keepScreenOn,
                             onCheckedChange = onKeepScreenOnChange,
-                            thumbContent = {
-                                Icon(
-                                    painter = painterResource(
-                                        id = if (keepScreenOn) R.drawable.check else R.drawable.close
-                                    ),
-                                    contentDescription = null,
-                                    modifier = Modifier.size(SwitchDefaults.IconSize)
-                                )
-                            }
                         )
                     },
                     onClick = { onKeepScreenOnChange(!keepScreenOn) }

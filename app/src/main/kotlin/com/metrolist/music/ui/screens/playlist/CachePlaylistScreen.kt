@@ -192,8 +192,7 @@ fun CachePlaylistScreen(
         modifier = Modifier.fillMaxSize(),
     ) {
         CollectionHeaderTint(
-            artwork = (if (isPlaying) mediaMetadata?.thumbnailUrl else null)
-                ?: cachedSongs.firstOrNull()?.song?.thumbnailUrl,
+            artwork = cachedSongs.firstOrNull()?.song?.thumbnailUrl,
             scrollState = lazyListState,
         )
         LazyColumn(
@@ -498,10 +497,10 @@ private fun CachePlaylistHeader(
                     .size(240.dp)
                     .shadow(
                         elevation = 24.dp,
-                        shape = RoundedCornerShape(3.dp),
+                        shape = RoundedCornerShape(24.dp),
                         spotColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.3f)
                     ),
-                shape = RoundedCornerShape(3.dp)
+                shape = RoundedCornerShape(24.dp)
             ) {
                 AsyncImage(
                     model = songs.first().thumbnailUrl,
@@ -553,7 +552,7 @@ private fun CachePlaylistHeader(
                     )
                 },
                 shape = androidx.compose.foundation.shape.CircleShape,
-                color = MaterialTheme.colorScheme.surfaceVariant,
+                color = MaterialTheme.colorScheme.surfaceContainerHigh,
                 modifier = Modifier.size(48.dp)
             ) {
                 Box(
@@ -615,7 +614,7 @@ private fun CachePlaylistHeader(
                     }
                 },
                 shape = androidx.compose.foundation.shape.CircleShape,
-                color = MaterialTheme.colorScheme.surfaceVariant,
+                color = MaterialTheme.colorScheme.surfaceContainerHigh,
                 modifier = Modifier.size(48.dp)
             ) {
                 Box(

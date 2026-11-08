@@ -26,15 +26,78 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ProvideTextStyle
+import androidx.compose.material3.Slider
+import androidx.compose.material3.SliderDefaults
+import androidx.compose.material3.Switch
+import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import com.metrolist.music.R
 import com.metrolist.music.ui.theme.onyxGlass
 import androidx.compose.ui.graphics.painter.Painter
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
+
+/**
+ * Onyx switch: the single switch style used across settings, with the same
+ * check/close thumb the player controls use. Replaces the copy-pasted
+ * Switch + thumbContent block that used to be repeated in every settings row.
+ */
+@Composable
+fun OnyxSwitch(
+    checked: Boolean,
+    onCheckedChange: (Boolean) -> Unit,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+) {
+    Switch(
+        checked = checked,
+        onCheckedChange = onCheckedChange,
+        modifier = modifier,
+        enabled = enabled,
+        thumbContent = {
+            Icon(
+                painter = painterResource(
+                    id = if (checked) R.drawable.check else R.drawable.close
+                ),
+                contentDescription = null,
+                modifier = Modifier.size(SwitchDefaults.IconSize)
+            )
+        }
+    )
+}
+
+/**
+ * Onyx slider: settings slider in the same accent style as the player
+ * sliders (primary thumb/track instead of the bare Material default).
+ */
+@Composable
+fun OnyxSlider(
+    value: Float,
+    onValueChange: (Float) -> Unit,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+    valueRange: ClosedFloatingPointRange<Float> = 0f..1f,
+    steps: Int = 0,
+) {
+    Slider(
+        value = value,
+        onValueChange = onValueChange,
+        modifier = modifier,
+        enabled = enabled,
+        valueRange = valueRange,
+        steps = steps,
+        colors = SliderDefaults.colors(
+            thumbColor = MaterialTheme.colorScheme.primary,
+            activeTrackColor = MaterialTheme.colorScheme.primary,
+            inactiveTrackColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.24f),
+        ),
+    )
+}
 
 /**
  * A Material 3 Expressive style settings group component

@@ -336,7 +336,7 @@ fun ListenTogetherScreen(
                             ButtonDefaults.buttonColors(
                                 containerColor = MaterialTheme.colorScheme.error,
                             ),
-                        shape = RoundedCornerShape(16.dp),
+                        shape = RoundedCornerShape(24.dp),
                     ) {
                         Icon(
                             painter = painterResource(R.drawable.logout),
@@ -526,7 +526,7 @@ private fun ConnectionStatusCard(
                             stiffness = Spring.StiffnessLow,
                         ),
                 ),
-        shape = RoundedCornerShape(20.dp),
+        shape = RoundedCornerShape(24.dp),
         colors =
             CardDefaults.cardColors(
                 containerColor =
@@ -605,7 +605,7 @@ private fun ConnectionStatusCard(
                     Button(
                         onClick = onConnect,
                         modifier = Modifier.weight(1f),
-                        shape = RoundedCornerShape(12.dp),
+                        shape = RoundedCornerShape(24.dp),
                         colors =
                             ButtonDefaults.buttonColors(
                                 containerColor = MaterialTheme.colorScheme.primary,
@@ -623,7 +623,7 @@ private fun ConnectionStatusCard(
                     Button(
                         onClick = onDisconnect,
                         modifier = Modifier.weight(1f),
-                        shape = RoundedCornerShape(12.dp),
+                        shape = RoundedCornerShape(24.dp),
                         colors =
                             ButtonDefaults.buttonColors(
                                 containerColor = MaterialTheme.colorScheme.primary,
@@ -634,7 +634,7 @@ private fun ConnectionStatusCard(
                     FilledTonalButton(
                         onClick = onReconnect,
                         modifier = Modifier.weight(1f),
-                        shape = RoundedCornerShape(12.dp),
+                        shape = RoundedCornerShape(24.dp),
                     ) {
                         Text("Reconnect", fontWeight = FontWeight.Medium)
                     }
@@ -711,7 +711,7 @@ private fun RoomStatusCard(
                             clipboard.setPrimaryClip(clip)
                             Toast.makeText(context, R.string.copied_to_clipboard, Toast.LENGTH_SHORT).show()
                         },
-                        shape = RoundedCornerShape(12.dp),
+                        shape = RoundedCornerShape(24.dp),
                     ) {
                         Icon(
                             painter = painterResource(R.drawable.link),
@@ -729,7 +729,7 @@ private fun RoomStatusCard(
                             clipboard.setPrimaryClip(clip)
                             Toast.makeText(context, R.string.copied_to_clipboard, Toast.LENGTH_SHORT).show()
                         },
-                        shape = RoundedCornerShape(12.dp),
+                        shape = RoundedCornerShape(24.dp),
                     ) {
                         Icon(
                             painter = painterResource(R.drawable.content_copy),
@@ -754,7 +754,7 @@ private fun ConnectedUsersSection(
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(20.dp),
+        shape = RoundedCornerShape(24.dp),
         colors =
             CardDefaults.cardColors(
                 containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
@@ -900,7 +900,7 @@ private fun PendingJoinRequestsSection(
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(20.dp),
+        shape = RoundedCornerShape(24.dp),
         colors =
             CardDefaults.cardColors(
                 containerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
@@ -979,7 +979,7 @@ private fun PendingSuggestionsSection(
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(20.dp),
+        shape = RoundedCornerShape(24.dp),
         colors =
             CardDefaults.cardColors(
                 containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
@@ -1101,7 +1101,7 @@ private fun JoinCreateRoomSection(
                     }
                 },
                 singleLine = true,
-                shape = RoundedCornerShape(16.dp),
+                shape = RoundedCornerShape(24.dp),
                 colors =
                     OutlinedTextFieldDefaults.colors(
                         focusedBorderColor = MaterialTheme.colorScheme.primary,
@@ -1136,7 +1136,7 @@ private fun JoinCreateRoomSection(
                     }
                 },
                 singleLine = true,
-                shape = RoundedCornerShape(16.dp),
+                shape = RoundedCornerShape(24.dp),
                 colors =
                     OutlinedTextFieldDefaults.colors(
                         focusedBorderColor = MaterialTheme.colorScheme.primary,
@@ -1159,7 +1159,7 @@ private fun JoinCreateRoomSection(
             ) {
                 Surface(
                     modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(12.dp),
+                    shape = RoundedCornerShape(24.dp),
                     color = MaterialTheme.colorScheme.primaryContainer,
                 ) {
                     Row(
@@ -1195,7 +1195,7 @@ private fun JoinCreateRoomSection(
             ) {
                 Surface(
                     modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(12.dp),
+                    shape = RoundedCornerShape(24.dp),
                     color = MaterialTheme.colorScheme.errorContainer,
                 ) {
                     Row(
@@ -1234,7 +1234,7 @@ private fun JoinCreateRoomSection(
                     onClick = onCreateRoom,
                     modifier = Modifier.fillMaxWidth(),
                     enabled = hasUsername,
-                    shape = RoundedCornerShape(16.dp),
+                    shape = RoundedCornerShape(24.dp),
                     colors =
                         ButtonDefaults.buttonColors(
                             containerColor = MaterialTheme.colorScheme.primary,
@@ -1256,7 +1256,7 @@ private fun JoinCreateRoomSection(
                     onClick = onJoinRoom,
                     modifier = Modifier.fillMaxWidth(),
                     enabled = hasUsername && hasRoomCode,
-                    shape = RoundedCornerShape(16.dp),
+                    shape = RoundedCornerShape(24.dp),
                     colors =
                         ButtonDefaults.buttonColors(
                             containerColor = MaterialTheme.colorScheme.tertiary,
@@ -1282,7 +1282,7 @@ private fun SettingsLinkCard(onClick: () -> Unit) {
             Modifier
                 .fillMaxWidth()
                 .clickable(onClick = onClick),
-        shape = RoundedCornerShape(16.dp),
+        shape = RoundedCornerShape(24.dp),
         colors =
             CardDefaults.cardColors(
                 containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
@@ -1366,7 +1366,7 @@ private fun UserActionDialog(
                     Modifier
                         .fillMaxWidth()
                         .clickable(onClick = onKick),
-                shape = RoundedCornerShape(12.dp),
+                shape = RoundedCornerShape(24.dp),
                 color = MaterialTheme.colorScheme.errorContainer,
             ) {
                 Row(
@@ -1402,7 +1402,7 @@ private fun UserActionDialog(
                     Modifier
                         .fillMaxWidth()
                         .clickable(onClick = onPermanentKick),
-                shape = RoundedCornerShape(12.dp),
+                shape = RoundedCornerShape(24.dp),
                 color = MaterialTheme.colorScheme.surfaceVariant,
             ) {
                 Row(
@@ -1437,7 +1437,7 @@ private fun UserActionDialog(
                     Modifier
                         .fillMaxWidth()
                         .clickable(onClick = onTransferOwnership),
-                shape = RoundedCornerShape(12.dp),
+                shape = RoundedCornerShape(24.dp),
                 color = MaterialTheme.colorScheme.primaryContainer,
             ) {
                 Row(

@@ -268,6 +268,9 @@ inline fun ListItem(
     isAvailable: Boolean = true,
     showDivider: Boolean = true,
 ) {
+    // Read theme colors in composition: drawWithContent runs at draw time.
+    val dividerColor = MaterialTheme.colorScheme.outlineVariant
+    val activeIndicatorColor = MaterialTheme.colorScheme.primary
     Row(
         verticalAlignment = Alignment.CenterVertically,
         modifier = modifier
@@ -282,7 +285,7 @@ inline fun ListItem(
                 drawContent()
                 if (showDivider) {
                     drawLine(
-                        color = Color(0xFFA1A1A6).copy(alpha = 0.12f),
+                        color = dividerColor,
                         start = Offset(72.dp.toPx(), size.height - 1.dp.toPx()),
                         end = Offset(size.width - 8.dp.toPx(), size.height - 1.dp.toPx()),
                         strokeWidth = 1.dp.toPx(),
@@ -290,7 +293,7 @@ inline fun ListItem(
                 }
                 if (isActive || isSelected == true) {
                     drawLine(
-                        color = Color(0xFFF5F5F7),
+                        color = activeIndicatorColor,
                         start = Offset(1.dp.toPx(), size.height * 0.25f),
                         end = Offset(1.dp.toPx(), size.height * 0.75f),
                         strokeWidth = 2.dp.toPx(),
@@ -426,7 +429,7 @@ fun GridItem(
     artistCardTint: Brush? = null,
 ) {
     val gridHeight = currentGridThumbnailHeight()
-    val cardShape = RoundedCornerShape(16.dp)
+    val cardShape = RoundedCornerShape(OnyxRadius)
     Column(
         modifier = modifier
             .padding(8.dp)
@@ -439,7 +442,7 @@ fun GridItem(
                     Modifier.onyxGlass(cardShape, showBorder = false)
                 },
             )
-            .padding(10.dp)
+            .padding(12.dp)
     ) {
         BoxWithConstraints(
             contentAlignment = Alignment.Center,
@@ -449,7 +452,7 @@ fun GridItem(
                 Modifier.height(gridHeight)
             }
                 .aspectRatio(thumbnailRatio)
-                .clip(RoundedCornerShape(16.dp))
+                .clip(RoundedCornerShape(ThumbnailCornerRadius))
         ) {
             thumbnailContent()
         }
@@ -678,7 +681,7 @@ fun ArtistListItem(
             Icon(
                 painter = painterResource(R.drawable.favorite),
                 contentDescription = null,
-                tint = Color.White,
+                tint = MaterialTheme.colorScheme.primary,
                 modifier = Modifier
                     .size(18.dp)
                     .padding(end = 2.dp),
@@ -1030,7 +1033,7 @@ fun PlaylistGridItem(
     Box(
         modifier = modifier.padding(8.dp)
             .then(if (fillMaxWidth) Modifier.fillMaxWidth() else Modifier.width(currentGridThumbnailHeight()))
-            .aspectRatio(0.88f).clip(RoundedCornerShape(20.dp))
+            .aspectRatio(0.88f).clip(RoundedCornerShape(OnyxRadius))
             .background(MaterialTheme.colorScheme.surfaceContainer),
     ) {
         if (artwork != null) AsyncImage(
@@ -1056,7 +1059,7 @@ fun PlaylistGridItem(
             if (!autoPlaylist) Row(verticalAlignment = Alignment.CenterVertically) {
                 badges()
                 Text(pluralStringResource(R.plurals.n_song, playlist.songCount, playlist.songCount),
-                    style = MaterialTheme.typography.bodySmall, color = Color.White.copy(alpha = .75f))
+                    style = MaterialTheme.typography.bodySmall, color = Color.White.copy(alpha = .85f))
             }
         }
     }
@@ -1764,7 +1767,7 @@ fun BoxScope.OverlayEditButton(
         Box(
             contentAlignment = Alignment.Center,
             modifier = Modifier
-                .size(36.dp)
+                .size(48.dp)
                 .clip(CircleShape)
                 .background(Color.Black.copy(alpha = ActiveBoxAlpha))
                 .padding(0.dp)
@@ -1774,7 +1777,7 @@ fun BoxScope.OverlayEditButton(
                 painter = painterResource(R.drawable.edit),
                 contentDescription = null,
                 tint = Color.White,
-                modifier = Modifier.size(20.dp)
+                modifier = Modifier.size(24.dp)
             )
         }
     }
@@ -1796,7 +1799,7 @@ fun BoxScope.AlbumPlayButton(
         Box(
             contentAlignment = Alignment.Center,
             modifier = Modifier
-                .size(36.dp)
+                .size(48.dp)
                 .clip(CircleShape)
                 .background(Color.Black.copy(alpha = ActiveBoxAlpha))
                 .clickable(onClick = onClick)
@@ -1921,7 +1924,7 @@ object Icon {
         Icon(
             painter = painterResource(R.drawable.favorite),
             contentDescription = null,
-            tint = Color.White,
+            tint = MaterialTheme.colorScheme.primary,
             modifier = Modifier
                 .semantics { testTagsAsResourceId = true }.testTag("sonet_favorite_badge")
                 .size(18.dp)

@@ -20,9 +20,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Checkbox
-import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
@@ -69,8 +67,8 @@ fun CsvColumnMappingDialog(
             modifier =
                 Modifier
                     .fillMaxWidth(0.95f)
-                    .clip(RoundedCornerShape(16.dp))
-                    .background(MaterialTheme.colorScheme.surface)
+                    .clip(RoundedCornerShape(24.dp))
+                    .background(MaterialTheme.colorScheme.surfaceContainerHigh)
                     .padding(24.dp)
                     .verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(16.dp),
@@ -87,8 +85,8 @@ fun CsvColumnMappingDialog(
                     modifier =
                         Modifier
                             .fillMaxWidth()
-                            .clip(RoundedCornerShape(8.dp))
-                            .background(MaterialTheme.colorScheme.surfaceVariant)
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(MaterialTheme.colorScheme.surfaceContainerLow)
                             .padding(12.dp),
                     verticalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
@@ -115,7 +113,7 @@ fun CsvColumnMappingDialog(
                                         modifier =
                                             Modifier
                                                 .width(120.dp)
-                                                .clip(RoundedCornerShape(4.dp))
+                                                .clip(RoundedCornerShape(8.dp))
                                                 .background(
                                                     when {
                                                         rowIndex == 0 && hasHeader -> MaterialTheme.colorScheme.primaryContainer
@@ -190,10 +188,11 @@ fun CsvColumnMappingDialog(
                         .padding(top = 8.dp),
                 horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End),
             ) {
-                OutlinedButton(onClick = onDismiss) {
+                OutlinedButton(onClick = onDismiss, shape = RoundedCornerShape(24.dp)) {
                     Text(stringResource(R.string.cancel))
                 }
                 Button(
+                    shape = RoundedCornerShape(24.dp),
                     onClick = {
                         onConfirm(
                             CsvImportState(
@@ -300,8 +299,8 @@ fun CsvImportProgressDialog(
             modifier =
                 Modifier
                     .fillMaxWidth(0.85f)
-                    .clip(RoundedCornerShape(16.dp))
-                    .background(MaterialTheme.colorScheme.surface)
+                    .clip(RoundedCornerShape(24.dp))
+                    .background(MaterialTheme.colorScheme.surfaceContainerHigh)
                     .padding(24.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
@@ -331,8 +330,8 @@ fun CsvImportProgressDialog(
                     modifier =
                         Modifier
                             .fillMaxWidth()
-                            .clip(RoundedCornerShape(8.dp))
-                            .background(MaterialTheme.colorScheme.surfaceVariant)
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(MaterialTheme.colorScheme.surfaceContainerLow)
                             .padding(12.dp),
                     verticalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
@@ -347,7 +346,7 @@ fun CsvImportProgressDialog(
                             modifier =
                                 Modifier
                                     .fillMaxWidth()
-                                    .clip(RoundedCornerShape(4.dp))
+                                    .clip(RoundedCornerShape(8.dp))
                                     .background(MaterialTheme.colorScheme.background)
                                     .padding(8.dp),
                             verticalArrangement = Arrangement.spacedBy(4.dp),

@@ -69,7 +69,7 @@ fun AnimatedBottomSheet(
     modifier: Modifier = Modifier,
     sheetState: SheetState = rememberMaterialBottomSheetState(initialValue = SheetValue.Hidden),
     sheetMaxWidth: Dp = BottomSheetDefaults.SheetMaxWidth,
-    shape: Shape = BottomSheetDefaults.ExpandedShape,
+    shape: Shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
     containerColor: Color = BottomSheetDefaults.ContainerColor,
     contentColor: Color = contentColorFor(containerColor),
     tonalElevation: Dp = 0.dp,
@@ -121,7 +121,7 @@ fun AnimatedBottomSheet(
 fun BottomSheetMenu(
     modifier: Modifier = Modifier,
     state: MenuState,
-    background: Color = MaterialTheme.colorScheme.surface,
+    background: Color = MaterialTheme.colorScheme.surfaceContainerLow,
 ) {
     val focusManager = LocalFocusManager.current
     val sheetState = rememberMaterialBottomSheetState(initialValue = SheetValue.Hidden)

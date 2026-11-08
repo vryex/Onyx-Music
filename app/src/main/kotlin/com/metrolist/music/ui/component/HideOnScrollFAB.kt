@@ -24,6 +24,7 @@ import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SmallFloatingActionButton
 import androidx.compose.runtime.Composable
@@ -90,6 +91,7 @@ fun BoxScope.HideOnScrollFAB(
                 Spacer(modifier = Modifier.height(12.dp))
             }
             FloatingActionButton(
+                shape = RoundedCornerShape(24.dp),
                 onClick = { if (!playerCovered) onClick() },
             ) {
                 Icon(

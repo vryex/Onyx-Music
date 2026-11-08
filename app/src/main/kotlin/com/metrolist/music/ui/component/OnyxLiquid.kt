@@ -50,7 +50,49 @@ import androidx.compose.ui.unit.sp
 import coil3.compose.AsyncImage
 import com.metrolist.innertube.models.YTItem
 import com.metrolist.music.R
+import com.metrolist.music.constants.PlayerBackgroundStyle
+import com.metrolist.music.constants.PlayerBackgroundStyleKey
+import com.metrolist.music.constants.ThumbnailCornerRadius
 import com.metrolist.music.ui.theme.onyxGlass
+import com.metrolist.music.ui.theme.onArtworkColor
+import com.metrolist.music.ui.theme.rememberArtworkTones
+import com.metrolist.music.utils.rememberEnumPreference
+
+/** Onyx Liquid shared tokens: one radius for cards/controls, one for artwork. */
+val OnyxRadius = 24.dp
+val OnyxThumbnailRadius = ThumbnailCornerRadius
+
+/**
+ * Page background coherent with the player setting (PlayerBackgroundStyle):
+ * DEFAULT keeps the flat theme, PURE_BLACK is black, GRADIENT/BLUR wash the
+ * page with the darkened tone of the currently playing cover — the same 0.45
+ * darkening Player.kt uses — so Home/Library never cut against the player.
+ */
+@Composable
+fun Modifier.onyxPageBackground(artworkUrl: String?): Modifier {
+    val style by rememberEnumPreference(PlayerBackgroundStyleKey, PlayerBackgroundStyle.GRADIENT)
+    val artworkColor by rememberArtworkColor(artworkUrl?.resize(224, 224))
+    val darkTone = remember(artworkColor) {
+        artworkColor.copy(
+            red = artworkColor.red * 0.45f,
+            green = artworkColor.green * 0.45f,
+            blue = artworkColor.blue * 0.45f,
+        )
+    }
+    return when (style) {
+        PlayerBackgroundStyle.DEFAULT -> this
+        PlayerBackgroundStyle.PURE_BLACK -> background(Color.Black)
+        PlayerBackgroundStyle.GRADIENT -> background(Brush.verticalGradient(listOf(darkTone, Color.Black)))
+        PlayerBackgroundStyle.BLUR -> background(Color.Black).background(darkTone.copy(alpha = 0.5f))
+    }
+}
+
+/** Cover accent with its legible on-color, using the player luminance rule. */
+@Composable
+fun rememberOnyxAccent(artworkUrl: String?): Pair<Color, Color> {
+    val tones by rememberArtworkTones(artworkUrl?.resize(224, 224))
+    return tones.accent to onArtworkColor(tones.accent)
+}
 
 @Composable
 fun LiquidIconButton(
@@ -124,7 +166,7 @@ private fun ObservatoryStars(modifier: Modifier = Modifier) {
 @Composable
 fun OnyxHomeObservatory() {
     Column(
-        Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 22.dp),
+        Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 24.dp),
         verticalArrangement = Arrangement.spacedBy(6.dp),
     ) {
         Text(stringResource(R.string.home), style = MaterialTheme.typography.displaySmall,
@@ -147,6 +189,7 @@ fun OnyxHomeShortcuts(onHistory: () -> Unit, onExplore: () -> Unit) {
 private fun HomeShortcut(title: String, icon: Int, onClick: () -> Unit, modifier: Modifier) {
     Row(modifier.clip(RoundedCornerShape(24.dp))
         .background(MaterialTheme.colorScheme.surface)
+        .border(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.18f), RoundedCornerShape(24.dp))
         .clickable(role = Role.Button, onClick = onClick)
         .heightIn(min = 48.dp).padding(horizontal = 12.dp, vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -168,12 +211,13 @@ fun OnyxHomeHero(
     if (title.isNullOrBlank() || artwork.isNullOrBlank()) return
     var fallbackArt by remember(artwork) { mutableStateOf(false) }
     val artTone by rememberArtworkColor(artwork.resize(224, 224))
+    val (accent, onAccent) = rememberOnyxAccent(artwork)
     // One understated surface. The parent crossfades artwork AND metadata in
     // this same position; no card carousel, pagination, or magazine layout.
     Box(
         modifier = modifier.height(316.dp)
-            .clip(RoundedCornerShape(20.dp))
-            .background(Color.Black)
+            .clip(RoundedCornerShape(OnyxRadius))
+            .background(artTone)
             .clickable(role = Role.Button, onClick = onExplore),
     ) {
         AsyncImage(
@@ -221,14 +265,14 @@ fun OnyxHomeHero(
                 )
             }
             Box(
-                Modifier.size(42.dp).clip(CircleShape)
-                    .background(Color.White.copy(alpha = .20f))
+                Modifier.size(48.dp).clip(CircleShape)
+                    .background(accent)
                     .clickable(role = Role.Button, onClick = onPlay),
                 contentAlignment = Alignment.Center,
             ) {
                 Icon(
                     painterResource(R.drawable.play), contentDescription = stringResource(R.string.play),
-                    tint = Color.White, modifier = Modifier.size(22.dp),
+                    tint = onAccent, modifier = Modifier.size(22.dp),
                 )
             }
         }
@@ -239,16 +283,16 @@ fun OnyxHomeHero(
 fun OnyxQuickAccessItem(item: YTItem, isPinned: Boolean, modifier: Modifier = Modifier,
     isActive: Boolean = false, isPlaying: Boolean = false) {
     val artistTint = if (item is com.metrolist.innertube.models.ArtistItem) rememberHomeArtistTint(item.thumbnail) else null
-    Row(modifier.clip(RoundedCornerShape(16.dp))
+    Row(modifier.clip(RoundedCornerShape(OnyxRadius))
         .then(
             if (artistTint != null) Modifier.background(artistTint)
             else Modifier.background(MaterialTheme.colorScheme.surface)
         )
         .padding(8.dp), verticalAlignment = Alignment.CenterVertically) {
-        ItemThumbnail(item.thumbnail, isActive, isPlaying, RoundedCornerShape(8.dp), Modifier.size(56.dp))
+        ItemThumbnail(item.thumbnail, isActive, isPlaying, RoundedCornerShape(OnyxThumbnailRadius), Modifier.size(56.dp))
         Text(item.title, Modifier.weight(1f).padding(horizontal = 12.dp),
             style = MaterialTheme.typography.bodyMedium, maxLines = 2, overflow = TextOverflow.Ellipsis)
-        if (isPinned) Icon(painterResource(R.drawable.ic_push_pin), null, Modifier.size(12.dp),
+        if (isPinned) Icon(painterResource(R.drawable.ic_push_pin), null, Modifier.size(16.dp),
             tint = MaterialTheme.colorScheme.primary)
     }
 }
@@ -256,8 +300,8 @@ fun OnyxQuickAccessItem(item: YTItem, isPinned: Boolean, modifier: Modifier = Mo
 @Composable
 fun OnyxCollectionCard(title: String, subtitle: String, icon: Int, onClick: (() -> Unit)? = null, modifier: Modifier = Modifier) {
     Column(
-        modifier.onyxGlass(RoundedCornerShape(16.dp), showBorder = false)
-            .then(if (onClick != null) Modifier.clickable(role = Role.Button, onClick = onClick) else Modifier).padding(18.dp),
+        modifier.onyxGlass(RoundedCornerShape(OnyxRadius), showBorder = false)
+            .then(if (onClick != null) Modifier.clickable(role = Role.Button, onClick = onClick) else Modifier).padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {

@@ -17,6 +17,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import com.metrolist.music.ui.component.LiquidIconButton
+import com.metrolist.music.ui.theme.onyxGlass
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -238,8 +239,7 @@ fun SearchScreen(
                         searchSource == SearchSource.LOCAL, { searchSource = SearchSource.LOCAL }, Modifier.weight(1f))
                 }
                 if (query.text.isEmpty()) {
-                    Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp))
-                        .background(MaterialTheme.colorScheme.surface)
+                    Row(Modifier.fillMaxWidth().onyxGlass(RoundedCornerShape(24.dp))
                         .clickable(role = Role.Button) { navController.navigate("mood_and_genres") }
                         .padding(16.dp), verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -323,14 +323,15 @@ fun SearchScreen(
 
 @Composable
 private fun SearchScopeButton(title: String, icon: Int, selected: Boolean, onClick: () -> Unit, modifier: Modifier) {
-    Row(modifier.clip(RoundedCornerShape(32.dp))
-        .background(if (selected) MaterialTheme.colorScheme.surfaceContainerHigh else MaterialTheme.colorScheme.surface)
+    Row(modifier.clip(RoundedCornerShape(50.dp))
+        .background(if (selected) Color.White else Color(0xFF2A2A2A))
+        .border(0.75.dp, if (selected) Color.Transparent else MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(50.dp))
         .selectable(selected = selected, role = Role.RadioButton, onClick = onClick)
         .heightIn(min = 48.dp).padding(horizontal = 12.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         Icon(painterResource(icon), null, Modifier.size(18.dp),
-            tint = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant)
+            tint = if (selected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant)
         Text(title, style = MaterialTheme.typography.labelMedium, maxLines = 2, overflow = TextOverflow.Ellipsis,
-            color = if (selected) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant)
+            color = if (selected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant)
     }
 }

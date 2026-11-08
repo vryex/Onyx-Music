@@ -217,10 +217,10 @@ fun AlbumScreen(
                                 .size(240.dp)
                                 .shadow(
                                     elevation = 24.dp,
-                                    shape = RoundedCornerShape(3.dp),
+                                    shape = RoundedCornerShape(24.dp),
                                     spotColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.3f),
                                 ),
-                        shape = RoundedCornerShape(3.dp),
+                        shape = RoundedCornerShape(24.dp),
                     ) {
                         AsyncImage(
                             model = albumWithSongs.album.thumbnailUrl?.resize(1080, 1080),
@@ -314,7 +314,7 @@ fun AlbumScreen(
                                 }
                             },
                             shape = CircleShape,
-                            color = MaterialTheme.colorScheme.surfaceVariant,
+                            color = MaterialTheme.colorScheme.surfaceContainerHigh,
                             modifier = Modifier.size(48.dp),
                         ) {
                             Box(
@@ -386,7 +386,7 @@ fun AlbumScreen(
                                 }
                             },
                             shape = CircleShape,
-                            color = MaterialTheme.colorScheme.surfaceVariant,
+                            color = MaterialTheme.colorScheme.surfaceContainerHigh,
                             modifier = Modifier.size(48.dp),
                         ) {
                             Box(
