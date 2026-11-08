@@ -79,6 +79,7 @@ import com.metrolist.music.constants.LyricsScrollKey
 import com.metrolist.music.constants.LyricsTextPositionKey
 import com.metrolist.music.constants.LyricsTextSizeKey
 import com.metrolist.music.constants.PlayerBackgroundStyle
+import com.metrolist.music.constants.PlayerBackgroundStyleKey
 import com.metrolist.music.constants.PlayerButtonsStyle
 import com.metrolist.music.constants.PlayerButtonsStyleKey
 import com.metrolist.music.constants.RespectAgentPositioningKey
@@ -172,6 +173,11 @@ fun AppearanceSettings(
         rememberEnumPreference(
             PlayerButtonsStyleKey,
             defaultValue = PlayerButtonsStyle.DEFAULT,
+        )
+    val (playerBackgroundStyle, onPlayerBackgroundStyleChange) =
+        rememberEnumPreference(
+            PlayerBackgroundStyleKey,
+            defaultValue = PlayerBackgroundStyle.GRADIENT,
         )
     val (lyricsPosition, onLyricsPositionChange) =
         rememberEnumPreference(
@@ -301,6 +307,9 @@ fun AppearanceSettings(
     }
 
     var showPlayerButtonsStyleDialog by rememberSaveable {
+        mutableStateOf(false)
+    }
+    var showPlayerBackgroundStyleDialog by rememberSaveable {
         mutableStateOf(false)
     }
 
@@ -475,6 +484,27 @@ fun AppearanceSettings(
                 )
             }
         }
+    }
+
+    if (showPlayerBackgroundStyleDialog) {
+        EnumDialog(
+            onDismiss = { showPlayerBackgroundStyleDialog = false },
+            onSelect = {
+                onPlayerBackgroundStyleChange(it)
+                showPlayerBackgroundStyleDialog = false
+            },
+            title = stringResource(R.string.player_background_style),
+            current = playerBackgroundStyle,
+            values = PlayerBackgroundStyle.values().toList(),
+            valueText = {
+                when (it) {
+                    PlayerBackgroundStyle.DEFAULT -> stringResource(R.string.player_background_solid)
+                    PlayerBackgroundStyle.GRADIENT -> stringResource(R.string.gradient)
+                    PlayerBackgroundStyle.BLUR -> stringResource(R.string.player_background_blur)
+                    PlayerBackgroundStyle.PURE_BLACK -> stringResource(R.string.player_background_pure_black)
+                }
+            },
+        )
     }
 
     if (showPlayerButtonsStyleDialog) {
@@ -998,6 +1028,21 @@ fun AppearanceSettings(
                             )
                         },
                         onClick = { showPlayerButtonsStyleDialog = true },
+                    ),
+                    Material3SettingsItem(
+                        icon = painterResource(R.drawable.gradient),
+                        title = { Text(stringResource(R.string.player_background_style)) },
+                        description = {
+                            Text(
+                                when (playerBackgroundStyle) {
+                                    PlayerBackgroundStyle.DEFAULT -> stringResource(R.string.player_background_solid)
+                                    PlayerBackgroundStyle.GRADIENT -> stringResource(R.string.gradient)
+                                    PlayerBackgroundStyle.BLUR -> stringResource(R.string.player_background_blur)
+                                    PlayerBackgroundStyle.PURE_BLACK -> stringResource(R.string.player_background_pure_black)
+                                },
+                            )
+                        },
+                        onClick = { showPlayerBackgroundStyleDialog = true },
                     ),
                     Material3SettingsItem(
                         icon = painterResource(R.drawable.sliders),

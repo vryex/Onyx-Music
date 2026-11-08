@@ -105,6 +105,7 @@ import com.metrolist.music.LocalPlayerConnection
 import com.metrolist.music.R
 import com.metrolist.music.constants.ListItemHeight
 import com.metrolist.music.constants.PlayerBackgroundStyle
+import com.metrolist.music.constants.QueueEditHintShownKey
 import com.metrolist.music.constants.QueueEditLockKey
 import com.metrolist.music.constants.UseNewPlayerDesignKey
 import com.metrolist.music.extensions.metadata
@@ -215,7 +216,8 @@ fun Queue(
         BackHandler(onBack = onExitSelectionMode)
     }
 
-    var locked by rememberPreference(QueueEditLockKey, defaultValue = true)
+    var locked by rememberPreference(QueueEditLockKey, defaultValue = false)
+    var queueEditHintShown by rememberPreference(QueueEditHintShownKey, defaultValue = false)
 
     val useNewPlayerDesign = true
 
@@ -900,8 +902,9 @@ fun Queue(
                         indication = null,
                         interactionSource = remember { MutableInteractionSource() },
                     ) { }
-                    // Opaque black queue header: title, lock, song count and duration.
-                    .background(Color.Black).windowInsetsPadding(
+                    // Queue header follows the player background instead of
+                    // cutting the artwork gradient with opaque black.
+                    .background(background).windowInsetsPadding(
                         WindowInsets.systemBars
                             .only(WindowInsetsSides.Top + WindowInsetsSides.Horizontal),
                     ),
@@ -1032,6 +1035,43 @@ fun Queue(
             if (pureBlack) {
                 HorizontalDivider()
             }
+
+            // One-time hint: reorder and swipe-to-remove are now unlocked by
+            // default, but the gestures are invisible without an explanation.
+            if (!queueEditHintShown) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 6.dp)
+                        .clickable { queueEditHintShown = true },
+                ) {
+                    Icon(
+                        painter = painterResource(R.drawable.drag_handle),
+                        contentDescription = null,
+                        modifier = Modifier.size(18.dp),
+                        tint = TextBackgroundColor.copy(alpha = 0.7f),
+                    )
+                    Spacer(Modifier.width(8.dp))
+                    Text(
+                        text = stringResource(R.string.queue_edit_hint),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = TextBackgroundColor.copy(alpha = 0.7f),
+                        modifier = Modifier.weight(1f),
+                    )
+                    IconButton(
+                        onClick = { queueEditHintShown = true },
+                        modifier = Modifier.size(28.dp),
+                    ) {
+                        Icon(
+                            painter = painterResource(R.drawable.close),
+                            contentDescription = null,
+                            modifier = Modifier.size(16.dp),
+                            tint = TextBackgroundColor.copy(alpha = 0.7f),
+                        )
+                    }
+                }
+            }
         }
 
         val shuffleModeEnabled by playerConnection.shuffleModeEnabled.collectAsStateWithLifecycle()
@@ -1040,7 +1080,7 @@ fun Queue(
             modifier =
                 Modifier
                     // Match the queue background without recoloring shuffle/repeat icons.
-                    .background(Color.Black).fillMaxWidth()
+                    .background(background).fillMaxWidth()
                     .height(
                         ListItemHeight +
                             WindowInsets.systemBars
@@ -1180,7 +1220,7 @@ private fun PlayerQueueButton(
                     iconButtonColor
                 } else {
                     when (playerBackground) {
-                        PlayerBackgroundStyle.BLUR, PlayerBackgroundStyle.GRADIENT -> {
+                        PlayerBackgroundStyle.BLUR, PlayerBackgroundStyle.GRADIENT, PlayerBackgroundStyle.PURE_BLACK -> {
                             Color.White
                         }
 

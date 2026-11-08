@@ -122,3 +122,10 @@ fun rememberArtworkColor(artwork: String?): State<Color> {
     val tones by rememberArtworkTones(artwork)
     return animateColorAsState(tones.surface, tween(650, easing = FastOutSlowInEasing), label = "artworkColor")
 }
+
+/**
+ * Text color that stays legible on a surface taken from the cover.
+ * Light covers get dark text, dark covers get white text (WCAG luminance).
+ */
+fun onArtworkColor(color: Color): Color =
+    if (ColorUtils.calculateLuminance(color.toArgb()) > 0.55f) Color.Black else Color.White

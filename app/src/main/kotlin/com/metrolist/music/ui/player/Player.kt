@@ -8,6 +8,7 @@ package com.metrolist.music.ui.player
 import com.metrolist.music.ui.component.LiquidIconButton
 import com.metrolist.music.ui.component.OnyxPlayerHeader
 import com.metrolist.music.ui.theme.SonetLyricsBackdrop
+import com.metrolist.music.ui.theme.onArtworkColor
 import com.metrolist.music.ui.theme.rememberArtworkColor
 import com.metrolist.music.ui.utils.resize
 import androidx.compose.ui.draw.shadow
@@ -75,6 +76,7 @@ import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -185,6 +187,7 @@ import com.metrolist.music.constants.HidePlayerThumbnailKey
 import com.metrolist.music.constants.HideStatusBarOnFullscreenKey
 import com.metrolist.music.constants.KeepScreenOn
 import com.metrolist.music.constants.PlayerBackgroundStyle
+import com.metrolist.music.constants.PlayerBackgroundStyleKey
 import com.metrolist.music.constants.PlayerButtonsStyle
 import com.metrolist.music.constants.PlayerButtonsStyleKey
 import com.metrolist.music.constants.PlayerHorizontalPadding
@@ -265,18 +268,22 @@ fun BottomSheetPlayer(
     }
 
 
-    val playerBackground = PlayerBackgroundStyle.GRADIENT
+    val playerBackground by rememberEnumPreference(
+        key = PlayerBackgroundStyleKey,
+        defaultValue = PlayerBackgroundStyle.GRADIENT,
+    )
     val playerButtonsStyle by rememberEnumPreference(
         key = PlayerButtonsStyleKey,
         defaultValue = PlayerButtonsStyle.DEFAULT,
     )
 
-    val useDarkTheme = true
+    // Flat follows the system theme; the artwork styles are always dark.
+    val useDarkTheme = playerBackground != PlayerBackgroundStyle.DEFAULT || isSystemInDarkTheme()
 
     val shouldUseDarkButtonColors =
         remember(playerBackground, useDarkTheme) {
             when (playerBackground) {
-                PlayerBackgroundStyle.BLUR, PlayerBackgroundStyle.GRADIENT -> true
+                PlayerBackgroundStyle.BLUR, PlayerBackgroundStyle.GRADIENT, PlayerBackgroundStyle.PURE_BLACK -> true
                 PlayerBackgroundStyle.DEFAULT -> useDarkTheme
             }
         }
@@ -291,7 +298,7 @@ fun BottomSheetPlayer(
             val insetsController = WindowCompat.getInsetsController(window, window.decorView)
 
             when (playerBackground) {
-                PlayerBackgroundStyle.BLUR, PlayerBackgroundStyle.GRADIENT -> {
+                PlayerBackgroundStyle.BLUR, PlayerBackgroundStyle.GRADIENT, PlayerBackgroundStyle.PURE_BLACK -> {
                     insetsController.isAppearanceLightStatusBars = false
                 }
 
@@ -344,6 +351,26 @@ fun BottomSheetPlayer(
             !it.equals("radio", ignoreCase = true)
     }
     val artworkColor by rememberArtworkColor(mediaMetadata?.thumbnailUrl)
+    // Darkened cover tone shared by the gradient background and the queue,
+    // so the two sheets never cut against each other.
+    val artworkDarkTone = artworkColor.copy(
+        red = artworkColor.red * 0.45f,
+        green = artworkColor.green * 0.45f,
+        blue = artworkColor.blue * 0.45f,
+    )
+    // Text/icon color that stays legible on the effective player background:
+    // flat uses the theme, pure black is always white, artwork styles pick
+    // black or white from the darkened cover luminance.
+    val playerContentColor: Color = when (playerBackground) {
+        PlayerBackgroundStyle.DEFAULT -> MaterialTheme.colorScheme.onSurface
+        PlayerBackgroundStyle.PURE_BLACK -> Color.White
+        else -> onArtworkColor(artworkDarkTone)
+    }
+    val queueBackgroundColor: Color = when (playerBackground) {
+        PlayerBackgroundStyle.DEFAULT -> MaterialTheme.colorScheme.surface
+        PlayerBackgroundStyle.PURE_BLACK -> Color.Black
+        else -> artworkDarkTone
+    }
     // Keep the small cover painter alive even when the player is collapsed.
     // This exact URL is already used by the mini player and can be drawn on the
     // first expanded frame while its sharper request finishes.
@@ -455,6 +482,7 @@ fun BottomSheetPlayer(
                 PlayerBackgroundStyle.DEFAULT -> MaterialTheme.colorScheme.onBackground
                 PlayerBackgroundStyle.BLUR -> Color.White
                 PlayerBackgroundStyle.GRADIENT -> Color.White
+                PlayerBackgroundStyle.PURE_BLACK -> Color.White
             },
         label = "TextBackgroundColor",
     )
@@ -465,6 +493,7 @@ fun BottomSheetPlayer(
                 PlayerBackgroundStyle.DEFAULT -> MaterialTheme.colorScheme.surface
                 PlayerBackgroundStyle.BLUR -> Color.Black
                 PlayerBackgroundStyle.GRADIENT -> Color.Black
+                PlayerBackgroundStyle.PURE_BLACK -> Color.Black
             },
         label = "icBackgroundColor",
     )
@@ -472,7 +501,8 @@ fun BottomSheetPlayer(
     val (textButtonColor, iconButtonColor) =
         when {
             playerBackground == PlayerBackgroundStyle.BLUR ||
-                playerBackground == PlayerBackgroundStyle.GRADIENT -> {
+                playerBackground == PlayerBackgroundStyle.GRADIENT ||
+                playerBackground == PlayerBackgroundStyle.PURE_BLACK -> {
                 when (playerButtonsStyle) {
                     PlayerButtonsStyle.DEFAULT -> {
                         Pair(Color.White, Color.Black)
@@ -525,7 +555,8 @@ fun BottomSheetPlayer(
     val (sideButtonContainerColor, sideButtonContentColor) =
         when {
             playerBackground == PlayerBackgroundStyle.BLUR ||
-                playerBackground == PlayerBackgroundStyle.GRADIENT -> {
+                playerBackground == PlayerBackgroundStyle.GRADIENT ||
+                playerBackground == PlayerBackgroundStyle.PURE_BLACK -> {
                 when (playerButtonsStyle) {
                     PlayerButtonsStyle.DEFAULT -> {
                         Pair(
@@ -849,20 +880,34 @@ fun BottomSheetPlayer(
             // One seamless background for the ENTIRE expanded sheet. Painting
             // the image here (instead of inside Thumbnail) lets it begin behind
             // the status bar and now-playing header with no horizontal seam.
-            val darkTone = artworkColor.copy(
-                red = artworkColor.red * 0.45f,
-                green = artworkColor.green * 0.45f,
-                blue = artworkColor.blue * 0.45f,
-            )
             Box(
-                modifier = Modifier.fillMaxSize().onGloballyPositioned(artworkPlacement::placeContainer).background(
-                    Brush.verticalGradient(
-                        0f to darkTone,
-                        0.62f to darkTone,
-                        1f to Color.Black,
-                    )
-                )
+                modifier = Modifier.fillMaxSize().onGloballyPositioned(artworkPlacement::placeContainer).then(
+                    when (playerBackground) {
+                        PlayerBackgroundStyle.PURE_BLACK -> Modifier.background(Color.Black)
+                        PlayerBackgroundStyle.DEFAULT -> Modifier.background(MaterialTheme.colorScheme.surface)
+                        else -> Modifier.background(
+                            Brush.verticalGradient(
+                                0f to artworkDarkTone,
+                                0.62f to artworkDarkTone,
+                                1f to Color.Black,
+                            ),
+                        )
+                    },
+                ),
             ) {
+                // Real blur for the BLUR style: a tiny (120px) copy of the cover,
+                // blurred and darkened, so it costs almost nothing to draw.
+                if (playerBackground == PlayerBackgroundStyle.BLUR &&
+                    !mediaMetadata?.thumbnailUrl.isNullOrBlank()
+                ) {
+                    AsyncImage(
+                        model = mediaMetadata?.thumbnailUrl?.resize(120, 120),
+                        contentDescription = null,
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier.matchParentSize().blur(28.dp),
+                    )
+                    Box(Modifier.matchParentSize().background(Color.Black.copy(alpha = 0.45f)))
+                }
                 if (videoSession != null && immersiveVideo && !showInlineLyrics &&
                     LocalConfiguration.current.orientation != Configuration.ORIENTATION_LANDSCAPE) {
                     EmbeddedMusicVideo(
@@ -954,6 +999,7 @@ fun BottomSheetPlayer(
                     Text(
                         mediaMetadata.title,
                         style = MaterialTheme.typography.headlineMedium,
+                        color = playerContentColor,
                         fontWeight = FontWeight.Medium,
                         maxLines = 2, overflow = TextOverflow.Ellipsis,
                         modifier = Modifier.combinedClickable(
@@ -976,7 +1022,7 @@ fun BottomSheetPlayer(
                             Text(
                                 artist.name + if (index < mediaMetadata.artists.lastIndex) ", " else "",
                                 style = MaterialTheme.typography.bodyLarge,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                color = playerContentColor.copy(alpha = 0.75f),
                                 modifier = Modifier.combinedClickable(
                                     onClick = {
                                         artist.id?.takeIf { it.isNotBlank() }?.let {
@@ -1012,16 +1058,28 @@ fun BottomSheetPlayer(
                     }
                     Unit
                 }
+                // The favorite button always likes the song. In lyrics mode a
+                // separate fullscreen button appears next to it instead of
+                // hijacking the heart.
                 PlayerIconButton(
-                    if (showInlineLyrics) R.drawable.fullscreen else if (favorite) R.drawable.favorite else R.drawable.favorite_border,
-                    if (showInlineLyrics) stringResource(R.string.onyx_fullscreen) else stringResource(R.string.liked),
-                    onClick = { if (showInlineLyrics) isFullScreen = !isFullScreen else toggleFavorite() },
+                    if (favorite) R.drawable.favorite else R.drawable.favorite_border,
+                    stringResource(R.string.liked),
+                    onClick = { toggleFavorite() },
                     modifier = Modifier.graphicsLayer {
                         scaleX = favoritePulse.value; scaleY = favoritePulse.value
                         rotationZ = favoriteRotation.value
                     }.semantics { selected = favorite },
-                    contentColor = Color.White,
+                    contentColor = playerContentColor,
                 )
+                if (showInlineLyrics) {
+                    Spacer(Modifier.width(12.dp))
+                    PlayerIconButton(
+                        R.drawable.fullscreen,
+                        stringResource(R.string.onyx_fullscreen),
+                        onClick = { isFullScreen = !isFullScreen },
+                        contentColor = playerContentColor,
+                    )
+                }
                 Spacer(Modifier.width(12.dp))
                 if (showInlineLyrics) {
                     val lyrics by playerConnection.currentLyrics.collectAsStateWithLifecycle(initialValue = null)
@@ -1040,6 +1098,27 @@ fun BottomSheetPlayer(
             }
         }
         val controlsContent: @Composable ColumnScope.(MediaMetadata) -> Unit = { mediaMetadata ->
+            // Scrub bubble: the destination time while dragging, for every slider style.
+            AnimatedVisibility(
+                visible = sliderPosition != null,
+                enter = fadeIn(tween(140)),
+                exit = fadeOut(tween(140)),
+            ) {
+                Box(
+                    Modifier.fillMaxWidth().padding(horizontal = PlayerHorizontalPadding + 4.dp),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Text(
+                        text = sliderPosition?.let { makeTimeString(it) }.orEmpty(),
+                        style = MaterialTheme.typography.labelLarge,
+                        fontFamily = FontFamily.Monospace,
+                        color = playerContentColor,
+                        modifier = Modifier
+                            .background(playerContentColor.copy(alpha = 0.12f), RoundedCornerShape(50))
+                            .padding(horizontal = 12.dp, vertical = 4.dp),
+                    )
+                }
+            }
             when (sliderStyle) {
                 SliderStyle.DEFAULT -> {
                     val sliderValue = (sliderPosition ?: effectivePosition).toFloat()
@@ -1073,7 +1152,7 @@ fun BottomSheetPlayer(
                         },
                         enabled = !isListenTogetherGuest,
                         thumb = {
-                            Box(Modifier.size(scrubSize).shadow(4.dp, CircleShape).background(Color.White, CircleShape))
+                            Box(Modifier.size(scrubSize).shadow(4.dp, CircleShape).background(playerContentColor, CircleShape))
                         },
                         track = { sliderState ->
                             PlayerSliderTrack(
@@ -1085,7 +1164,7 @@ fun BottomSheetPlayer(
                             )
                         },
                         colors = PlayerSliderColors.getSliderColors(Color(0xFFF5F5F7), playerBackground, useDarkTheme),
-                        modifier = Modifier.padding(horizontal = PlayerHorizontalPadding),
+                        modifier = Modifier.padding(horizontal = PlayerHorizontalPadding).heightIn(min = 48.dp),
                     )
                 }
 
@@ -1168,14 +1247,16 @@ fun BottomSheetPlayer(
                             }
                         },
                         enabled = !isListenTogetherGuest,
-                        thumb = { Spacer(modifier = Modifier.size(0.dp)) },
+                        // Slim keeps a visible 12dp thumb: a 0dp thumb cannot be
+                        // grabbed or seen, so the slider looks broken.
+                        thumb = { Box(Modifier.size(12.dp).shadow(4.dp, CircleShape).background(playerContentColor, CircleShape)) },
                         track = { sliderState ->
                             PlayerSliderTrack(
                                 sliderState = sliderState,
                                 colors = PlayerSliderColors.getSliderColors(Color(0xFFF5F5F7), playerBackground, useDarkTheme),
                             )
                         },
-                        modifier = Modifier.padding(horizontal = PlayerHorizontalPadding),
+                        modifier = Modifier.padding(horizontal = PlayerHorizontalPadding).heightIn(min = 48.dp),
                     )
                 }
             }
@@ -1194,7 +1275,7 @@ fun BottomSheetPlayer(
                     text = makeTimeString(sliderPosition ?: effectivePosition),
                     style = MaterialTheme.typography.labelMedium,
                     fontFamily = FontFamily.Monospace,
-                    color = Color(0xFFA1A1A6),
+                    color = playerContentColor.copy(alpha = 0.65f),
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
@@ -1203,7 +1284,7 @@ fun BottomSheetPlayer(
                     text = if (duration != C.TIME_UNSET) makeTimeString(duration) else "",
                     style = MaterialTheme.typography.labelMedium,
                     fontFamily = FontFamily.Monospace,
-                    color = Color(0xFFA1A1A6),
+                    color = playerContentColor.copy(alpha = 0.65f),
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
@@ -1381,6 +1462,7 @@ fun BottomSheetPlayer(
                         videoSelected = videoModeActive,
                         showCast = true,
                         playbackSource = displayedSource,
+                        contentColor = playerContentColor,
                         modifier = Modifier.windowInsetsPadding(WindowInsets.systemBars.only(WindowInsetsSides.Top)),
                     )
                     Box(
@@ -1450,8 +1532,8 @@ fun BottomSheetPlayer(
             Queue(
                 state = queueSheetState,
                 playerBottomSheetState = state,
-                // Queue stays pure black; keep grey current-song/header controls intact.
-                background = Color.Black,
+                // Queue follows the player background instead of pure black.
+                background = queueBackgroundColor,
                 onBackgroundColor = onBackgroundColor,
                 TextBackgroundColor = TextBackgroundColor,
                 textButtonColor = textButtonColor,

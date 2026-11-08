@@ -7,6 +7,7 @@
 
 package com.metrolist.music.ui.player
 
+import com.metrolist.music.ui.theme.onArtworkColor
 import com.metrolist.music.ui.theme.rememberArtworkTones
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.LinearEasing
@@ -248,6 +249,9 @@ private fun NewMiniPlayer(
     val artworkTones by rememberArtworkTones(mediaMetadata?.thumbnailUrl)
     val artworkColor by animateColorAsState(artworkTones.surface, tween(650), label = "miniArtwork")
     val playButtonColor by animateColorAsState(artworkTones.accent, tween(650), label = "miniAccent")
+    // Text/icons on the mini player follow the cover luminance: light
+    // covers get dark text, dark covers keep white text.
+    val miniOnArtworkColor = remember(artworkColor) { onArtworkColor(artworkColor) }
     val isEffectivelyPlaying by playerConnection.isEffectivelyPlaying.collectAsStateWithLifecycle()
     val primaryColor = MaterialTheme.colorScheme.primary
     val outlineColor = MaterialTheme.colorScheme.outline
@@ -335,15 +339,15 @@ private fun NewMiniPlayer(
                     .border(1.dp, Color(0xFFF5F5F7).copy(alpha = 0.20f), RoundedCornerShape(24.dp))
                     .drawWithContent {
                         drawContent()
-                        val y = size.height - 1.dp.toPx()
+                        val y = size.height - 2.dp.toPx()
                         val inset = 20.dp.toPx()
                         val start = Offset(inset, y)
                         val end = Offset(size.width - inset, y)
-                        drawLine(outlineColor.copy(alpha = 0.25f), start, end, 1.dp.toPx(), StrokeCap.Round)
+                        drawLine(outlineColor.copy(alpha = 0.25f), start, end, 3.dp.toPx(), StrokeCap.Round)
                         val fraction = progressState.progress
                         val progressEnd = if (layoutDirection == LayoutDirection.Rtl) start else end
                         val progressStart = if (layoutDirection == LayoutDirection.Rtl) end else start
-                        drawLine(primaryColor, progressStart, progressStart + (progressEnd - progressStart) * fraction, 1.dp.toPx(), StrokeCap.Round)
+                        drawLine(playButtonColor, progressStart, progressStart + (progressEnd - progressStart) * fraction, 3.dp.toPx(), StrokeCap.Round)
                     }
                     .clickable(
                         interactionSource = interactionSource,
@@ -371,7 +375,7 @@ private fun NewMiniPlayer(
                 Spacer(Modifier.width(12.dp))
                 NewMiniPlayerSongInfo(
                     mediaMetadata = mediaMetadata,
-                    onSurfaceColor = Color(0xFFF5F5F7),
+                    onSurfaceColor = miniOnArtworkColor,
                     errorColor = errorColor,
                     modifier = Modifier.weight(1f),
                 )
@@ -380,11 +384,18 @@ private fun NewMiniPlayer(
                         modifier = Modifier.size(18.dp), tint = primaryColor)
                 }
                 IconButton(
+                    enabled = canSkipPrevious && !isListenTogetherGuest,
+                    onClick = { playerConnection.player.seekToPreviousMediaItem() },
+                ) {
+                    Icon(painterResource(R.drawable.skip_previous), stringResource(R.string.onyx_previous_track),
+                        tint = miniOnArtworkColor.copy(alpha = 0.65f))
+                }
+                IconButton(
                     enabled = canSkipNext && !isListenTogetherGuest,
                     onClick = { playerConnection.seekToNext() },
                 ) {
                     Icon(painterResource(R.drawable.skip_next), stringResource(R.string.onyx_next_track),
-                        tint = Color(0xFFA1A1A6))
+                        tint = miniOnArtworkColor.copy(alpha = 0.65f))
                 }
                 Box(Modifier.size(36.dp).clip(RoundedCornerShape(24.dp))) {
                     AsyncImage(
@@ -401,7 +412,7 @@ private fun NewMiniPlayer(
                             contentAlignment = Alignment.Center,
                         ) {
                             // Floating white bars directly over the cover: no dark pill.
-                            MiniPlayingEqualizer(Modifier.size(12.dp))
+                            MiniPlayingEqualizer(Modifier.size(12.dp), miniOnArtworkColor)
                         }
                     }
                 }
@@ -413,7 +424,7 @@ private fun NewMiniPlayer(
 
 /** Mini audio equalizer, drawn only during playback (no parent recomposition). */
 @Composable
-private fun MiniPlayingEqualizer(modifier: Modifier = Modifier) {
+private fun MiniPlayingEqualizer(modifier: Modifier = Modifier, color: Color = Color.White) {
     val transition = rememberInfiniteTransition(label = "miniEqualizer")
     val phase = transition.animateFloat(
         initialValue = 0f,
@@ -430,7 +441,7 @@ private fun MiniPlayingEqualizer(modifier: Modifier = Modifier) {
             val barHeight = size.height * (0.29f + amplitude * 0.62f)
             val x = size.width * (index + 1) / 4f
             drawLine(
-                color = Color.White,
+                color = color,
                 start = Offset(x, size.height - barHeight),
                 end = Offset(x, size.height),
                 strokeWidth = 1.6.dp.toPx(),
