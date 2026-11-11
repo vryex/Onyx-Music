@@ -3,6 +3,9 @@ name: Onyx Music APK
 
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - design/onyx-liquid-glass
 
 permissions:
   contents: read

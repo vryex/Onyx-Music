@@ -10,6 +10,8 @@ import android.os.Build
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.darkColorScheme
+import androidx.compose.material3.lightColorScheme
 import androidx.compose.material3.dynamicDarkColorScheme
 import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.runtime.Composable
@@ -25,7 +27,7 @@ import com.materialkolor.dynamiccolor.ColorSpec
 import com.materialkolor.rememberDynamicColorScheme
 import com.materialkolor.score.Score
 
-val DefaultThemeColor = Color(0xFFED5564)
+val DefaultThemeColor = Color(0xFFFF6474)
 
 @Composable
 fun MetrolistTheme(
@@ -34,31 +36,29 @@ fun MetrolistTheme(
     themeColor: Color = DefaultThemeColor,
     content: @Composable () -> Unit,
 ) {
-    val context = LocalContext.current
-    // Determine if system dynamic colors should be used (Android S+ and default theme color)
-    val useSystemDynamicColor = (themeColor == DefaultThemeColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S)
-
-    // Select the appropriate color scheme generation method
-    val baseColorScheme = if (useSystemDynamicColor) {
-        // Use standard Material 3 dynamic color functions for system wallpaper colors
-        if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
-    } else {
-        // Use materialKolor only when a specific seed color is provided
-        rememberDynamicColorScheme(
-            seedColor = themeColor, // themeColor is guaranteed non-default here
-            isDark = darkTheme,
-            specVersion = ColorSpec.SpecVersion.SPEC_2025,
-            style = PaletteStyle.TonalSpot // Keep existing style
-        )
+    val accent = remember(themeColor) {
+        if (themeColor == DefaultThemeColor || themeColor == Color(0xFF9EB4FF)) {
+            Color(0xFFFF6474)
+        } else themeColor
     }
-
-    // Apply pureBlack modification if needed, similar to original logic
-    val colorScheme = remember(baseColorScheme, pureBlack, darkTheme) {
-        if (darkTheme && pureBlack) {
-            baseColorScheme.pureBlack(true)
-        } else {
-            baseColorScheme
-        }
+    val colorScheme = remember(accent) {
+        darkColorScheme(
+            primary = accent,
+            onPrimary = Color.Black,
+            background = Color.Black,
+            onBackground = Color(0xFFF8F8F8),
+            surface = Color.Black,
+            onSurface = Color(0xFFF8F8F8),
+            surfaceVariant = Color(0xFF242424),
+            onSurfaceVariant = Color(0xFFAEAEAE),
+            surfaceContainerLowest = Color.Black,
+            surfaceContainerLow = Color(0xFF0C0C0C),
+            surfaceContainer = Color(0xFF171717),
+            surfaceContainerHigh = Color(0xFF212121),
+            surfaceContainerHighest = Color(0xFF292929),
+            outline = Color(0xFF505050),
+            outlineVariant = Color(0xFF292929),
+        )
     }
 
     // Use standard MaterialTheme instead of MaterialExpressiveTheme
