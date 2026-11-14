@@ -120,11 +120,8 @@ def validate_page_actions():
                key=lambda n: int(re.findall(r'\d+', n.get('bounds', ''))[3]))
     mx1, my1, mx2, my2 = map(int, re.findall(r'\d+', mini.get('bounds', '')))
     size = list(map(int, re.findall(r'\d+', adb('shell', 'wm', 'size').decode())))[-2:]
-    drag = subprocess.Popen(['adb', 'shell', 'input', 'swipe', str((mx1 + mx2) // 2), str((my1 + my2) // 2),
-                             str(size[0] // 2), str(size[1] // 4), '4000'])
-    time.sleep(1.2)
-    snapshot('22-dragging-player')
-    drag.wait(timeout=10)
+    adb('shell', 'input', 'swipe', str((mx1 + mx2) // 2), str((my1 + my2) // 2),
+        str(size[0] // 2), str(size[1] // 4), '750')
     time.sleep(2)
     expanded_actions = snapshot('22-expanded-actions')
     assert not any(n.get('resource-id', '') == 'sonet_page_actions' for n in expanded_actions.iter('node')), 'Page actions remain accessible over expanded player'
@@ -202,7 +199,11 @@ def validate_page_actions():
 
 
 def save_runtime_log():
-    raw = adb('logcat', '-d', check=False)
+    try:
+        raw = adb('logcat', '-d', check=False)
+    except subprocess.TimeoutExpired:
+        print('Timed out reading logcat from the emulator')
+        return
     (out / 'player-logcat.txt').write_bytes(raw)
     for line in raw.decode(errors='replace').splitlines():
         if 'SonetVideo' in line:

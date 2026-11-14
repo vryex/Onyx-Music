@@ -11,7 +11,7 @@ ACTIVITY = PACKAGE + '/com.metrolist.music.MainActivity'
 
 
 def adb(*args, check=True):
-    return subprocess.run(['adb', *args], check=check, capture_output=True).stdout
+    return subprocess.run(['adb', *args], check=check, capture_output=True, timeout=45).stdout
 
 
 def snapshot(name, recovered_launcher=False):
