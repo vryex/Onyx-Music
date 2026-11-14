@@ -302,7 +302,7 @@ class App :
         return ImageLoader
             .Builder(this)
             .apply {
-                crossfade(true)
+                crossfade(false)
                 allowHardware(Build.VERSION.SDK_INT >= Build.VERSION_CODES.P)
                 // Memory cache for fast image loading (prevents network requests on recomposition)
                 memoryCache {

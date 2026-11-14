@@ -22,7 +22,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyColumn
@@ -112,6 +111,7 @@ fun LibrarySongsScreen(
     val uploadFailedStr = stringResource(R.string.upload_failed)
     val uploadCompleteStr = stringResource(R.string.upload_complete)
     val queueAllSongsStr = stringResource(R.string.queue_all_songs)
+    val libraryPlaybackSource = stringResource(R.string.sonet_playback_library)
     val playerConnection = LocalPlayerConnection.current ?: return
     val isPlaying by playerConnection.isEffectivelyPlaying.collectAsStateWithLifecycle()
     val mediaMetadata by playerConnection.mediaMetadata.collectAsStateWithLifecycle()
@@ -339,7 +339,7 @@ fun LibrarySongsScreen(
                         selected = true,
                         colors = FilterChipDefaults.filterChipColors(containerColor = MaterialTheme.colorScheme.surface),
                         onClick = onDeselect,
-                        shape = RoundedCornerShape(16.dp),
+                        shape = RoundedCornerShape(24.dp),
                         leadingIcon = {
                             Icon(
                                 painter = painterResource(R.drawable.close),
@@ -409,7 +409,7 @@ fun LibrarySongsScreen(
 
                     IconButton(
                         onClick = { isSearchActive = true },
-                        modifier = Modifier.padding(start = 8.dp, end = 8.dp).size(40.dp),
+                        modifier = Modifier.padding(start = 8.dp, end = 8.dp),
                     ) {
                         Icon(
                             painter = painterResource(R.drawable.search),
@@ -453,7 +453,7 @@ fun LibrarySongsScreen(
                         ) {
                             Icon(
                                 painter = painterResource(R.drawable.more_vert),
-                                contentDescription = null,
+                                contentDescription = stringResource(R.string.more_options),
                             )
                         }
                     },
@@ -470,6 +470,7 @@ fun LibrarySongsScreen(
                                             items = filteredSongs.map { it.toMediaItem() },
                                             startIndex = index,
                                         ),
+                                        source = libraryPlaybackSource,
                                     )
                                 }
                             }.animateItem(),
@@ -500,6 +501,7 @@ fun LibrarySongsScreen(
                             title = queueAllSongsStr,
                             items = filteredSongs.shuffled().map { it.toMediaItem() },
                         ),
+                        source = libraryPlaybackSource,
                     )
                 }
             },

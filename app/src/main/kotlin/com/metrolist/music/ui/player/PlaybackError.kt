@@ -177,7 +177,7 @@ fun PlaybackError(
         ) {
             Button(
                 onClick = retry,
-                shape = RoundedCornerShape(20.dp),
+                shape = RoundedCornerShape(24.dp),
                 colors =
                 ButtonDefaults.buttonColors(
                     containerColor = MaterialTheme.colorScheme.primary,
@@ -197,7 +197,7 @@ fun PlaybackError(
                     val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
                     clipboard.setPrimaryClip(ClipData.newPlainText("Metrolist Playback Error", errorReport))
                 },
-                shape = RoundedCornerShape(20.dp),
+                shape = RoundedCornerShape(24.dp),
             ) {
                 Icon(
                     painter = painterResource(R.drawable.content_copy),

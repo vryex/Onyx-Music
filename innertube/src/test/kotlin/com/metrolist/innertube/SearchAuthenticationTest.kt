@@ -22,6 +22,18 @@ import org.junit.Test
 
 class SearchAuthenticationTest {
     @Test
+    fun publicYouTubeSearchIsDisabledBeforeSendingAnyRequest() = runBlocking {
+        val engine = MockEngine {
+            respond("{}", headers = headersOf(HttpHeaders.ContentType, "application/json"))
+        }
+        HttpClient(engine) { install(ContentNegotiation) { json() } }.use { client ->
+            val result = runCatching { InnerTube(client).search(YouTubeClient.WEB, query = "Artist") }
+            assertTrue("Search must stay in the Music catalogue", result.exceptionOrNull() is IllegalArgumentException)
+            assertTrue("No request to regular YouTube is allowed", engine.requestHistory.isEmpty())
+        }
+    }
+
+    @Test
     fun explicitSearchAuthenticationDoesNotLeakIntoLaterLookups() =
         runBlocking {
             val engine =

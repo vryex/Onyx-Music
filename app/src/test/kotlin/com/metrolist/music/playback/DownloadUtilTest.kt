@@ -15,6 +15,14 @@ class DownloadUtilTest {
     }
 
     @Test
+    fun `in-flight downloads are not prepared again`() {
+        assertFalse(shouldPrepareDownload(Download.STATE_QUEUED))
+        assertFalse(shouldPrepareDownload(Download.STATE_DOWNLOADING))
+        assertFalse(shouldPrepareDownload(Download.STATE_REMOVING))
+        assertTrue(shouldPrepareDownload(Download.STATE_STOPPED))
+    }
+
+    @Test
     fun `downloadArtworkUrls keeps distinct song and album covers`() {
         assertEquals(
             listOf("song-cover", "album-cover"),

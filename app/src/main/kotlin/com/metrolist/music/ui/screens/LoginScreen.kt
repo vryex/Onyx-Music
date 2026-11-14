@@ -393,6 +393,8 @@ fun LoginScreen(
 
     if (loginStage == LoginStage.SelectingAccount) {
         AlertDialog(
+            shape = RoundedCornerShape(24.dp),
+            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
             onDismissRequest = {},
             title = { Text(stringResource(R.string.choose_youtube_channel)) },
             text = {
@@ -427,7 +429,8 @@ fun LoginScreen(
             },
             confirmButton = {
                 Button(
-                    colors = ButtonDefaults.buttonColors(containerColor = AuthViolet, contentColor = Color.White),
+                    shape = RoundedCornerShape(24.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = AuthViolet, contentColor = Color.Black),
                     enabled = selectedAccount?.let { it.isSelected || it.signinUrl != null } == true,
                     onClick = {
                         val account = selectedAccount ?: return@Button
@@ -463,11 +466,14 @@ fun LoginScreen(
 
     errorMessage?.let { error ->
         AlertDialog(
+            shape = RoundedCornerShape(24.dp),
+            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
             onDismissRequest = { errorMessage = null },
             title = { Text(stringResource(R.string.login_failed)) },
             text = { Text(error) },
             confirmButton = {
                 Button(
+                    shape = RoundedCornerShape(24.dp),
                     onClick = {
                         errorMessage = null
                         webViewRef?.reload()

@@ -85,7 +85,7 @@ fun WrappedTotalArtistsScreen(
             BoxWithConstraints(Modifier.fillMaxWidth().padding(horizontal = 16.dp)) {
                 val density = LocalDensity.current
                 val baseStyle = MaterialTheme.typography.displayLarge.copy(
-                    color = Color.White, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center,
+                    color = Color.White, fontWeight = FontWeight.Medium, textAlign = TextAlign.Center,
                     fontFamily = bbh_bartle, drawStyle = Stroke(with(density) { 2.dp.toPx() })
                 )
                 val textStyle = remember(uniqueArtistCount, maxWidth) {

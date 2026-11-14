@@ -5,7 +5,7 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
@@ -34,20 +34,14 @@ fun RandomizeGridItem(
     // When isLoading is false, multiplier goes to 1 (moving dots to corners)
     val dotOffsetMultiplier by animateFloatAsState(
         targetValue = if (isLoading) 0f else 1f,
-        animationSpec = tween(durationMillis = 600),
+        animationSpec = tween(durationMillis = 160),
         label = "dotOffset",
-    )
-
-    val loadingAlpha by animateFloatAsState(
-        targetValue = if (isLoading) 1f else 0f,
-        animationSpec = tween(durationMillis = 400),
-        label = "loadingAlpha",
     )
 
     Box(
         modifier =
             modifier
-                .aspectRatio(1f)
+                .fillMaxSize()
                 .clip(RoundedCornerShape(ThumbnailCornerRadius))
                 .background(MaterialTheme.colorScheme.secondaryContainer)
                 .clickable(onClick = onClick),
@@ -55,8 +49,8 @@ fun RandomizeGridItem(
     ) {
         // Die Dots (5-pattern)
         val dotColor = MaterialTheme.colorScheme.onSecondaryContainer
-        val dotSize = 14.dp
-        val padding = 24.dp
+        val dotSize = 7.dp
+        val padding = 14.dp
 
         // Using a single Center alignment and offsetting FROM center ensures they
         // collapse TO center correctly.
@@ -112,7 +106,7 @@ fun RandomizeGridItem(
         )
 
         // Loading Indicator overlay
-        Box(modifier = Modifier.alpha(loadingAlpha)) {
+        if (isLoading) Box {
             LoadingIndicator(
                 modifier = Modifier.size(48.dp),
                 color = MaterialTheme.colorScheme.onSecondaryContainer,

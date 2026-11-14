@@ -668,7 +668,7 @@ private fun ServerChooserDialog(
                             Text(
                                 text = server.name,
                                 style = MaterialTheme.typography.titleSmall,
-                                fontWeight = FontWeight.SemiBold,
+                                fontWeight = FontWeight.Medium,
                             )
                             Text(
                                 text = "${server.location} - ${server.operator}",
@@ -699,7 +699,7 @@ private fun ServerChooserDialog(
             Text(
                 text = stringResource(R.string.listen_together_custom_server),
                 style = MaterialTheme.typography.titleSmall,
-                fontWeight = FontWeight.SemiBold,
+                fontWeight = FontWeight.Medium,
             )
             OutlinedTextField(
                 value = customUrl,

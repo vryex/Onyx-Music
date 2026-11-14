@@ -199,7 +199,7 @@ fun AddToPlaylistDialog(
                     Text(
                         text = stringResource(R.string.create_playlist),
                         style = MaterialTheme.typography.titleSmall,
-                        fontWeight = FontWeight.SemiBold,
+                        fontWeight = FontWeight.Medium,
                     )
                 }
             }
@@ -244,7 +244,7 @@ fun AddToPlaylistDialog(
                                                 PlaylistSortType.SONG_COUNT   -> R.string.sort_by_song_count
                                                 PlaylistSortType.LAST_UPDATED -> R.string.sort_by_last_updated
                                             }),
-                                            fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal,
+                                            fontWeight = if (selected) FontWeight.Medium else FontWeight.Normal,
                                         )
                                     }
                                 )

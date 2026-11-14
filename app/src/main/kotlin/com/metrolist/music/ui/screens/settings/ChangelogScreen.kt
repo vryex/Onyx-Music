@@ -82,7 +82,7 @@ fun ChangelogScreen(
                     Text(
                         text = stringResource(R.string.changelog),
                         style = MaterialTheme.typography.displaySmall,
-                        fontWeight = FontWeight.Bold,
+                        fontWeight = FontWeight.Medium,
                         modifier = Modifier.fillMaxWidth(),
                         textAlign = TextAlign.Center
                     )
@@ -210,7 +210,7 @@ fun MarkdownText(text: String) {
                             2 -> MaterialTheme.typography.headlineSmall
                             else -> MaterialTheme.typography.titleMedium
                         },
-                        fontWeight = FontWeight.Bold,
+                        fontWeight = FontWeight.Medium,
                         textAlign = TextAlign.Center
                     )
                 }
@@ -233,7 +233,7 @@ fun MarkdownText(text: String) {
                         pushStringAnnotation(tag = "URL", annotation = link)
                         withStyle(style = SpanStyle(
                             color = MaterialTheme.colorScheme.primary, 
-                            fontWeight = if (match.startsWith("@")) FontWeight.Bold else FontWeight.Normal,
+                            fontWeight = if (match.startsWith("@")) FontWeight.Medium else FontWeight.Normal,
                             textDecoration = if (match.startsWith("@")) TextDecoration.None else TextDecoration.Underline
                         )) {
                             append(match)

@@ -64,7 +64,7 @@ fun EqFrequencyResponseGraph(
     val textMeasurer = rememberTextMeasurer()
     val surfaceColor = MaterialTheme.colorScheme.surfaceContainer
     val gridColor = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)
-    val labelColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+    val labelColor = MaterialTheme.colorScheme.onSurfaceVariant
     val curveColor = MaterialTheme.colorScheme.primary
     val fillColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)
     val zeroLineColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f)
@@ -79,7 +79,7 @@ fun EqFrequencyResponseGraph(
         modifier = modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp, vertical = 8.dp),
-        shape = RoundedCornerShape(12.dp),
+        shape = RoundedCornerShape(16.dp),
         color = surfaceColor,
         tonalElevation = 2.dp
     ) {

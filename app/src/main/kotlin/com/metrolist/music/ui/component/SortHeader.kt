@@ -59,7 +59,7 @@ inline fun <reified T : Enum<T>> SortHeader(
                     indication = ripple(bounded = false),
                 ) {
                     menuExpanded = !menuExpanded
-                }.padding(horizontal = 4.dp, vertical = 8.dp),
+                }.padding(horizontal = 12.dp, vertical = 14.dp),
         )
 
         DropdownMenu(
@@ -105,8 +105,8 @@ inline fun <reified T : Enum<T>> SortHeader(
                 color = MaterialTheme.colorScheme.primary,
                 modifier =
                 Modifier
-                    .size(32.dp)
-                    .padding(8.dp),
+                    .size(48.dp)
+                    .padding(12.dp),
                 onClick = { onSortDescendingChange(!sortDescending) },
             )
         }

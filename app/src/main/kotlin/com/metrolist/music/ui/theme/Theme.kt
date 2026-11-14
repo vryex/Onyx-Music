@@ -5,6 +5,7 @@
 
 package com.metrolist.music.ui.theme
 
+import androidx.compose.ui.text.font.FontWeight
 import android.graphics.Bitmap
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.ColorScheme
@@ -21,61 +22,76 @@ import androidx.compose.ui.graphics.toArgb
 import androidx.palette.graphics.Palette
 import com.materialkolor.score.Score
 
-val DefaultThemeColor = Color(0xFFD1E4FA)
+val DefaultThemeColor = Color(0xFFF5F5F7)
 
-val MidnightCanvas = Color(0xFF05060F)
-val FrostGlow = Color(0xFFD1E4FA)
-val MoonMist = Color(0xFFC7D3EA)
-val FogVeil = Color(0xFF9DA7BA)
-val GlassEdge = Color(0x1FBAD7F7)
-val AuthViolet = Color(0xFF663AF3)
+val MidnightCanvas = Color(0xFF000000)
+val FrostGlow = Color(0xFFF5F5F7)
+val MoonMist = Color(0xFFD1D1D6)
+val FogVeil = Color(0xFFA1A1A6)
+val GlassEdge = Color(0x18FFFFFF)
+val AuthViolet = Color(0xFFF5F5F7)
 
 private val MidnightColors = darkColorScheme(
-    primary = FrostGlow,
+    primary = Color(0xFFF5F5F7),
     onPrimary = MidnightCanvas,
-    primaryContainer = Color(0xFF242C3A),
+    primaryContainer = Color(0xFF242424),
     onPrimaryContainer = FrostGlow,
-    secondary = MoonMist,
+    secondary = Color(0xFFA1A1A6),
     onSecondary = MidnightCanvas,
-    secondaryContainer = Color(0xFF1B2230),
+    secondaryContainer = Color(0xFF242424),
     onSecondaryContainer = FrostGlow,
     tertiary = FrostGlow,
     onTertiary = MidnightCanvas,
-    tertiaryContainer = Color(0xFF242C3A),
+    tertiaryContainer = Color(0xFF242424),
     onTertiaryContainer = FrostGlow,
     background = MidnightCanvas,
-    onBackground = Color(0xFFD8ECF8),
+    onBackground = Color(0xFFF5F5F7),
     surface = MidnightCanvas,
     onSurface = FrostGlow,
-    surfaceVariant = Color(0xFF171D29),
+    surfaceVariant = Color(0xFF242424),
     onSurfaceVariant = FogVeil,
     surfaceTint = Color.Transparent,
     surfaceContainerLowest = MidnightCanvas,
-    surfaceContainerLow = Color(0xFF0D101A),
-    surfaceContainer = Color(0xFF111622),
-    surfaceContainerHigh = Color(0xFF191F2C),
-    surfaceContainerHighest = Color(0xFF242C3A),
+    surfaceContainerLow = Color(0xFF141414),
+    surfaceContainer = Color(0xFF141414),
+    surfaceContainerHigh = Color(0xFF242424),
+    surfaceContainerHighest = Color(0xFF242424),
     inverseSurface = FrostGlow,
     inverseOnSurface = MidnightCanvas,
-    inversePrimary = Color(0xFF242C3A),
-    outline = Color(0xFF647084),
+    inversePrimary = Color(0xFF242424),
+    outline = Color(0xFF636366),
     outlineVariant = GlassEdge,
 )
 
 private val MidnightShapes = androidx.compose.material3.Shapes(
-    extraSmall = androidx.compose.foundation.shape.RoundedCornerShape(6.dp),
-    small = androidx.compose.foundation.shape.RoundedCornerShape(6.dp),
-    medium = androidx.compose.foundation.shape.RoundedCornerShape(16.dp),
-    large = androidx.compose.foundation.shape.RoundedCornerShape(16.dp),
-    extraLarge = androidx.compose.foundation.shape.RoundedCornerShape(16.dp),
+    extraSmall = androidx.compose.foundation.shape.RoundedCornerShape(12.dp),
+    small = androidx.compose.foundation.shape.RoundedCornerShape(24.dp),
+    medium = androidx.compose.foundation.shape.RoundedCornerShape(20.dp),
+    large = androidx.compose.foundation.shape.RoundedCornerShape(28.dp),
+    extraLarge = androidx.compose.foundation.shape.RoundedCornerShape(32.dp),
 )
 
-private val MidnightTypography = androidx.compose.material3.Typography().let { type ->
-    type.copy(
-        headlineLarge = type.headlineLarge.copy(fontWeight = androidx.compose.ui.text.font.FontWeight.Medium, letterSpacing = (-0.4).sp),
-        headlineMedium = type.headlineMedium.copy(fontWeight = androidx.compose.ui.text.font.FontWeight.Medium, letterSpacing = (-0.3).sp),
-        titleLarge = type.titleLarge.copy(fontWeight = androidx.compose.ui.text.font.FontWeight.Medium, letterSpacing = (-0.24).sp),
-        bodyLarge = type.bodyLarge.copy(letterSpacing = (-0.16).sp),
+private val MidnightTypography = androidx.compose.material3.Typography().let { t ->
+    val family = androidx.compose.ui.text.font.FontFamily(
+        androidx.compose.ui.text.font.Font(com.metrolist.music.R.font.outfit_regular, FontWeight.Normal),
+        androidx.compose.ui.text.font.Font(com.metrolist.music.R.font.outfit_medium, FontWeight.Medium),
+    )
+    t.copy(
+        displayLarge = t.displayLarge.copy(fontFamily = family, fontSize = 40.sp, lineHeight = 46.sp, fontWeight = FontWeight.Medium, letterSpacing = (-0.4).sp),
+        displayMedium = t.displayMedium.copy(fontFamily = family, fontSize = 32.sp, lineHeight = 38.sp, fontWeight = FontWeight.Medium),
+        displaySmall = t.displaySmall.copy(fontFamily = family, fontSize = 32.sp, lineHeight = 38.sp, fontWeight = FontWeight.Medium),
+        headlineLarge = t.headlineLarge.copy(fontFamily = family, fontSize = 32.sp, lineHeight = 38.sp, fontWeight = FontWeight.Medium),
+        headlineMedium = t.headlineMedium.copy(fontFamily = family, fontSize = 24.sp, lineHeight = 29.sp, fontWeight = FontWeight.Medium),
+        headlineSmall = t.headlineSmall.copy(fontFamily = family, fontSize = 22.sp, lineHeight = 26.sp, fontWeight = FontWeight.Medium),
+        titleLarge = t.titleLarge.copy(fontFamily = family, fontSize = 22.sp, lineHeight = 26.sp, fontWeight = FontWeight.Medium),
+        titleMedium = t.titleMedium.copy(fontFamily = family, fontSize = 16.sp, lineHeight = 20.sp, fontWeight = FontWeight.Medium),
+        titleSmall = t.titleSmall.copy(fontFamily = family, fontSize = 15.sp, lineHeight = 19.sp, fontWeight = FontWeight.Medium),
+        bodyLarge = t.bodyLarge.copy(fontFamily = family, fontSize = 16.sp, lineHeight = 20.sp),
+        bodyMedium = t.bodyMedium.copy(fontFamily = family, fontSize = 15.sp, lineHeight = 21.sp),
+        bodySmall = t.bodySmall.copy(fontFamily = family, fontSize = 12.sp, lineHeight = 16.sp),
+        labelLarge = t.labelLarge.copy(fontFamily = family, fontSize = 14.sp, fontWeight = FontWeight.Medium),
+        labelMedium = t.labelMedium.copy(fontFamily = family, fontSize = 12.sp, fontWeight = FontWeight.Medium),
+        labelSmall = t.labelSmall.copy(fontFamily = family, fontSize = 11.sp, fontWeight = FontWeight.Medium),
     )
 }
 

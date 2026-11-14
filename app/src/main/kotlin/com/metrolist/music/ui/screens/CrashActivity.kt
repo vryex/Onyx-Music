@@ -139,6 +139,7 @@ fun CrashScreen(
         },
         floatingActionButton = {
             ExtendedFloatingActionButton(
+                shape = RoundedCornerShape(24.dp),
                 onClick = onShare,
                 icon = {
                     Icon(

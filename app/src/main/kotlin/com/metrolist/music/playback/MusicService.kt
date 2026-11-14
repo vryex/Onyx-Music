@@ -175,12 +175,10 @@ import com.metrolist.music.db.entities.RelatedSongMap
 import com.metrolist.music.db.entities.Song
 import com.metrolist.music.di.DownloadCache
 import com.metrolist.music.di.PlayerCache
-import com.metrolist.music.eq.EqualizerService
-import com.metrolist.music.eq.audio.CustomEqualizerAudioProcessor
-import com.metrolist.music.eq.data.EQProfileRepository
 import com.metrolist.music.extensions.SilentHandler
 import com.metrolist.music.extensions.collect
 import com.metrolist.music.extensions.collectLatest
+import com.metrolist.music.utils.recordRecentlyHeard
 import com.metrolist.music.extensions.currentMetadata
 import com.metrolist.music.extensions.findNextMediaItemById
 import com.metrolist.music.extensions.mediaItems
@@ -281,12 +279,6 @@ class MusicService :
 
     @Inject
     lateinit var mediaLibrarySessionCallback: MediaLibrarySessionCallback
-
-    @Inject
-    lateinit var equalizerService: EqualizerService
-
-    @Inject
-    lateinit var eqProfileRepository: EQProfileRepository
 
     @Inject
     lateinit var widgetManager: MetrolistWidgetManager
@@ -424,7 +416,6 @@ class MusicService :
     private var isAudioEffectSessionOpened = false
     private var openedAudioEffectSessionId: Int = C.AUDIO_SESSION_ID_UNSET
     private val playerNormalizationProcessors = HashMap<Player, VolumeNormalizationAudioProcessor>()
-    private val playerEqualizerProcessors = HashMap<Player, CustomEqualizerAudioProcessor>()
 
     private var loudnessSetupJob: Job? = null
     private var loudnessSetupGeneration: Long = 0L
@@ -760,16 +751,6 @@ class MusicService :
         lyricsHelper.preferred.collectLatest(scope) {}
 
         scope.launch {
-            eqProfileRepository.activeProfile.collect { profile ->
-                if (profile != null) {
-                    equalizerService.applyProfile(profile)
-                } else {
-                    equalizerService.disable()
-                }
-            }
-        }
-
-        scope.launch {
             connectivityObserver.networkStatus.collect { isConnected ->
                 isNetworkConnected.value = isConnected
                 if (isConnected && waitingForNetworkConnection.value) {
@@ -930,10 +911,9 @@ class MusicService :
         combine(
             dataStore.data.map { it[AudioOffload] ?: false },
             dataStore.data.map { it[CrossfadeEnabledKey] ?: false },
-            eqProfileRepository.activeProfile,
-        ) { offloadPref, crossfadeEnabled, eqProfile ->
-            // Offload bypasses the PCM processors used by custom EQ and crossfade.
-            offloadPref && !crossfadeEnabled && eqProfile == null
+        ) { offloadPref, crossfadeEnabled ->
+            // Crossfade requires the PCM audio path.
+            offloadPref && !crossfadeEnabled
         }.distinctUntilChanged()
             .collectLatest(scope) { useOffload ->
                 player.setOffloadEnabled(useOffload)
@@ -1281,7 +1261,6 @@ class MusicService :
 
     private fun createExoPlayer(prefs: Preferences? = null): ExoPlayer {
         val normalizationProcessor = VolumeNormalizationAudioProcessor()
-        val eqProcessor = CustomEqualizerAudioProcessor()
 
         val silenceProcessor = SilenceDetectorAudioProcessor { handleLongSilenceDetected() }
 
@@ -1307,7 +1286,7 @@ class MusicService :
                 .setMediaSourceFactory(
                     createMediaSourceFactory(normalizationProcessor) { createdPlayer },
                 )
-                .setRenderersFactory(createRenderersFactory(normalizationProcessor, eqProcessor, silenceProcessor, useAudioTrackPlaybackParams))
+                .setRenderersFactory(createRenderersFactory(normalizationProcessor, silenceProcessor, useAudioTrackPlaybackParams))
                 .setLoadControl(
                     // Start playback once ~750ms is buffered (media3's default is 1000ms) so first
                     // audio is audible a touch sooner. min/max/after-rebuffer match the media3 1.x
@@ -1334,20 +1313,18 @@ class MusicService :
 
         playerNormalizationProcessors[player] = normalizationProcessor
         playerSilenceProcessors[player] = silenceProcessor
-        playerEqualizerProcessors[player] = eqProcessor
-        equalizerService.addAudioProcessor(eqProcessor)
 
         if (prefs != null) {
             val offload = prefs[AudioOffload] ?: false
             val crossfade = prefs[CrossfadeEnabledKey] ?: false
-            player.setOffloadEnabled(offload && !crossfade && eqProfileRepository.activeProfile.value == null)
+            player.setOffloadEnabled(offload && !crossfade)
             player.skipSilenceEnabled = prefs[SkipSilenceKey] ?: false
         } else {
             player.apply {
                 runBlocking {
                     val offload = dataStore.get(AudioOffload, false)
                     val crossfade = dataStore.get(CrossfadeEnabledKey, false)
-                    setOffloadEnabled(offload && !crossfade && eqProfileRepository.activeProfile.value == null)
+                    setOffloadEnabled(offload && !crossfade)
                     skipSilenceEnabled = dataStore.get(SkipSilenceKey, false)
                 }
             }
@@ -2762,6 +2739,16 @@ class MusicService :
                 closeAudioEffectSession()
             }
         }
+        if (player.isPlaying && events.containsAny(
+                Player.EVENT_MEDIA_ITEM_TRANSITION, Player.EVENT_IS_PLAYING_CHANGED,
+            ) && !dataStore.get(PauseListenHistoryKey, false)
+        ) {
+            player.currentMetadata?.let { metadata ->
+                scope.launch(Dispatchers.IO) {
+                    applicationContext.recordRecentlyHeard(metadata, database)
+                }
+            }
+        }
         if (events.containsAny(EVENT_TIMELINE_CHANGED, EVENT_POSITION_DISCONTINUITY)) {
             currentMediaMetadata.value = player.currentMetadata
         }
@@ -3967,7 +3954,6 @@ class MusicService :
 
     private fun createRenderersFactory(
         normalizationProcessor: VolumeNormalizationAudioProcessor,
-        eqProcessor: CustomEqualizerAudioProcessor,
         silenceProcessor: SilenceDetectorAudioProcessor,
         useAudioTrackPlaybackParams: Boolean,
     ) = object : DefaultRenderersFactory(this) {
@@ -4027,7 +4013,6 @@ class MusicService :
                 DefaultAudioSink.DefaultAudioProcessorChain(
                     arrayOf(
                         normalizationProcessor,
-                        eqProcessor,
                         silenceProcessor,
                     ),
                     SilenceSkippingAudioProcessor(2_000_000, 20_000, 256),
@@ -5011,7 +4996,6 @@ class MusicService :
     private fun releaseExoPlayer(player: ExoPlayer) {
         playerNormalizationProcessors.remove(player)
         playerSilenceProcessors.remove(player)
-        playerEqualizerProcessors.remove(player)?.let(equalizerService::removeAudioProcessor)
         player.release()
     }
 

@@ -85,7 +85,7 @@ fun ShowOffsetDialog(songProvider: () -> SongEntity?) {
         Text(
             text = stringResource(R.string.lyrics_offset),
             style = MaterialTheme.typography.headlineSmall,
-            fontWeight = FontWeight.Bold
+            fontWeight = FontWeight.Medium
         )
 
         Spacer(modifier = Modifier.height(16.dp))
@@ -138,7 +138,7 @@ fun ShowOffsetDialog(songProvider: () -> SongEntity?) {
                 singleLine = true,
                 textStyle = MaterialTheme.typography.displaySmall.copy(
                     textAlign = TextAlign.Center,
-                    fontWeight = FontWeight.Bold
+                    fontWeight = FontWeight.Medium
                 ),
                 modifier = Modifier.widthIn(min = 120.dp, max = 160.dp),
                 colors = TextFieldDefaults.colors(

@@ -96,7 +96,7 @@ fun WrappedTopArtistScreen(topArtist: Artist?, isVisible: Boolean) {
                 text = topArtist?.artist?.name ?: stringResource(id = R.string.wrapped_no_data),
                 style = MaterialTheme.typography.headlineMedium,
                 color = Color.White,
-                fontWeight = FontWeight.Bold,
+                fontWeight = FontWeight.Medium,
                 textAlign = TextAlign.Center
             )
         }

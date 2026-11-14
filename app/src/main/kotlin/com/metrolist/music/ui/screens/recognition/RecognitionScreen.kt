@@ -519,7 +519,7 @@ private fun SuccessState(
         Text(
             text = result.title,
             style = MaterialTheme.typography.headlineSmall,
-            fontWeight = FontWeight.Bold,
+            fontWeight = FontWeight.Medium,
             textAlign = TextAlign.Center,
             maxLines = 2,
             overflow = TextOverflow.Ellipsis,
@@ -623,7 +623,7 @@ private fun NoMatchState(
         Text(
             text = stringResource(R.string.no_match_found),
             style = MaterialTheme.typography.titleLarge,
-            fontWeight = FontWeight.Bold,
+            fontWeight = FontWeight.Medium,
         )
 
         Text(
@@ -674,7 +674,7 @@ private fun ErrorState(
         Text(
             text = stringResource(R.string.recognition_error),
             style = MaterialTheme.typography.titleLarge,
-            fontWeight = FontWeight.Bold,
+            fontWeight = FontWeight.Medium,
         )
 
         Text(

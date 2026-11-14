@@ -697,6 +697,31 @@ interface DatabaseDao {
     @Query("SELECT * FROM song WHERE dateDownload IS NOT NULL AND isDownloaded = 0")
     fun cachePlaylistSongs(): Flow<List<Song>>
 
+    @Query("""
+        SELECT thumbnailUrl FROM song WHERE
+        (:kind = 'liked' AND liked = 1) OR
+        (:kind = 'downloaded' AND isDownloaded = 1) OR
+        (:kind = 'cached' AND dateDownload IS NOT NULL AND isDownloaded = 0) OR
+        (:kind = 'uploaded' AND isUploaded = 1)
+        ORDER BY CASE WHEN :kind = 'liked' THEN likedDate
+            WHEN :kind = 'uploaded' THEN inLibrary ELSE dateDownload END DESC, rowid DESC
+        LIMIT 1
+    """)
+    fun autoPlaylistCover(kind: String): Flow<String?>
+
+    @Query("""
+        SELECT song.thumbnailUrl FROM song INNER JOIN
+        (SELECT songId FROM event GROUP BY songId ORDER BY SUM(playTime) DESC LIMIT 1) AS top
+        ON top.songId = song.id
+    """)
+    fun topPlaylistCover(): Flow<String?>
+
+    @Query("""
+        SELECT song.thumbnailUrl FROM song INNER JOIN playlist_song_map AS map ON map.songId = song.id
+        WHERE map.playlistId = :playlistId ORDER BY map.position ASC LIMIT 1
+    """)
+    fun firstPlaylistCover(playlistId: String): Flow<String?>
+
     @Query("SELECT id FROM song WHERE id IN (:songIds)")
     suspend fun existingSongIds(songIds: List<String>): List<String>
 
@@ -1499,6 +1524,20 @@ interface DatabaseDao {
         thisMondayStart: LocalDateTime,
         lastMondayStart: LocalDateTime,
     ): Flow<List<EventWithSong>>
+
+    /** Recently heard unique songs, newest first, with reactive Room updates. */
+    @Transaction
+    @Query(
+        """
+        SELECT event.* FROM event
+        INNER JOIN (
+            SELECT MAX(id) AS lastId FROM event GROUP BY songId
+        ) AS recent ON recent.lastId = event.id
+        ORDER BY event.id DESC
+        LIMIT :limit
+        """,
+    )
+    fun recentlyHeardSongs(limit: Int = 8): Flow<List<EventWithSong>>
 
     @Transaction
     @Query("SELECT * FROM event ORDER BY rowId ASC LIMIT 1")

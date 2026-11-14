@@ -26,15 +26,78 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ProvideTextStyle
+import androidx.compose.material3.Slider
+import androidx.compose.material3.SliderDefaults
+import androidx.compose.material3.Switch
+import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import com.metrolist.music.R
 import com.metrolist.music.ui.theme.onyxGlass
 import androidx.compose.ui.graphics.painter.Painter
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
+
+/**
+ * Onyx switch: the single switch style used across settings, with the same
+ * check/close thumb the player controls use. Replaces the copy-pasted
+ * Switch + thumbContent block that used to be repeated in every settings row.
+ */
+@Composable
+fun OnyxSwitch(
+    checked: Boolean,
+    onCheckedChange: (Boolean) -> Unit,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+) {
+    Switch(
+        checked = checked,
+        onCheckedChange = onCheckedChange,
+        modifier = modifier,
+        enabled = enabled,
+        thumbContent = {
+            Icon(
+                painter = painterResource(
+                    id = if (checked) R.drawable.check else R.drawable.close
+                ),
+                contentDescription = null,
+                modifier = Modifier.size(SwitchDefaults.IconSize)
+            )
+        }
+    )
+}
+
+/**
+ * Onyx slider: settings slider in the same accent style as the player
+ * sliders (primary thumb/track instead of the bare Material default).
+ */
+@Composable
+fun OnyxSlider(
+    value: Float,
+    onValueChange: (Float) -> Unit,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+    valueRange: ClosedFloatingPointRange<Float> = 0f..1f,
+    steps: Int = 0,
+) {
+    Slider(
+        value = value,
+        onValueChange = onValueChange,
+        modifier = modifier,
+        enabled = enabled,
+        valueRange = valueRange,
+        steps = steps,
+        colors = SliderDefaults.colors(
+            thumbColor = MaterialTheme.colorScheme.primary,
+            activeTrackColor = MaterialTheme.colorScheme.primary,
+            inactiveTrackColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.24f),
+        ),
+    )
+}
 
 /**
  * A Material 3 Expressive style settings group component
@@ -57,28 +120,17 @@ fun Material3SettingsGroup(
                 text = it,
                 style = MaterialTheme.typography.labelLarge,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(bottom = 8.dp, top = 8.dp)
+                modifier = Modifier.padding(start = 8.dp, bottom = 6.dp, top = 14.dp)
             )
         }
 
-        // Settings items
-        Column(
-            modifier = Modifier.fillMaxWidth(),
-            verticalArrangement = Arrangement.spacedBy(6.dp)
-        ) {
+        Column(Modifier.fillMaxWidth()) {
             items.forEachIndexed { index, item ->
-                val shape = RoundedCornerShape(16.dp)
-
-                Card(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .onyxGlass(shape),
-                    shape = shape,
-                    colors = CardDefaults.cardColors(containerColor = Color.Transparent),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
-                ) {
-                    Material3SettingsItemRow(item = item)
-                }
+                Material3SettingsItemRow(item = item)
+                if (index < items.lastIndex) androidx.compose.material3.HorizontalDivider(
+                    modifier = Modifier.padding(start = 52.dp, end = 8.dp),
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.07f),
+                )
             }
         }
     }
@@ -98,7 +150,8 @@ private fun Material3SettingsItemRow(
                 enabled = item.enabled && item.onClick != null,
                 onClick = { item.onClick?.invoke() }
             )
-            .padding(horizontal = 20.dp, vertical = 16.dp),
+            .clip(RoundedCornerShape(14.dp))
+            .padding(horizontal = 8.dp, vertical = 18.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         // Custom leading content or Icon with background
@@ -107,14 +160,7 @@ private fun Material3SettingsItemRow(
             Spacer(modifier = Modifier.width(16.dp))
         } else if (item.icon != null) {
             Box(
-                modifier = Modifier
-                    .size(40.dp)
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(
-                        MaterialTheme.colorScheme.primary.copy(
-                            alpha = if (item.isHighlighted) 0.15f else 0.1f
-                        )
-                    ),
+                modifier = Modifier.size(28.dp),
                 contentAlignment = Alignment.Center
             ) {
                 if (item.showBadge) {
@@ -133,7 +179,7 @@ private fun Material3SettingsItemRow(
                             else if (item.isHighlighted)
                                 MaterialTheme.colorScheme.primary
                             else
-                                MaterialTheme.colorScheme.primary.copy(alpha = 0.9f),
+                                MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.size(24.dp)
                         )
                     }
@@ -146,7 +192,7 @@ private fun Material3SettingsItemRow(
                         else if (item.isHighlighted)
                             MaterialTheme.colorScheme.primary
                         else
-                            MaterialTheme.colorScheme.primary.copy(alpha = 0.9f),
+                            MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.size(24.dp)
                     )
                 }
@@ -161,7 +207,7 @@ private fun Material3SettingsItemRow(
         ) {
             // Title content
             ProvideTextStyle(
-                MaterialTheme.typography.titleMedium.copy(
+                MaterialTheme.typography.bodyLarge.copy(
                     color = if (!item.enabled) 
                         MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
                     else
@@ -191,6 +237,15 @@ private fun Material3SettingsItemRow(
         item.trailingContent?.let { trailing ->
             Spacer(modifier = Modifier.width(8.dp))
             trailing()
+        }
+        if (item.trailingContent == null && item.onClick != null) {
+            Spacer(Modifier.width(12.dp))
+            Icon(
+                painter = androidx.compose.ui.res.painterResource(com.metrolist.music.R.drawable.arrow_forward),
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.32f),
+                modifier = Modifier.size(18.dp),
+            )
         }
     }
 }
