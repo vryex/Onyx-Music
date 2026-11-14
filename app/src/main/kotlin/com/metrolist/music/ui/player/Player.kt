@@ -1412,6 +1412,7 @@ fun BottomSheetPlayer(
             }
 
             else -> BoxWithConstraints(Modifier.fillMaxSize()) {
+                val showQuickActions = maxWidth >= 392.dp
                 // Spend spare portrait height on breathing room below the controls.
                 val controlsLift = if (isFullScreen) 0.dp else
                     ((maxHeight - 600.dp) / 3).coerceIn(0.dp, 40.dp)
@@ -1488,7 +1489,7 @@ fun BottomSheetPlayer(
                     }
 
                     mediaMetadata?.let {
-                        metadataContent(it, maxWidth >= 392.dp)
+                        metadataContent(it, showQuickActions)
                         controlsContent(it)
                     }
 
