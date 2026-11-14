@@ -31,6 +31,7 @@ import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
 import android.content.res.Configuration
+import android.os.SystemClock
 import android.view.WindowManager
 import android.widget.Toast
 import androidx.compose.animation.core.Animatable
@@ -107,6 +108,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -450,16 +452,6 @@ fun BottomSheetPlayer(
     var position by positionState
     var duration by durationState
 
-    val effectivePosition by remember {
-        derivedStateOf {
-            if (isCasting) {
-                castPosition
-            } else {
-                position
-            }
-        }
-    }
-
     var sliderPosition by remember {
         mutableStateOf<Long?>(null)
     }
@@ -694,15 +686,25 @@ fun BottomSheetPlayer(
                     position = newPosition.positionMs.coerceAtLeast(0L)
                 }
             }
+
+            override fun onMediaItemTransition(mediaItem: androidx.media3.common.MediaItem?, reason: Int) {
+                sliderPosition = null
+                lastManualSeekTime = 0L
+            }
         }
         player.addListener(listener)
         onDispose { player.removeListener(listener) }
     }
 
+    LaunchedEffect(mediaMetadata?.id, isCasting, isListenTogetherGuest, sliderStyle, squigglySlider, duration) {
+        sliderPosition = null
+    }
+
     // Also update position when playback state changes (e.g., song change, seek)
-    LaunchedEffect(playbackState, mediaMetadata?.id) {
+    LaunchedEffect(playerConnection, playbackState, mediaMetadata?.id, isCasting) {
         if (!isCasting) {
-            position = playerConnection.player.currentPosition
+            lastManualSeekTime = 0L
+            position = playerConnection.player.currentPosition.coerceAtLeast(0L)
             // Prefer the song's known duration (from metadata, available instantly from the restored
             // queue) so the slider range is right even when restored paused / before the stream
             // resolves; fall back to the player's duration once it is known.
@@ -732,15 +734,17 @@ fun BottomSheetPlayer(
         previousMediaId = currentId
     }
 
-    // When casting, use Cast position/duration directly
-    // But wait a bit after manual seeks to let Cast catch up
-    LaunchedEffect(isCasting, castPosition, castDuration) {
-        if (isCasting && sliderPosition == null) {
-            val timeSinceManualSeek = System.currentTimeMillis() - lastManualSeekTime
-            if (timeSinceManualSeek > 1500) {
-                // Only update from Cast if we haven't manually seeked recently
-                position = castPosition
-                if (castDuration > 0) duration = castDuration
+    // Give the receiver time to acknowledge a seek, then resync even if it is paused.
+    val isScrubbing = sliderPosition != null
+    LaunchedEffect(isCasting, castPosition, castDuration, isScrubbing, lastManualSeekTime) {
+        if (isCasting) {
+            duration = castDuration.coerceAtLeast(0L)
+            if (!isScrubbing) {
+                if (lastManualSeekTime != 0L) {
+                    val settleTime = 1500L - (SystemClock.elapsedRealtime() - lastManualSeekTime)
+                    if (settleTime > 0L) delay(settleTime)
+                }
+                position = castPosition.coerceAtLeast(0L)
             }
         }
     }
@@ -993,166 +997,107 @@ fun BottomSheetPlayer(
             }
         }
         val controlsContent: @Composable ColumnScope.(MediaMetadata) -> Unit = { mediaMetadata ->
-            // Scrub bubble: the destination time while dragging, for every slider style.
-            AnimatedVisibility(
-                visible = sliderPosition != null,
-                enter = fadeIn(tween(140)),
-                exit = fadeOut(tween(140)),
-            ) {
-                Box(
-                    Modifier.fillMaxWidth().padding(horizontal = PlayerHorizontalPadding + 4.dp),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Text(
-                        text = sliderPosition?.let { makeTimeString(it) }.orEmpty(),
-                        style = MaterialTheme.typography.labelLarge,
-                        fontFamily = FontFamily.Monospace,
-                        color = playerContentColor,
-                        modifier = Modifier
-                            .background(playerContentColor.copy(alpha = 0.12f), RoundedCornerShape(50))
-                            .padding(horizontal = 12.dp, vertical = 4.dp),
-                    )
+            DisposableEffect(Unit) {
+                onDispose { sliderPosition = null }
+            }
+
+            val canSeek = !isListenTogetherGuest && duration > 0L
+            val sliderRange = 0f..duration.coerceAtLeast(1L).toFloat()
+            val sliderValue = if (duration > 0L) {
+                (sliderPosition ?: position).toFloat().coerceIn(sliderRange)
+            } else 0f
+            val sliderColors = PlayerSliderColors.getSliderColors(playbackAccent, playerBackground, useDarkTheme)
+            val sliderModifier = Modifier.padding(horizontal = PlayerHorizontalPadding).heightIn(min = 48.dp)
+            val previewSeek: (Float) -> Unit = {
+                if (canSeek) sliderPosition = it.toLong().coerceIn(0L, duration)
+            }
+            val finishSeek: () -> Unit = {
+                val target = sliderPosition
+                sliderPosition = null
+                if (canSeek && target != null && playerConnection.mediaMetadata.value?.id == mediaMetadata.id) {
+                    val seekPosition = target.coerceIn(0L, duration)
+                    if (isCasting) {
+                        lastManualSeekTime = SystemClock.elapsedRealtime()
+                        castHandler?.seekTo(seekPosition)
+                    } else {
+                        playerConnection.player.seekTo(seekPosition)
+                    }
+                    position = seekPosition
                 }
             }
-            when (sliderStyle) {
-                SliderStyle.DEFAULT -> {
-                    val sliderValue = (sliderPosition ?: effectivePosition).toFloat()
-                    val sliderRange = 0f..duration.coerceAtLeast(0L).toFloat()
-                    val sliderState = remember(sliderRange) {
-                        SliderState(value = sliderValue, trackRange = sliderRange)
-                    }
-                    sliderState.value = sliderValue
-                    val scrubSize by animateDpAsState(if (sliderPosition != null) 18.dp else 12.dp, tween(140), label = "scrubThumb")
-                    val scrubTrackHeight by animateDpAsState(if (sliderPosition != null) 8.dp else 6.dp, tween(140), label = "scrubTrack")
-                    Slider(
-                        state = sliderState,
-                        onValueChange = {
-                            if (!isListenTogetherGuest) {
-                                sliderPosition = it.toLong()
-                            }
-                        },
-                        onValueChangeFinished = {
-                            if (!isListenTogetherGuest) {
-                                sliderPosition?.let {
-                                    if (isCasting) {
-                                        castHandler?.seekTo(it)
-                                        lastManualSeekTime = System.currentTimeMillis()
-                                    } else {
-                                        playerConnection.player.seekTo(it)
-                                    }
-                                    position = it
-                                }
-                                sliderPosition = null
-                            }
-                        },
-                        enabled = !isListenTogetherGuest,
-                        thumb = {
-                            Box(Modifier.size(scrubSize).shadow(4.dp, CircleShape).background(playerContentColor, CircleShape))
-                        },
-                        track = { sliderState ->
-                            PlayerSliderTrack(
-                                sliderState = sliderState,
-                                colors = PlayerSliderColors.getSliderColors(playbackAccent, playerBackground, useDarkTheme),
-                                trackHeight = scrubTrackHeight,
-                                accentColor = playbackAccent,
-                                bufferedFraction = if (duration > 0L) playerConnection.player.bufferedPosition.toFloat() / duration else 0f,
-                            )
-                        },
-                        colors = PlayerSliderColors.getSliderColors(playbackAccent, playerBackground, useDarkTheme),
-                        modifier = Modifier.padding(horizontal = PlayerHorizontalPadding).heightIn(min = 48.dp),
-                    )
-                }
 
-                SliderStyle.WAVY -> {
-                    if (squigglySlider) {
-                        SquigglySlider(
-                            value = (sliderPosition ?: effectivePosition).toFloat(),
-                            valueRange = 0f..(duration.coerceAtLeast(0L).toFloat()),
-                            onValueChange = {
-                                sliderPosition = it.toLong()
-                            },
-                            onValueChangeFinished = {
-                                sliderPosition?.let {
-                                    if (isCasting) {
-                                        castHandler?.seekTo(it)
-                                        lastManualSeekTime = System.currentTimeMillis()
-                                    } else {
-                                        playerConnection.player.seekTo(it)
-                                    }
-                                    position = it
-                                }
-                                sliderPosition = null
-                            },
-                            modifier = Modifier.padding(horizontal = PlayerHorizontalPadding),
-                            colors = PlayerSliderColors.getSliderColors(playbackAccent, playerBackground, useDarkTheme),
-                            isPlaying = effectiveIsPlaying,
+            key(mediaMetadata.id, isCasting, canSeek, sliderStyle) {
+                when (sliderStyle) {
+                    SliderStyle.DEFAULT, SliderStyle.SLIM -> {
+                        val sliderState = remember(sliderRange) {
+                            SliderState(value = sliderValue, trackRange = sliderRange)
+                        }
+                        sliderState.value = sliderValue
+                        val slim = sliderStyle == SliderStyle.SLIM
+                        val scrubSize by animateDpAsState(
+                            if (!slim && sliderPosition != null) 18.dp else 12.dp,
+                            tween(140), label = "scrubThumb",
                         )
-                    } else {
-                        WavySlider(
-                            value = (sliderPosition ?: effectivePosition).toFloat(),
-                            valueRange = 0f..(duration.coerceAtLeast(0L).toFloat()),
-                            onValueChange = {
-                                sliderPosition = it.toLong()
-                            },
-                            onValueChangeFinished = {
-                                sliderPosition?.let {
-                                    if (isCasting) {
-                                        castHandler?.seekTo(it)
-                                        lastManualSeekTime = System.currentTimeMillis()
-                                    } else {
-                                        playerConnection.player.seekTo(it)
-                                    }
-                                    position = it
+                        val scrubTrackHeight by animateDpAsState(
+                            if (slim) 4.dp else if (sliderPosition != null) 8.dp else 6.dp,
+                            tween(140), label = "scrubTrack",
+                        )
+                        Slider(
+                            state = sliderState,
+                            onValueChange = previewSeek,
+                            onValueChangeFinished = finishSeek,
+                            enabled = canSeek,
+                            thumb = {
+                                Box(Modifier.size(18.dp), contentAlignment = Alignment.Center) {
+                                    Box(
+                                        Modifier.size(scrubSize).shadow(4.dp, CircleShape)
+                                            .background(playerContentColor, CircleShape),
+                                    )
                                 }
-                                sliderPosition = null
                             },
-                            colors = PlayerSliderColors.getSliderColors(playbackAccent, playerBackground, useDarkTheme),
-                            modifier = Modifier.padding(horizontal = PlayerHorizontalPadding),
-                            isPlaying = effectiveIsPlaying,
+                            track = { sliderState ->
+                                PlayerSliderTrack(
+                                    sliderState = sliderState,
+                                    colors = sliderColors,
+                                    trackHeight = scrubTrackHeight,
+                                    accentColor = if (slim) null else playbackAccent,
+                                    bufferedFraction = if (!slim && canSeek && !isCasting) {
+                                        playerConnection.player.bufferedPosition.toFloat() / duration
+                                    } else 0f,
+                                )
+                            },
+                            colors = sliderColors,
+                            modifier = sliderModifier,
                         )
                     }
-                }
 
-                SliderStyle.SLIM -> {
-                    val sliderValue = (sliderPosition ?: effectivePosition).toFloat()
-                    val sliderRange = 0f..(duration.coerceAtLeast(0L).toFloat())
-                    val sliderState = remember(sliderRange) {
-                        SliderState(value = sliderValue, trackRange = sliderRange)
-                    }
-                    sliderState.value = sliderValue
-                    Slider(
-                        state = sliderState,
-                        onValueChange = {
-                            if (!isListenTogetherGuest) {
-                                sliderPosition = it.toLong()
-                            }
-                        },
-                        onValueChangeFinished = {
-                            if (!isListenTogetherGuest) {
-                                sliderPosition?.let {
-                                    if (isCasting) {
-                                        castHandler?.seekTo(it)
-                                        lastManualSeekTime = System.currentTimeMillis()
-                                    } else {
-                                        playerConnection.player.seekTo(it)
-                                    }
-                                    position = it
-                                }
-                                sliderPosition = null
-                            }
-                        },
-                        enabled = !isListenTogetherGuest,
-                        // Slim keeps a visible 12dp thumb: a 0dp thumb cannot be
-                        // grabbed or seen, so the slider looks broken.
-                        thumb = { Box(Modifier.size(12.dp).shadow(4.dp, CircleShape).background(playerContentColor, CircleShape)) },
-                        track = { sliderState ->
-                            PlayerSliderTrack(
-                                sliderState = sliderState,
-                                colors = PlayerSliderColors.getSliderColors(playbackAccent, playerBackground, useDarkTheme),
+                    SliderStyle.WAVY -> {
+                        if (squigglySlider) {
+                            SquigglySlider(
+                                value = sliderValue,
+                                valueRange = sliderRange,
+                                onValueChange = previewSeek,
+                                onValueChangeFinished = finishSeek,
+                                onValueChangeCancelled = { sliderPosition = null },
+                                enabled = canSeek,
+                                modifier = sliderModifier,
+                                colors = sliderColors,
+                                isPlaying = effectiveIsPlaying,
                             )
-                        },
-                        modifier = Modifier.padding(horizontal = PlayerHorizontalPadding).heightIn(min = 48.dp),
-                    )
+                        } else {
+                            WavySlider(
+                                value = sliderValue,
+                                valueRange = sliderRange,
+                                onValueChange = previewSeek,
+                                onValueChangeFinished = finishSeek,
+                                onValueChangeCancelled = { sliderPosition = null },
+                                enabled = canSeek,
+                                modifier = sliderModifier,
+                                colors = sliderColors,
+                                isPlaying = effectiveIsPlaying,
+                            )
+                        }
+                    }
                 }
             }
 
@@ -1167,10 +1112,10 @@ fun BottomSheetPlayer(
                         .padding(horizontal = PlayerHorizontalPadding + 4.dp),
             ) {
                 Text(
-                    text = makeTimeString(sliderPosition ?: effectivePosition),
+                    text = makeTimeString(sliderPosition ?: position),
                     style = MaterialTheme.typography.labelMedium,
                     fontFamily = FontFamily.Monospace,
-                    color = playerContentColor.copy(alpha = 0.65f),
+                    color = playerContentColor.copy(alpha = if (sliderPosition != null) 1f else 0.65f),
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
@@ -1292,7 +1237,7 @@ fun BottomSheetPlayer(
                                     mediaMetadata = mediaMetadata,
                                     showLyrics = showLyrics,
                                     playbackActive = !state.isCollapsed && !state.isDismissed,
-                                    positionProvider = { effectivePosition },
+                                    positionProvider = { position },
                                 )
                             } else if (videoSession != null) {
                                 EmbeddedMusicVideo(
@@ -1375,7 +1320,7 @@ fun BottomSheetPlayer(
                                 mediaMetadata = mediaMetadata,
                                 showLyrics = showInlineLyrics,
                                 playbackActive = showInlineLyrics && !state.isCollapsed && !state.isDismissed,
-                                positionProvider = { effectivePosition },
+                                positionProvider = { position },
                                 modifier = Modifier.matchParentSize()
                                     .graphicsLayer { alpha = lyricsMix.value }
                                     .then(if (!showInlineLyrics) Modifier.clearAndSetSemantics { } else Modifier),

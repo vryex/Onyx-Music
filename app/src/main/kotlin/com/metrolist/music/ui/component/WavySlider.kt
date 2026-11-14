@@ -24,6 +24,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -49,7 +50,8 @@ fun WavySlider(
     strokeWidth: Dp = 4.dp,
     thumbRadius: Dp = 8.dp,
     wavelength: Dp = WavyProgressIndicatorDefaults.LinearDeterminateWavelength,
-    waveSpeed: Dp = wavelength
+    waveSpeed: Dp = wavelength,
+    onValueChangeCancelled: (() -> Unit)? = null,
 ) {
     val density = LocalDensity.current
     val strokeWidthPx = with(density) { strokeWidth.toPx() }
@@ -58,10 +60,16 @@ fun WavySlider(
         Stroke(width = strokeWidthPx, cap = StrokeCap.Round) 
     }
     
-    val normalizedValue = ((value - valueRange.start) / (valueRange.endInclusive - valueRange.start))
-        .coerceIn(0f, 1f)
+    val rangeLength = valueRange.endInclusive - valueRange.start
+    val normalizedValue = if (rangeLength > 0f) {
+        ((value - valueRange.start) / rangeLength).coerceIn(0f, 1f)
+    } else 0f
     
-    var isDragging by remember { mutableStateOf(false) }
+    val changeValue by rememberUpdatedState(onValueChange)
+    val finishChange by rememberUpdatedState(onValueChangeFinished)
+    val cancelChange by rememberUpdatedState(onValueChangeCancelled)
+
+    var isDragging by remember(enabled, valueRange) { mutableStateOf(false) }
     var dragValue by remember { mutableFloatStateOf(normalizedValue) }
     
     val displayValue = if (isDragging) dragValue else normalizedValue
@@ -89,8 +97,8 @@ fun WavySlider(
                 detectTapGestures { offset ->
                     val newValue = (offset.x / size.width).coerceIn(0f, 1f)
                     val mappedValue = valueRange.start + newValue * (valueRange.endInclusive - valueRange.start)
-                    onValueChange(mappedValue)
-                    onValueChangeFinished?.invoke()
+                    changeValue(mappedValue)
+                    finishChange?.invoke()
                 }
             }
             .pointerInput(valueRange) {
@@ -99,19 +107,20 @@ fun WavySlider(
                         isDragging = true
                         dragValue = (offset.x / size.width).coerceIn(0f, 1f)
                         val mappedValue = valueRange.start + dragValue * (valueRange.endInclusive - valueRange.start)
-                        onValueChange(mappedValue)
+                        changeValue(mappedValue)
                     },
                     onDragEnd = {
                         isDragging = false
-                        onValueChangeFinished?.invoke()
+                        finishChange?.invoke()
                     },
                     onDragCancel = {
                         isDragging = false
+                        cancelChange?.invoke()
                     },
                     onHorizontalDrag = { _, dragAmount ->
                         dragValue = (dragValue + dragAmount / size.width).coerceIn(0f, 1f)
                         val mappedValue = valueRange.start + dragValue * (valueRange.endInclusive - valueRange.start)
-                        onValueChange(mappedValue)
+                        changeValue(mappedValue)
                     }
                 )
             }
