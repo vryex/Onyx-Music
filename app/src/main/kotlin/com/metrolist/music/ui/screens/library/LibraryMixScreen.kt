@@ -106,7 +106,6 @@ import com.metrolist.music.ui.component.CreatePlaylistDialog
 import com.metrolist.music.ui.component.LibrarySearchEmptyPlaceholder
 import com.metrolist.music.ui.component.LibrarySearchHeader
 import com.metrolist.music.ui.component.LocalMenuState
-import com.metrolist.music.ui.component.onyxPageBackground
 import com.metrolist.music.ui.component.PlaylistGridItem
 import com.metrolist.music.ui.component.PlaylistListItem
 import com.metrolist.music.ui.component.SongGridItem
@@ -532,7 +531,6 @@ fun LibraryMixScreen(
         modifier =
             Modifier
                 .fillMaxSize()
-                .onyxPageBackground(mediaMetadata?.thumbnailUrl)
                 .pullToRefresh(
                     state = pullRefreshState,
                     isRefreshing = isRefreshing,

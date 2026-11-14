@@ -70,7 +70,6 @@ import com.metrolist.music.ui.component.LibrarySearchEmptyPlaceholder
 import com.metrolist.music.ui.component.LibrarySearchHeader
 import com.metrolist.music.ui.component.LocalMenuState
 import com.metrolist.music.ui.component.SortHeader
-import com.metrolist.music.ui.component.onyxPageBackground
 import com.metrolist.music.utils.rememberEnumPreference
 import com.metrolist.music.utils.rememberPreference
 import com.metrolist.music.viewmodels.LibraryArtistsViewModel
@@ -89,7 +88,6 @@ fun LibraryArtistsScreen(
     val keyboardController = LocalSoftwareKeyboardController.current
     val coroutineScope = rememberCoroutineScope()
     val playerConnection = LocalPlayerConnection.current ?: return
-    val mediaMetadata by playerConnection.mediaMetadata.collectAsStateWithLifecycle()
     var viewType by rememberEnumPreference(ArtistViewTypeKey, LibraryViewType.GRID)
 
     var filter by rememberEnumPreference(ArtistFilterKey, ArtistFilter.LIKED)
@@ -232,7 +230,7 @@ fun LibraryArtistsScreen(
     }
 
     Box(
-        modifier = Modifier.fillMaxSize().onyxPageBackground(mediaMetadata?.thumbnailUrl),
+        modifier = Modifier.fillMaxSize(),
     ) {
         when (viewType) {
             LibraryViewType.LIST ->

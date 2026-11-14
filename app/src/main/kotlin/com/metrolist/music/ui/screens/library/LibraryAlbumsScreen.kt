@@ -74,7 +74,6 @@ import com.metrolist.music.ui.component.LibrarySearchHeader
 import com.metrolist.music.ui.component.LibraryAlbumGridItem
 import com.metrolist.music.ui.component.LibraryAlbumListItem
 import com.metrolist.music.ui.component.LocalMenuState
-import com.metrolist.music.ui.component.onyxPageBackground
 import com.metrolist.music.ui.component.SortHeader
 import com.metrolist.music.utils.rememberEnumPreference
 import com.metrolist.music.utils.rememberPreference
@@ -250,7 +249,7 @@ fun LibraryAlbumsScreen(
     }
 
     Box(
-        modifier = Modifier.fillMaxSize().onyxPageBackground(mediaMetadata?.thumbnailUrl),
+        modifier = Modifier.fillMaxSize(),
     ) {
         when (viewType) {
             LibraryViewType.LIST -> {

@@ -150,7 +150,6 @@ import com.metrolist.music.utils.recentlyHeardSongs
 import com.metrolist.music.ui.component.OnyxHomeHero
 import com.metrolist.music.ui.component.OnyxHomeObservatory
 import com.metrolist.music.ui.component.OnyxHomeShortcuts
-import com.metrolist.music.ui.component.onyxPageBackground
 import com.metrolist.music.ui.component.OnyxQuickAccessItem
 import com.metrolist.music.ui.component.NavigationTitle
 import com.metrolist.music.ui.component.SongGridItem
@@ -1196,7 +1195,7 @@ fun HomeScreen(
         },
     ) {
         BoxWithConstraints(
-            modifier = Modifier.fillMaxSize().onyxPageBackground(mediaMetadata?.thumbnailUrl),
+            modifier = Modifier.fillMaxSize(),
             contentAlignment = Alignment.TopStart,
         ) {
             val horizontalLazyGridItemWidthFactor = if (maxWidth * 0.475f >= 320.dp) 0.475f else 0.9f

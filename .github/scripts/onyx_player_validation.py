@@ -113,6 +113,14 @@ def validate_page_actions():
     # Page actions must disappear with the player and return on the underlying page.
     tap_label(snapshot('22-fit-player'), 'minimize player')
     adb('shell', 'input', 'keyevent', 'KEYCODE_BACK')
+    tap_label(snapshot('22-find-library'), 'library')
+    snapshot('22-library-with-cover')
+    library_image = Image.open(out / '22-library-with-cover.png').convert('RGB')
+    width, height = library_image.size
+    for fraction in (.18, .25, .36, .55):
+        y = int(height * fraction)
+        rgb = ImageStat.Stat(library_image.crop((int(width * .025), y - 2, int(width * .043), y + 3))).mean
+        assert max(rgb) - min(rgb) < 10, 'Library background inherited the playing song artwork'
     tap_label(snapshot('22-library'), 'home')
     home_actions = snapshot('22-home-actions')
     assert any(n.get('resource-id', '') == 'sonet_page_actions' for n in home_actions.iter('node')), 'Home floating actions missing with collapsed player'
@@ -360,6 +368,16 @@ if not video_only:
         'Returning to portrait must keep the player expanded')
     tap_label(portrait, 'lyrics')
     lyrics_screen = snapshot('16-lyrics')
+    lyrics_image = Image.open(out / '16-lyrics.png').convert('RGB')
+    image_width, image_height = lyrics_image.size
+    # Sample the empty gutter, where the old panel abruptly darkened the backdrop.
+    gutter_left, gutter_right = int(image_width * .025), int(image_width * .043)
+    def gutter_color(y):
+        return ImageStat.Stat(lyrics_image.crop((gutter_left, y - 2, gutter_right, y + 3))).mean
+
+    for y in range(int(image_height * .08), int(image_height * .25)):
+        assert max(abs(a - b) for a, b in zip(gutter_color(y - 5), gutter_color(y + 5))) < 20, (
+            'Lyrics backdrop has an abrupt edge below the player header')
 
     def control_point(root, description):
         nodes = [n for n in root.iter('node') if n.get('content-desc', '').lower() == description]

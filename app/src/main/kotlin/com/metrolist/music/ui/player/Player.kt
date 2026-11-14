@@ -12,6 +12,7 @@ import com.metrolist.music.ui.theme.onArtworkColor
 import com.metrolist.music.ui.theme.rememberArtworkColor
 import com.metrolist.music.ui.utils.resize
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.draw.drawWithCache
 import com.metrolist.music.ui.theme.onyxGlass
@@ -1638,16 +1639,9 @@ fun InlineLyricsView(
     }
 
     Box(
-        modifier = modifier
-                .fillMaxSize()
-                .clip(RoundedCornerShape(12.dp)),
+        modifier = modifier.fillMaxSize().clipToBounds(),
         contentAlignment = Alignment.Center,
     ) {
-        // Real dark scrim behind the lyrics. The pane must read as dark no
-        // matter how bright or colourful the cover is: without it the
-        // lines dissolve into the photo (pink line on a pink cover, next
-        // line invisible). Plain black only, no palette colour.
-        Box(Modifier.matchParentSize().background(Color.Black.copy(alpha = 0.75f)))
         when {
             lyrics == null -> {
                 if (playbackActive) SonetLoadingIndicator()

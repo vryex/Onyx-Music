@@ -50,42 +50,14 @@ import androidx.compose.ui.unit.sp
 import coil3.compose.AsyncImage
 import com.metrolist.innertube.models.YTItem
 import com.metrolist.music.R
-import com.metrolist.music.constants.PlayerBackgroundStyle
-import com.metrolist.music.constants.PlayerBackgroundStyleKey
 import com.metrolist.music.constants.ThumbnailCornerRadius
 import com.metrolist.music.ui.theme.onyxGlass
 import com.metrolist.music.ui.theme.onArtworkColor
 import com.metrolist.music.ui.theme.rememberArtworkTones
-import com.metrolist.music.utils.rememberEnumPreference
 
 /** Onyx Liquid shared tokens: one radius for cards/controls, one for artwork. */
 val OnyxRadius = 24.dp
 val OnyxThumbnailRadius = ThumbnailCornerRadius
-
-/**
- * Page background coherent with the player setting (PlayerBackgroundStyle):
- * DEFAULT keeps the flat theme, PURE_BLACK is black, GRADIENT/BLUR wash the
- * page with the darkened tone of the currently playing cover — the same 0.45
- * darkening Player.kt uses — so Home/Library never cut against the player.
- */
-@Composable
-fun Modifier.onyxPageBackground(artworkUrl: String?): Modifier {
-    val style by rememberEnumPreference(PlayerBackgroundStyleKey, PlayerBackgroundStyle.GRADIENT)
-    val artworkColor by rememberArtworkColor(artworkUrl?.resize(224, 224))
-    val darkTone = remember(artworkColor) {
-        artworkColor.copy(
-            red = artworkColor.red * 0.45f,
-            green = artworkColor.green * 0.45f,
-            blue = artworkColor.blue * 0.45f,
-        )
-    }
-    return when (style) {
-        PlayerBackgroundStyle.DEFAULT -> this
-        PlayerBackgroundStyle.PURE_BLACK -> background(Color.Black)
-        PlayerBackgroundStyle.GRADIENT -> background(Brush.verticalGradient(listOf(darkTone, Color.Black)))
-        PlayerBackgroundStyle.BLUR -> background(Color.Black).background(darkTone.copy(alpha = 0.5f))
-    }
-}
 
 /** Cover accent with its legible on-color, using the player luminance rule. */
 @Composable

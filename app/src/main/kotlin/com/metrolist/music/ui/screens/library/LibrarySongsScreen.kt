@@ -83,7 +83,6 @@ import com.metrolist.music.ui.component.HideOnScrollFAB
 import com.metrolist.music.ui.component.LibrarySearchEmptyPlaceholder
 import com.metrolist.music.ui.component.LibrarySearchHeader
 import com.metrolist.music.ui.component.LocalMenuState
-import com.metrolist.music.ui.component.onyxPageBackground
 import com.metrolist.music.ui.component.SongListItem
 import com.metrolist.music.ui.component.SortHeader
 import com.metrolist.music.ui.menu.SongMenu
@@ -323,7 +322,7 @@ fun LibrarySongsScreen(
     }
 
     Box(
-        modifier = Modifier.fillMaxSize().onyxPageBackground(mediaMetadata?.thumbnailUrl),
+        modifier = Modifier.fillMaxSize(),
     ) {
         LazyColumn(
             state = lazyListState,

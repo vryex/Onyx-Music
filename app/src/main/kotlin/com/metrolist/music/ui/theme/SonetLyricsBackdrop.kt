@@ -44,8 +44,8 @@ fun SonetLyricsBackdrop(artwork: String?, modifier: Modifier = Modifier, active:
 
     val contrastOverlay = remember {
         Brush.verticalGradient(
-            0f to Color.Black.copy(alpha = .08f),
-            .53f to Color.Transparent,
+            0f to Color.Black.copy(alpha = .24f),
+            .53f to Color.Black.copy(alpha = .32f),
             1f to Color.Black.copy(alpha = .62f),
         )
     }

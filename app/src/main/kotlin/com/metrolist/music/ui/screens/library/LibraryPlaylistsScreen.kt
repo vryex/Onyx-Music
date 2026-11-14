@@ -81,7 +81,6 @@ import com.metrolist.music.ui.component.LibrarySearchHeader
 import com.metrolist.music.ui.component.LibraryPlaylistGridItem
 import com.metrolist.music.ui.component.LibraryPlaylistListItem
 import com.metrolist.music.ui.component.LocalMenuState
-import com.metrolist.music.ui.component.onyxPageBackground
 import com.metrolist.music.ui.component.PlaylistGridItem
 import com.metrolist.music.ui.component.PlaylistListItem
 import com.metrolist.music.ui.component.SortHeader
@@ -116,7 +115,6 @@ fun LibraryPlaylistsScreen(
     val haptic = LocalHapticFeedback.current
     val keyboardController = LocalSoftwareKeyboardController.current
     val playerConnection = LocalPlayerConnection.current ?: return
-    val mediaMetadata by playerConnection.mediaMetadata.collectAsStateWithLifecycle()
 
     val coroutineScope = rememberCoroutineScope()
 
@@ -407,7 +405,7 @@ fun LibraryPlaylistsScreen(
     }
 
     Box(
-        modifier = Modifier.fillMaxSize().onyxPageBackground(mediaMetadata?.thumbnailUrl),
+        modifier = Modifier.fillMaxSize(),
     ) {
         when (viewType) {
             LibraryViewType.LIST -> {
