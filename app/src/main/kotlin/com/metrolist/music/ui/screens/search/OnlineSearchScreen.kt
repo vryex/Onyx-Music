@@ -99,6 +99,7 @@ fun OnlineSearchScreen(
     val playerConnection = LocalPlayerConnection.current ?: return
 
     val coroutineScope = rememberCoroutineScope()
+    val mixPlaybackSource = stringResource(R.string.sonet_playback_mix, query)
 
     val haptic = LocalHapticFeedback.current
     val isPlaying by playerConnection.isEffectivelyPlaying.collectAsStateWithLifecycle()
@@ -254,7 +255,8 @@ fun OnlineSearchScreen(
                                                             title = item.title,
                                                             items = listOf(item.toMediaItem())
                                                         )
-                                                    }
+                                                    },
+                                                    source = if (autoRadioQueue) mixPlaybackSource else null,
                                                 )
                                                 onDismiss()
                                             }
@@ -375,6 +377,17 @@ fun OnlineSearchScreen(
             }
         }
 
+        if (viewState.history.isNotEmpty()) {
+            item(key = "history_header") {
+                Text(
+                    text = stringResource(R.string.history),
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp).padding(top = 12.dp, bottom = 4.dp),
+                )
+            }
+        }
+
         items(viewState.history, key = { "history_${it.query}" }) { history ->
             SuggestionItem(
                 query = history.query,
@@ -426,6 +439,7 @@ fun OnlineSearchScreen(
         items(viewState.items, key = { "item_${it.id}" }) { item ->
             YouTubeListItem(
                 item = item,
+                showDivider = item !is ArtistItem,
                 isActive =
                     when (item) {
                         is SongItem -> mediaMetadata?.id == item.id
@@ -512,6 +526,7 @@ fun OnlineSearchScreen(
                 },
                 modifier =
                     Modifier
+                        .artistSearchTint(item)
                         .combinedClickable(
                             onClick = {
                                 when (item) {
@@ -527,7 +542,8 @@ fun OnlineSearchScreen(
                                                         title = item.title,
                                                         items = listOf(item.toMediaItem())
                                                     )
-                                                }
+                                                },
+                                                source = if (autoRadioQueue) mixPlaybackSource else null,
                                             )
                                             onDismiss()
                                         }

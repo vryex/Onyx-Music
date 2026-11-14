@@ -323,7 +323,7 @@ fun DiscordSettings(
                             text = stringResource(R.string.discord_error_banner_title),
                             style = MaterialTheme.typography.titleSmall,
                             color = MaterialTheme.colorScheme.onErrorContainer,
-                            fontWeight = FontWeight.Bold,
+                            fontWeight = FontWeight.Medium,
                         )
                         Spacer(Modifier.height(4.dp))
                         Text(
@@ -399,7 +399,7 @@ fun DiscordSettings(
                                 stringResource(R.string.not_logged_in)
                             },
                         style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
+                        fontWeight = FontWeight.Medium,
                         modifier = Modifier.alpha(if (isLoggedIn) 1f else 0.5f),
                     )
                     if (displayUsername.isNotEmpty()) {
@@ -1017,7 +1017,7 @@ fun RichPresence(
                 text = "$activityPrefix $renderedState",
                 style = MaterialTheme.typography.labelLarge,
                 textAlign = TextAlign.Start,
-                fontWeight = FontWeight.ExtraBold,
+                fontWeight = FontWeight.Medium,
                 modifier = Modifier.fillMaxWidth(),
             )
 
@@ -1079,7 +1079,7 @@ fun RichPresence(
                         text = renderedDetails,
                         color = MaterialTheme.colorScheme.onSurface,
                         fontSize = 20.sp,
-                        fontWeight = FontWeight.ExtraBold,
+                        fontWeight = FontWeight.Medium,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                     )

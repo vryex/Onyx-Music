@@ -29,12 +29,14 @@ fun ListItemPlaceHolder(
     modifier: Modifier = Modifier,
     thumbnailShape: Shape = RoundedCornerShape(ThumbnailCornerRadius),
 ) {
+    // Same height (ListItemHeight + 8.dp) and horizontal padding (12.dp) as
+    // the real ListItem, so the shimmer swaps in without a layout jump.
     Row(
         verticalAlignment = Alignment.CenterVertically,
         modifier =
         modifier
-            .height(ListItemHeight)
-            .padding(horizontal = 6.dp),
+            .height(ListItemHeight + 8.dp)
+            .padding(horizontal = 12.dp),
     ) {
         Spacer(
             modifier =
@@ -49,7 +51,7 @@ fun ListItemPlaceHolder(
             modifier =
             Modifier
                 .weight(1f)
-                .padding(horizontal = 6.dp),
+                .padding(horizontal = 10.dp),
         ) {
             TextPlaceholder()
             TextPlaceholder()

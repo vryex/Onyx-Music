@@ -14,13 +14,14 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import com.metrolist.music.ui.component.OnyxRadius
 
 @Composable
 fun ButtonPlaceholder(modifier: Modifier = Modifier) {
     Spacer(
         modifier
             .height(ButtonDefaults.MinHeight)
-            .clip(RoundedCornerShape(50))
+            .clip(RoundedCornerShape(OnyxRadius))
             .background(MaterialTheme.colorScheme.onSurface),
     )
 }

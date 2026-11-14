@@ -19,6 +19,9 @@ val DynamicThemeKey = booleanPreferencesKey("dynamicTheme")
 val SelectedThemeColorKey = intPreferencesKey("selectedThemeColor")
 val DarkModeKey = stringPreferencesKey("darkMode")
 val PureBlackKey = booleanPreferencesKey("pureBlack")
+/** Typeface for song lyrics only, never app navigation or UI. Keep the key for existing selections. */
+val SonetLyricsFontKey = stringPreferencesKey("sonetFont")
+val SonetLyricsFontLabelKey = stringPreferencesKey("sonetLyricsFontLabel")
 val PureBlackMiniPlayerKey = booleanPreferencesKey("pureBlackMiniPlayer")
 val MiniPlayerBackgroundStyleKey = stringPreferencesKey("miniPlayerBackgroundStyle")
 
@@ -108,6 +111,8 @@ val DismissedKmpUpdateKey = stringPreferencesKey("dismissedKmpUpdate")
 val UpdateNotificationsEnabledKey = booleanPreferencesKey("updateNotifications")
 
 val AudioQualityKey = stringPreferencesKey("audioQuality")
+
+val DownloadQualityKey = stringPreferencesKey("downloadQuality")
 
 enum class AudioQuality {
     AUTO,
@@ -255,6 +260,7 @@ val LyricsProviderOrderKey = stringPreferencesKey("lyricsProviderOrder")
 val SimpMusicMigrationDoneKey = booleanPreferencesKey("simpMusicMigrationDone")
 val VideoThumbnailMigrationDoneKey = booleanPreferencesKey("videoThumbnailMigrationDone")
 val QueueEditLockKey = booleanPreferencesKey("queueEditLock")
+val QueueEditHintShownKey = booleanPreferencesKey("queueEditHintShown")
 val ShowWrappedCardKey = booleanPreferencesKey("show_wrapped_card")
 val WrappedSeenKey = booleanPreferencesKey("wrapped_seen")
 val LastSeenVersionKey = stringPreferencesKey("lastSeenVersion")
@@ -428,6 +434,7 @@ enum class PlayerBackgroundStyle {
     DEFAULT,
     GRADIENT,
     BLUR,
+    PURE_BLACK,
 }
 
 val TopSize = stringPreferencesKey("topSize")

@@ -5,6 +5,7 @@
 
 package com.metrolist.music.ui.menu
 
+import androidx.compose.ui.graphics.Color
 import android.content.Intent
 import android.content.res.Configuration
 import android.widget.Toast
@@ -404,7 +405,7 @@ fun SongMenu(
                     Text(
                         text = artist.name,
                         fontSize = 18.sp,
-                        fontWeight = FontWeight.Bold,
+                        fontWeight = FontWeight.Medium,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                         modifier =
@@ -478,7 +479,7 @@ fun SongMenu(
             ) {
                 Icon(
                     painter = painterResource(if (isFavorite) R.drawable.favorite else R.drawable.favorite_border),
-                    tint = if (isFavorite) MaterialTheme.colorScheme.error else LocalContentColor.current,
+                    tint = if (isFavorite) Color.White else LocalContentColor.current,
                     contentDescription = null,
                 )
             }
@@ -925,12 +926,24 @@ fun SongMenu(
 
                             Download.STATE_QUEUED, Download.STATE_DOWNLOADING -> {
                                 Material3MenuItemData(
-                                    title = { Text(text = stringResource(R.string.downloading)) },
+                                    title = {
+                                        val pct = download?.percentDownloaded?.takeIf { it >= 0f }?.toInt()
+                                        Text(text = if (pct != null) "${stringResource(R.string.downloading)} $pct%" else stringResource(R.string.downloading))
+                                    },
                                     icon = {
-                                        CircularProgressIndicator(
-                                            modifier = Modifier.size(24.dp),
-                                            strokeWidth = 2.dp,
-                                        )
+                                        val progress = download?.percentDownloaded?.takeIf { it >= 0f }?.div(100f)
+                                        if (progress != null) {
+                                            CircularProgressIndicator(
+                                                progress = { progress },
+                                                modifier = Modifier.size(24.dp),
+                                                strokeWidth = 2.dp,
+                                            )
+                                        } else {
+                                            CircularProgressIndicator(
+                                                modifier = Modifier.size(24.dp),
+                                                strokeWidth = 2.dp,
+                                            )
+                                        }
                                     },
                                     onClick = {
                                         DownloadService.sendRemoveDownload(

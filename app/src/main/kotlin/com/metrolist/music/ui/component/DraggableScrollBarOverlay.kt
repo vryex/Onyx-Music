@@ -45,7 +45,7 @@ fun DraggableScrollbar(
     scrollState: LazyListState,
     modifier: Modifier = Modifier,
     thumbColor: Color = LocalContentColor.current.copy(alpha = 0.8f),
-    thumbColorActive: Color = MaterialTheme.colorScheme.secondary,
+    thumbColorActive: Color = MaterialTheme.colorScheme.primary,
     thumbHeight: Dp = 72.dp,
     thumbWidth: Dp = 8.dp,
     thumbCornerRadius: Dp = 4.dp,

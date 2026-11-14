@@ -84,6 +84,7 @@ import com.metrolist.music.LocalDatabase
 import com.metrolist.music.LocalListenTogetherManager
 import com.metrolist.music.LocalNavController
 import com.metrolist.music.LocalPlayerAwareWindowInsets
+import com.metrolist.music.ui.theme.CollectionHeaderTint
 import com.metrolist.music.LocalPlayerConnection
 import com.metrolist.music.LocalSyncUtils
 import com.metrolist.music.R
@@ -93,6 +94,7 @@ import com.metrolist.music.db.entities.PlaylistEntity
 import com.metrolist.music.db.entities.PlaylistSongMap
 import com.metrolist.music.models.toMediaMetadata
 import com.metrolist.music.playback.queues.YouTubePlaylistQueue
+import com.metrolist.music.ui.component.EmptyPlaceholder
 import com.metrolist.music.ui.component.ExpandableText
 import com.metrolist.music.ui.component.IconButton
 import com.metrolist.music.ui.component.LocalMenuState
@@ -191,6 +193,10 @@ fun OnlinePlaylistScreen(
     }
 
     Box(Modifier.fillMaxSize()) {
+        CollectionHeaderTint(
+            artwork = playlist?.thumbnail,
+            scrollState = lazyListState,
+        )
         LazyColumn(
             state = lazyListState,
             contentPadding = LocalPlayerAwareWindowInsets.current.union(WindowInsets.ime).asPaddingValues(),
@@ -231,18 +237,10 @@ fun OnlinePlaylistScreen(
                     }
                 } else if (!isLoading && songs.isEmpty()) {
                     item(key = "empty_placeholder") {
-                        Box(
-                            modifier =
-                                Modifier
-                                    .fillParentMaxSize()
-                                    .padding(32.dp),
-                            contentAlignment = Alignment.Center,
-                        ) {
-                            Text(
-                                text = stringResource(R.string.playlist_is_empty),
-                                style = MaterialTheme.typography.bodyLarge,
-                            )
-                        }
+                        EmptyPlaceholder(
+                            icon = R.drawable.music_note,
+                            text = stringResource(R.string.playlist_is_empty),
+                        )
                     }
                 }
             } else {
@@ -512,10 +510,10 @@ private fun OnlinePlaylistHeader(
                     .size(240.dp)
                     .shadow(
                         elevation = 24.dp,
-                        shape = RoundedCornerShape(3.dp),
+                        shape = RoundedCornerShape(24.dp),
                         spotColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.3f),
                     ),
-            shape = RoundedCornerShape(3.dp),
+            shape = RoundedCornerShape(24.dp),
         ) {
             AsyncImage(
                 model = ImageRequest.Builder(LocalContext.current).data(playlist.thumbnail?.resize(1080, 1080)).build(),
@@ -530,7 +528,7 @@ private fun OnlinePlaylistHeader(
         Text(
             text = playlist.title,
             style = MaterialTheme.typography.headlineMedium,
-            fontWeight = FontWeight.Bold,
+            fontWeight = FontWeight.Medium,
             textAlign = TextAlign.Center,
             maxLines = 2,
             overflow = TextOverflow.Ellipsis,
@@ -659,7 +657,7 @@ private fun OnlinePlaylistHeader(
                     }
                 },
                 shape = CircleShape,
-                color = MaterialTheme.colorScheme.surfaceVariant,
+                color = MaterialTheme.colorScheme.surfaceContainerHigh,
                 modifier = Modifier.size(48.dp),
             ) {
                 Box(
@@ -674,7 +672,7 @@ private fun OnlinePlaylistHeader(
                         contentDescription = null,
                         tint =
                             if (dbPlaylist?.playlist?.bookmarkedAt != null) {
-                                MaterialTheme.colorScheme.error
+                                Color.White
                             } else {
                                 MaterialTheme.colorScheme.onSurfaceVariant
                             },
@@ -727,7 +725,7 @@ private fun OnlinePlaylistHeader(
                     }
                 },
                 shape = CircleShape,
-                color = MaterialTheme.colorScheme.surfaceVariant,
+                color = MaterialTheme.colorScheme.surfaceContainerHigh,
                 modifier = Modifier.size(48.dp),
             ) {
                 Box(

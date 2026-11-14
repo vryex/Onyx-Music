@@ -25,6 +25,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.withFrameMillis
@@ -52,11 +53,16 @@ fun SquigglySlider(
     onValueChangeFinished: (() -> Unit)? = null,
     colors: SliderColors = SliderDefaults.colors(),
     isPlaying: Boolean = true,
+    onValueChangeCancelled: (() -> Unit)? = null,
 ) {
     val primaryColor = colors.activeTrackColor
     val inactiveColor = colors.inactiveTrackColor
 
-    var isDragging by remember { mutableStateOf(false) }
+    val changeValue by rememberUpdatedState(onValueChange)
+    val finishChange by rememberUpdatedState(onValueChangeFinished)
+    val cancelChange by rememberUpdatedState(onValueChangeCancelled)
+
+    var isDragging by remember(enabled, valueRange) { mutableStateOf(false) }
     var dragPosition by remember { mutableFloatStateOf(value) }
     
     val currentValue = if (isDragging) dragPosition else value
@@ -127,8 +133,8 @@ fun SquigglySlider(
                             detectTapGestures { offset ->
                                 val newPosition = (offset.x / size.width) * duration
                                 val mappedValue = valueRange.start + newPosition.coerceIn(0f, duration)
-                                onValueChange(mappedValue)
-                                onValueChangeFinished?.invoke()
+                                changeValue(mappedValue)
+                                finishChange?.invoke()
                             }
                         }
                         .pointerInput(valueRange) {
@@ -137,20 +143,21 @@ fun SquigglySlider(
                                     isDragging = true
                                     val newPosition = (offset.x / size.width) * duration
                                     dragPosition = valueRange.start + newPosition.coerceIn(0f, duration)
-                                    onValueChange(dragPosition)
+                                    changeValue(dragPosition)
                                 },
                                 onDragEnd = {
                                     isDragging = false
-                                    onValueChangeFinished?.invoke()
+                                    finishChange?.invoke()
                                 },
                                 onDragCancel = {
                                     isDragging = false
+                                    cancelChange?.invoke()
                                 },
                                 onDrag = { change, _ ->
                                     change.consume()
                                     val newPosition = (change.position.x / size.width) * duration
                                     dragPosition = valueRange.start + newPosition.coerceIn(0f, duration)
-                                    onValueChange(dragPosition)
+                                    changeValue(dragPosition)
                                 }
                             )
                         }

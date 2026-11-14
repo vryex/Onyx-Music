@@ -21,6 +21,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.unit.dp
+import com.metrolist.music.ui.component.OnyxRadius
+import com.metrolist.music.ui.theme.onyxGlass
 import com.metrolist.music.constants.GridItemSize
 import com.metrolist.music.constants.GridItemsSizeKey
 import com.metrolist.music.constants.GridThumbnailHeight
@@ -36,18 +38,21 @@ fun GridItemPlaceHolder(
 ) {
     val gridItemSize by rememberEnumPreference(GridItemsSizeKey, GridItemSize.BIG)
     val gridHeight = if (gridItemSize == GridItemSize.BIG) GridThumbnailHeight else SmallGridThumbnailHeight
-    
+
+    // Same outer padding (8.dp), card radius (24.dp) and inner spacing (12.dp)
+    // as the real GridItem, so the shimmer swaps in without a layout jump.
     Column(
         modifier =
         if (fillMaxWidth) {
             modifier
-                .padding(12.dp)
+                .padding(8.dp)
                 .fillMaxWidth()
         } else {
             modifier
-                .padding(12.dp)
+                .padding(8.dp)
                 .width(gridHeight)
-        },
+        }.onyxGlass(RoundedCornerShape(OnyxRadius), showBorder = false)
+            .padding(12.dp),
     ) {
         Spacer(
             modifier =
@@ -60,7 +65,7 @@ fun GridItemPlaceHolder(
                 .background(MaterialTheme.colorScheme.onSurface),
         )
 
-        Spacer(modifier = Modifier.height(6.dp))
+        Spacer(modifier = Modifier.height(12.dp))
 
         TextPlaceholder()
 

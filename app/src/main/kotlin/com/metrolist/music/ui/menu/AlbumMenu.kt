@@ -5,6 +5,7 @@
 
 package com.metrolist.music.ui.menu
 
+import androidx.compose.ui.graphics.Color
 import android.annotation.SuppressLint
 import android.content.Intent
 import android.content.res.Configuration
@@ -244,7 +245,7 @@ fun AlbumMenu(
                     Text(
                         text = artist.name,
                         fontSize = 18.sp,
-                        fontWeight = FontWeight.Bold,
+                        fontWeight = FontWeight.Medium,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                         modifier =
@@ -271,7 +272,7 @@ fun AlbumMenu(
             ) {
                 Icon(
                     painter = painterResource(if (album.album.bookmarkedAt != null) R.drawable.favorite else R.drawable.favorite_border),
-                    tint = if (album.album.bookmarkedAt != null) MaterialTheme.colorScheme.error else LocalContentColor.current,
+                    tint = if (album.album.bookmarkedAt != null) Color.White else LocalContentColor.current,
                     contentDescription = null,
                 )
             }

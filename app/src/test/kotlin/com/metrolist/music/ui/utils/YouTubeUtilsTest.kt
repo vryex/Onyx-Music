@@ -79,4 +79,15 @@ class YouTubeUtilsTest {
         val url = "https://yt3.ggpht.com/abc?token=a=b"
         assertEquals(url, url.resize(544, 544))
     }
+
+    @Test fun `hero requests a large music cover`() {
+        assertEquals("https://lh3.googleusercontent.com/abc=w1080-h1080-p-l90-rj", "https://lh3.googleusercontent.com/abc=w60-h60-l90-rj".recommendationArtworkUrl())
+    }
+    @Test fun `hero tries optional max resolution for video thumbnails`() {
+        assertEquals("https://i.ytimg.com/vi/dQw4w9WgXcQ/maxresdefault.jpg", "https://i.ytimg.com/vi/dQw4w9WgXcQ/hqdefault.jpg?sqp=test".recommendationArtworkUrl())
+    }
+    @Test fun `unknown artwork hosts remain unchanged`() {
+        val url = "https://example.org/photo.jpg?token=abc"
+        assertEquals(url, url.recommendationArtworkUrl())
+    }
 }

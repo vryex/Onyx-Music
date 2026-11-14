@@ -197,7 +197,10 @@ class InnerTube(
         params: String? = null,
         continuation: String? = null,
         setLogin: Boolean = false,
-    ) = innerTubeX.search(client, query, params, continuation, setLogin = setLogin)
+    ): HttpResponse {
+        require(client == YouTubeClient.WEB_REMIX) { "Search is restricted to YouTube Music" }
+        return innerTubeX.search(client, query, params, continuation, setLogin = setLogin)
+    }
 
     suspend fun player(
         client: YouTubeClient,

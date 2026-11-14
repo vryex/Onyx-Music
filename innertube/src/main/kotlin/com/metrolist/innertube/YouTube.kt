@@ -88,6 +88,7 @@ import kotlin.random.Random
  * Modified from [ViMusic](https://github.com/vfsfitvnm/ViMusic)
  */
 object YouTube {
+    private val artistLookupSlots = kotlinx.coroutines.sync.Semaphore(2)
     private val innerTube = InnerTube()
 
     var locale: YouTubeLocale
@@ -3297,7 +3298,7 @@ object YouTube {
         if (missingNames.isEmpty()) return items
 
         val resolved = coroutineScope {
-            val semaphore = kotlinx.coroutines.sync.Semaphore(8)
+            val semaphore = artistLookupSlots
             missingNames.map { name ->
                 async {
                     semaphore.acquire()
@@ -3351,7 +3352,7 @@ object YouTube {
         if (missingNames.isEmpty()) return emptyMap()
 
         return coroutineScope {
-            val semaphore = kotlinx.coroutines.sync.Semaphore(8)
+            val semaphore = artistLookupSlots
             missingNames.map { name ->
                 async {
                     semaphore.acquire()

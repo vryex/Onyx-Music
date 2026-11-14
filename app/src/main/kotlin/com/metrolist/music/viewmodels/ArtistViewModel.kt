@@ -39,6 +39,10 @@ import com.metrolist.music.utils.get
 import com.metrolist.music.utils.reportException
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
+import com.metrolist.innertube.utils.loadYouTubePage
+import com.metrolist.music.utils.YouTubeConnectionDiagnostics
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -66,6 +70,9 @@ class ArtistViewModel @Inject constructor(
     val artistId = savedStateHandle.get<String>("artistId")!!
     private val isPodcastChannel = savedStateHandle.get<Boolean>("isPodcastChannel") ?: false
     var artistPage by mutableStateOf<ArtistPage?>(null)
+    var connectionError by mutableStateOf<String?>(null)
+        private set
+    private var requestJob: Job? = null
 
     // Track API subscription state separately
     private val _apiSubscribed = MutableStateFlow<Boolean?>(null)
@@ -141,123 +148,136 @@ class ArtistViewModel @Inject constructor(
     }
 
     fun fetchArtistsFromYTM() {
-        viewModelScope.launch {
-            val hideExplicit = context.dataStore.get(HideExplicitKey, false)
-            val hideVideoSongs = context.dataStore.get(HideVideoSongsKey, false)
-            val hideYoutubeShorts = context.dataStore.get(HideYoutubeShortsKey, false)
-            YouTube.artist(artistId)
-                .onSuccess { page ->
-                    // Collect all items from all sections and resolve artist IDs once
-                    val allItems = page.sections.flatMap { it.items }
-                    val resolvedIdMap = if (allItems.isNotEmpty()) {
-                        YouTube.resolveArtistIdMap(allItems)
-                    } else {
-                        emptyMap()
-                    }
+        requestJob?.cancel()
+        requestJob = viewModelScope.launch {
+            connectionError = null
+            var flags = Triple(false, false, false)
+            var receivedPage: ArtistPage? = null
+            loadYouTubePage(
+                fetch = {
+                    flags = Triple(context.dataStore.get(HideExplicitKey, false),
+                        context.dataStore.get(HideVideoSongsKey, false), context.dataStore.get(HideYoutubeShortsKey, false))
+                    YouTube.artist(artistId)
+                },
+                publish = { page ->
+                    receivedPage = page
+                    artistPage = page.copy(sections = page.sections.map { section ->
+                        section.copy(items = section.items.filterExplicit(flags.first)
+                            .filterVideoSongs(flags.second).filterYoutubeShorts(flags.third))
+                    }.filter { it.items.isNotEmpty() })
+                    _apiSubscribed.value = page.isSubscribed
+                },
+                enrich = ::enrichArtistPage,
+                onFailure = {
+                    connectionError = YouTubeConnectionDiagnostics.code(it)
+                    reportException(it)
+                },
+            )
+            receivedPage?.let { cacheArtistPage(it) }
+        }
+    }
 
-                    fun com.metrolist.innertube.models.Artist.resolve() =
-                        if (id == null) resolvedIdMap[name]?.let { copy(id = it) } ?: this else this
+    private suspend fun enrichArtistPage(page: ArtistPage): ArtistPage {
+        // Collect all items from all sections and resolve artist IDs once
+        val allItems = page.sections.flatMap { it.items }
+        val resolvedIdMap = if (allItems.isNotEmpty()) {
+            YouTube.resolveArtistIdMap(allItems)
+        } else {
+            emptyMap()
+        }
 
-                    // Resolve artist IDs and fetch durations from more endpoint
-                    val resolvedSections = page.sections.map { section ->
-                        section.copy(items = section.items.map { item ->
-                            when (item) {
-                                is SongItem -> item.copy(artists = item.artists.map { it.resolve() })
-                                is AlbumItem -> item.copy(artists = item.artists?.map { it.resolve() })
-                                is PlaylistItem -> item.copy(author = item.author?.resolve())
-                                is EpisodeItem -> item.copy(author = item.author?.resolve())
-                                is PodcastItem -> item.copy(author = item.author?.resolve())
-                                else -> item
-                            }
-                        })
-                    }
+        fun com.metrolist.innertube.models.Artist.resolve() =
+            if (id == null) resolvedIdMap[name]?.let { copy(id = it) } ?: this else this
 
-                    // Fetch song durations from the more endpoint if the first section has songs without duration
-                    var sectionsWithDurations = resolvedSections
-                    if (resolvedSections.isNotEmpty()) {
-                        val needDurations = resolvedSections.first().items.any {
-                            it is SongItem && it.duration == null
+        // Resolve artist IDs and fetch durations from more endpoint
+        val resolvedSections = page.sections.map { section ->
+            section.copy(items = section.items.map { item ->
+                when (item) {
+                    is SongItem -> item.copy(artists = item.artists.map { it.resolve() })
+                    is AlbumItem -> item.copy(artists = item.artists?.map { it.resolve() })
+                    is PlaylistItem -> item.copy(author = item.author?.resolve())
+                    is EpisodeItem -> item.copy(author = item.author?.resolve())
+                    is PodcastItem -> item.copy(author = item.author?.resolve())
+                    else -> item
+                }
+            })
+        }
+
+        // Fetch song durations from the more endpoint if the first section has songs without duration
+        var sectionsWithDurations = resolvedSections
+        if (resolvedSections.isNotEmpty()) {
+            val needDurations = resolvedSections.first().items.any {
+                it is SongItem && it.duration == null
+            }
+            if (needDurations) {
+                val moreEndpoint = resolvedSections.first().moreEndpoint
+                if (moreEndpoint != null) {
+                    try {
+                        val moreResult = withContext(Dispatchers.IO) {
+                            YouTube.artistItems(moreEndpoint)
                         }
-                        if (needDurations) {
-                            val moreEndpoint = resolvedSections.first().moreEndpoint
-                            if (moreEndpoint != null) {
-                                try {
-                                    val moreResult = withContext(Dispatchers.IO) {
-                                        YouTube.artistItems(moreEndpoint)
-                                    }
-                                    moreResult
-                                        .onSuccess { moreItems ->
-                                            val durationById = moreItems.items.filterIsInstance<SongItem>()
-                                                .associate { it.id to it.duration }
-                                            if (durationById.isNotEmpty()) {
-                                                sectionsWithDurations = listOf(resolvedSections.first().copy(
-                                                    items = resolvedSections.first().items.map { item ->
-                                                        if (item is SongItem && item.duration == null) {
-                                                            item.copy(duration = durationById[item.id] ?: item.duration)
-                                                        } else item
-                                                    }
-                                                )) + resolvedSections.drop(1)
-                                            }
+                        moreResult
+                            .onSuccess { moreItems ->
+                                val durationById = moreItems.items.filterIsInstance<SongItem>()
+                                    .associate { it.id to it.duration }
+                                if (durationById.isNotEmpty()) {
+                                    sectionsWithDurations = listOf(resolvedSections.first().copy(
+                                        items = resolvedSections.first().items.map { item ->
+                                            if (item is SongItem && item.duration == null) {
+                                                item.copy(duration = durationById[item.id] ?: item.duration)
+                                            } else item
                                         }
-                                        .onFailure { e -> reportException(e) }
-                                } catch (e: Exception) {
-                                    reportException(e)
+                                    )) + resolvedSections.drop(1)
                                 }
                             }
-                        }
+                            .onFailure { e -> reportException(e) }
+                    } catch (e: Exception) {
+                        reportException(e)
                     }
-
-                    val resolvedPage = page.copy(sections = sectionsWithDurations)
-                    val filteredSections = resolvedPage.sections
-                        .map { section ->
-                            section.copy(items = section.items.filterExplicit(hideExplicit).filterVideoSongs(hideVideoSongs).filterYoutubeShorts(hideYoutubeShorts))
-                        }
-                        .filter { section -> section.items.isNotEmpty() }
-
-                    artistPage = resolvedPage.copy(sections = filteredSections)
-                    // Cache page data + persist artist metadata
-                    viewModelScope.launch(Dispatchers.IO) {
-                        try {
-                            val cachedJson = serializeArtistPage(
-                                sections = resolvedPage.sections,
-                                description = resolvedPage.description,
-                                subscriberCountText = resolvedPage.subscriberCountText,
-                                monthlyListenerCount = resolvedPage.monthlyListenerCount,
-                                isSubscribed = resolvedPage.isSubscribed,
-                                artist = resolvedPage.artist,
-                            )
-                            val existingArtist = database.artist(artistId).firstOrNull()?.artist
-                            if (existingArtist != null) {
-                                database.update(
-                                    existingArtist.copy(
-                                        name = ArtistNameAliases.resolve(existingArtist.id, resolvedPage.artist.title),
-                                        channelId = resolvedPage.artist.channelId ?: existingArtist.channelId,
-                                        thumbnailUrl = resolvedPage.artist.thumbnail ?: existingArtist.thumbnailUrl,
-                                        cachedPageJson = cachedJson,
-                                        lastUpdateTime = java.time.LocalDateTime.now(),
-                                    )
-                                )
-                            } else {
-                                val apiArtist = resolvedPage.artist
-                                database.insert(
-                                    ArtistEntity(
-                                        id = artistId,
-                                        name = ArtistNameAliases.resolve(artistId, apiArtist.title),
-                                        channelId = apiArtist.channelId,
-                                        thumbnailUrl = apiArtist.thumbnail,
-                                        cachedPageJson = cachedJson,
-                                    )
-                                )
-                            }
-                        } catch (e: Exception) {
-                            reportException(e)
-                        }
-                    }
-                    // Store API subscription state
-                    _apiSubscribed.value = resolvedPage.isSubscribed
-                }.onFailure {
-                    reportException(it)
                 }
+            }
+        }
+
+        return page.copy(sections = sectionsWithDurations)
+    }
+
+    private suspend fun cacheArtistPage(page: ArtistPage) = withContext(Dispatchers.IO) {
+        try {
+            val cachedJson = serializeArtistPage(
+                sections = page.sections,
+                description = page.description,
+                subscriberCountText = page.subscriberCountText,
+                monthlyListenerCount = page.monthlyListenerCount,
+                isSubscribed = page.isSubscribed,
+                artist = page.artist,
+            )
+            val existingArtist = database.artist(artistId).firstOrNull()?.artist
+            if (existingArtist != null) {
+                database.update(
+                    existingArtist.copy(
+                        name = ArtistNameAliases.resolve(existingArtist.id, page.artist.title),
+                        channelId = page.artist.channelId ?: existingArtist.channelId,
+                        thumbnailUrl = page.artist.thumbnail ?: existingArtist.thumbnailUrl,
+                        cachedPageJson = cachedJson,
+                        lastUpdateTime = java.time.LocalDateTime.now(),
+                    )
+                )
+            } else {
+                val apiArtist = page.artist
+                database.insert(
+                    ArtistEntity(
+                        id = artistId,
+                        name = ArtistNameAliases.resolve(artistId, apiArtist.title),
+                        channelId = apiArtist.channelId,
+                        thumbnailUrl = apiArtist.thumbnail,
+                        cachedPageJson = cachedJson,
+                    )
+                )
+            }
+        } catch (cancelled: CancellationException) {
+            throw cancelled
+        } catch (error: Exception) {
+            reportException(error)
         }
     }
 

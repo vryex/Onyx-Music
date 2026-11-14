@@ -297,6 +297,15 @@ fun LocalSearchScreen(
                     )
                 }
             }
+
+            if (result.query.isEmpty()) {
+                item(key = "search_hint") {
+                    EmptyPlaceholder(
+                        icon = R.drawable.search,
+                        text = stringResource(R.string.search_library),
+                    )
+                }
+            }
         }
     }
 }

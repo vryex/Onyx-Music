@@ -27,7 +27,7 @@ import com.metrolist.innertube.YouTube
 import com.metrolist.innertube.models.SongItem
 import com.metrolist.innertubex.extraction.ContentHints
 import com.metrolist.music.constants.AudioQuality
-import com.metrolist.music.constants.AudioQualityKey
+import com.metrolist.music.constants.DownloadQualityKey
 import com.metrolist.music.db.MusicDatabase
 import com.metrolist.music.db.entities.AlbumEntity
 import com.metrolist.music.db.entities.FormatEntity
@@ -74,7 +74,7 @@ constructor(
 ) {
     private val TAG = "DownloadUtil"
     private val connectivityManager = context.getSystemService<ConnectivityManager>()!!
-    private val audioQuality by enumPreference(context, AudioQualityKey, AudioQuality.AUTO)
+    private val audioQuality by enumPreference(context, DownloadQualityKey, AudioQuality.AUTO)
     private val songUrlCache = StreamUrlCache()
     private val streamHttpClient =
         OkHttpClient.Builder()
@@ -392,8 +392,29 @@ constructor(
         scope.launch {
             database.getSongByIdBlocking(songId)?.let { song ->
                 download(song)
-            }
+            } ?: Timber.tag(TAG).w("download(songId=$songId): song not in database, ignoring")
         }
+    }
+
+    /**
+     * Removes one download through the service, so the download index, the
+     * download cache and the DB stay in sync: onDownloadRemoved() clears
+     * isDownloaded/dateDownload. Do NOT delete files from the download cache
+     * directly (see StorageSettings clear-all bug in the report) — that leaves
+     * isDownloaded=1 and the song listed as downloaded with no bytes on disk.
+     */
+    fun removeDownload(songId: String) {
+        DownloadService.sendRemoveDownload(
+            context,
+            ExoDownloadService::class.java,
+            songId,
+            false,
+        )
+    }
+
+    /** Removes every download known to [downloads] (in-flight and completed). */
+    fun removeAllDownloads() {
+        downloads.value.keys.toList().forEach { removeDownload(it) }
     }
 
     fun release() {
@@ -419,7 +440,18 @@ constructor(
     }
 }
 
-internal fun shouldPrepareDownload(downloadState: Int?): Boolean = downloadState != Download.STATE_COMPLETED
+/**
+ * Only (re)start a download that is absent, failed or stopped. In particular
+ * QUEUED / DOWNLOADING / RESTARTING / REMOVING must NOT be re-added:
+ * re-sending AddDownload for an in-flight id re-runs the expensive URL
+ * resolve (playerResponse + format upsert) and can restart/reset its
+ * progress — e.g. AlbumMenu/PlaylistMenu `songs.forEach { download(it) }`
+ * or a double-tap while a song is already downloading.
+ */
+internal fun shouldPrepareDownload(downloadState: Int?): Boolean =
+    downloadState == null ||
+        downloadState == Download.STATE_FAILED ||
+        downloadState == Download.STATE_STOPPED
 
 internal fun downloadArtworkUrls(
     songArtwork: String?,

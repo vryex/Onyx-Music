@@ -101,6 +101,7 @@ fun AccountSettings(
     val accountName by homeViewModel.accountName.collectAsStateWithLifecycle()
     val accountImageUrl by homeViewModel.accountImageUrl.collectAsStateWithLifecycle()
 
+    var showAdvancedLogin by remember { mutableStateOf(false) }
     var showToken by remember { mutableStateOf(false) }
     var showTokenEditor by remember { mutableStateOf(false) }
     var showLogoutDialog by remember { mutableStateOf(false) }
@@ -108,7 +109,7 @@ fun AccountSettings(
 
     Column(
         modifier = Modifier
-            .background(MaterialTheme.colorScheme.surfaceContainer)
+            .background(androidx.compose.ui.graphics.Color(0xFF101010))
             .padding(16.dp)
             .verticalScroll(rememberScrollState())
     ) {
@@ -118,14 +119,16 @@ fun AccountSettings(
                 .padding(start = 8.dp, end = 8.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
+            Icon(painterResource(R.drawable.sonet_mark), null, Modifier.size(24.dp))
+            Spacer(Modifier.width(8.dp))
             Text(
                 text = stringResource(id = R.string.app_name),
-                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Medium),
                 modifier = Modifier.padding(start = 4.dp)
             )
             Spacer(modifier = Modifier.weight(1f))
             IconButton(onClick = onClose) {
-                Icon(painterResource(R.drawable.close), contentDescription = null)
+                Icon(painterResource(R.drawable.close), contentDescription = stringResource(R.string.close))
             }
         }
 
@@ -271,7 +274,7 @@ fun AccountSettings(
                             }
 
                             Text(
-                                text = if (isLoggedIn) accountName else stringResource(R.string.login),
+                                text = if (isLoggedIn) accountName else stringResource(R.string.action_login),
                             )
                         }
                     },
@@ -318,8 +321,13 @@ fun AccountSettings(
         Spacer(Modifier.height(8.dp))
 
         Material3SettingsGroup(
-            items = listOf(
-                Material3SettingsItem(
+            items = listOfNotNull(
+                if (!isLoggedIn) Material3SettingsItem(
+                    title = { Text(stringResource(R.string.advanced)) },
+                    icon = painterResource(R.drawable.token),
+                    onClick = { showAdvancedLogin = !showAdvancedLogin }
+                ) else null,
+                if (isLoggedIn || showAdvancedLogin) Material3SettingsItem(
                     title = {
                         Text(
                             when {
@@ -335,8 +343,8 @@ fun AccountSettings(
                         else if (!showToken) showToken = true
                         else showTokenEditor = true
                     }
-                ),
-                Material3SettingsItem(
+                ) else null,
+                if (isLoggedIn) Material3SettingsItem(
                     title = { Text(stringResource(R.string.more_content)) },
                     icon = painterResource(R.drawable.cached),
                     trailingContent = {
@@ -359,8 +367,8 @@ fun AccountSettings(
                         )
                     },
                     enabled = isLoggedIn
-                ),
-                Material3SettingsItem(
+                ) else null,
+                if (isLoggedIn) Material3SettingsItem(
                     title = { Text(stringResource(R.string.yt_sync)) },
                     icon = painterResource(R.drawable.cached),
                     trailingContent = {
@@ -380,7 +388,7 @@ fun AccountSettings(
                         )
                     },
                     enabled = isLoggedIn
-                )
+                ) else null
             ),
             useLowContrast = true
         )

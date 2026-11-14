@@ -1,0 +1,109 @@
+name: Sonet Player Validation
+on:
+  push:
+    branches: [feat/onyx-liquid-v2]
+    paths:
+      - app/**
+      - .github/scripts/onyx_smoke.py
+      - .github/scripts/onyx_player_validation.py
+      - .github/scripts/onyx_scroll_profile.py
+      - .github/scripts/onyx_compare_profiles.py
+      - .github/workflows/onyx-player-validation.yml
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: onyx-player-validation-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  player:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Install image assertion dependency
+        run: python3 -m pip install --user --break-system-packages "Pillow>=10,<13"
+      - name: Wait for the release artifact
+        id: release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TARGET_SHA: ${{ github.sha }}
+        run: |
+          python3 - <<'PY'
+          import json, os, subprocess, time, urllib.request
+          target_sha = subprocess.check_output(['git', 'log', '-1', '--format=%H', '--', 'app', 'innertube', 'gradle', '*.gradle.kts'], text=True).strip()
+          assert target_sha, 'Missing production source commit'
+          print('Validating production source', target_sha)
+          api = 'https://api.github.com/repos/vryex/Onyx-Music/actions'
+          def get(url):
+              request = urllib.request.Request(url, headers={'Authorization': 'Bearer ' + os.environ['GH_TOKEN'], 'Accept': 'application/vnd.github+json'})
+              with urllib.request.urlopen(request, timeout=30) as response:
+                  return json.load(response)
+          for _ in range(120):
+              runs = get(api + '/workflows/onyx-midnight.yml/runs?per_page=30')['workflow_runs']
+              matching = [r for r in runs if r['head_sha'] == target_sha]
+              if matching:
+                  run = matching[0]
+                  if any(a['name'] == 'Sonet-signed-release' for a in get(api + '/runs/' + str(run['id']) + '/artifacts')['artifacts']):
+                      with open(os.environ['GITHUB_OUTPUT'], 'a') as out:
+                          out.write('run_id=' + str(run['id']) + '\n')
+                      print('Matched release artifact to source', run['head_sha'])
+                      break
+                  if run['status'] == 'completed':
+                      raise SystemExit('Release finished without its APK artifact: ' + str(run['conclusion']))
+              time.sleep(10)
+          else:
+              raise SystemExit('Timed out waiting for matching release artifact')
+          PY
+      - uses: actions/download-artifact@v4
+        with:
+          name: Sonet-signed-release
+          run-id: ${{ steps.release.outputs.run_id }}
+          github-token: ${{ github.token }}
+          path: dist
+      - uses: actions/download-artifact@v4
+        with:
+          name: Onyx-Music-signed-release
+          run-id: 38854055530
+          github-token: ${{ github.token }}
+          path: baseline-dist
+      - name: Prepare matched profile APKs
+        run: |
+          keytool -genkeypair -keystore "$RUNNER_TEMP/profile.p12" -storepass android -keypass android -alias profile -keyalg RSA -keysize 2048 -validity 1 -dname "CN=Disposable Profile Test" -noprompt
+          java -jar dist/apksigner.jar sign --ks "$RUNNER_TEMP/profile.p12" --ks-key-alias profile --ks-pass pass:android --key-pass pass:android --out baseline-profile.apk baseline-dist/Onyx-Music-unsigned.apk
+          java -jar dist/apksigner.jar sign --ks "$RUNNER_TEMP/profile.p12" --ks-key-alias profile --ks-pass pass:android --key-pass pass:android --out candidate-profile.apk dist/Sonet-unsigned.apk
+      - name: Enable emulator acceleration
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          target: google_apis
+          arch: x86_64
+          profile: pixel_2
+          ram-size: 2048M
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none -no-snapshot
+          disable-animations: false
+          script: |
+            python3 .github/scripts/onyx_player_validation.py
+            adb reconnect offline
+            timeout 60 adb wait-for-device
+            adb uninstall com.onyx.music
+            adb install baseline-profile.apk
+            adb shell pm grant com.onyx.music android.permission.POST_NOTIFICATIONS
+            adb shell am start -W -n com.onyx.music/com.metrolist.music.MainActivity
+            python3 -c 'import time; time.sleep(8)'
+            python3 .github/scripts/onyx_scroll_profile.py baseline
+            adb install -r candidate-profile.apk
+            python3 .github/scripts/onyx_scroll_profile.py candidate
+            python3 .github/scripts/onyx_compare_profiles.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: Sonet-player-validation
+          path: smoke/
+          if-no-files-found: ignore

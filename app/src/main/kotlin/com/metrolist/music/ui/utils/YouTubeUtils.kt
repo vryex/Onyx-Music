@@ -42,3 +42,13 @@ fun String.resize(
 
     return this
 }
+
+/** Request the large cover only on known image hosts; retain the source as UI fallback. */
+fun String.recommendationArtworkUrl(): String {
+    val resized = resize(1080, 1080)
+    if (resized != this) return resized
+    val match = Regex("^https://i[1-4]?\\.ytimg\\.com/(vi|vi_webp)/([A-Za-z0-9_-]{11})/[^/?]+(?:\\?.*)?$").matchEntire(this)
+        ?: return this
+    val extension = if (match.groupValues[1] == "vi_webp") "webp" else "jpg"
+    return "https://i.ytimg.com/${match.groupValues[1]}/${match.groupValues[2]}/maxresdefault.$extension"
+}

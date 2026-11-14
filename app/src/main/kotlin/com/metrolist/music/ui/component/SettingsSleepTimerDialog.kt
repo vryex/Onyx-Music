@@ -49,8 +49,17 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.Spring
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Slider
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.window.DialogProperties
+import kotlin.math.roundToInt
 
 fun decodeDayTimes(raw: String): MutableMap<Int, Pair<String, String>> {
     if (raw.isBlank()) return mutableMapOf()
@@ -653,4 +662,99 @@ fun SleepTimerTimePickerDialog(
             }) { Text(stringResource(android.R.string.ok)) }
         },
     ) { TimePicker(state = timePickerState) }
+}
+
+/**
+ * One-shot sleep timer (countdown in minutes). Canonical home for the
+ * countdown dialog that used to be copy-pasted in Player.kt and Queue.kt:
+ * both call sites should use this instead of keeping their own copy.
+ */
+@Composable
+fun SleepTimerCountdownDialog(
+    defaultMinutes: Float,
+    onStart: (minutes: Int) -> Unit,
+    onStartEndOfSong: () -> Unit,
+    onSetDefault: (minutes: Int) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    var minutes by remember { mutableFloatStateOf(defaultMinutes) }
+    val isAtDefault by remember {
+        derivedStateOf { minutes.roundToInt() == defaultMinutes.roundToInt() }
+    }
+    LaunchedEffect(defaultMinutes) { minutes = defaultMinutes }
+
+    AlertDialog(
+        modifier = Modifier.padding(horizontal = 20.dp),
+        properties = DialogProperties(usePlatformDefaultWidth = false),
+        onDismissRequest = onDismiss,
+        icon = {
+            Icon(
+                painter = painterResource(R.drawable.bedtime),
+                contentDescription = null,
+            )
+        },
+        title = { Text(stringResource(R.string.sleep_timer)) },
+        confirmButton = {
+            TextButton(
+                onClick = { onStart(minutes.roundToInt()) },
+            ) {
+                Text(stringResource(android.R.string.ok))
+            }
+        },
+        dismissButton = {
+            TextButton(
+                onClick = onDismiss,
+            ) {
+                Text(stringResource(android.R.string.cancel))
+            }
+        },
+        text = {
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Text(
+                    text = pluralStringResource(
+                        R.plurals.minute,
+                        minutes.roundToInt(),
+                        minutes.roundToInt(),
+                    ),
+                    style = MaterialTheme.typography.bodyLarge,
+                )
+
+                Slider(
+                    value = minutes,
+                    onValueChange = { minutes = it },
+                    valueRange = 5f..120f,
+                    steps = (120 - 5) / 5 - 1,
+                )
+
+                Column(
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                ) {
+                    if (isAtDefault) {
+                        Button(
+                            onClick = { onSetDefault(minutes.roundToInt()) },
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = MaterialTheme.colorScheme.primary,
+                                contentColor = MaterialTheme.colorScheme.onPrimary,
+                            ),
+                        ) {
+                            Text(stringResource(R.string.set_as_default))
+                        }
+                    } else {
+                        OutlinedButton(
+                            onClick = { onSetDefault(minutes.roundToInt()) },
+                        ) {
+                            Text(stringResource(R.string.set_as_default))
+                        }
+                    }
+
+                    OutlinedButton(
+                        onClick = onStartEndOfSong,
+                    ) {
+                        Text(stringResource(R.string.end_of_song))
+                    }
+                }
+            }
+        },
+    )
 }

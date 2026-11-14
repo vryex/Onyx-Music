@@ -248,7 +248,7 @@ private fun RecognitionHistoryItem(
         shape = RoundedCornerShape(ThumbnailCornerRadius),
         colors =
             CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                containerColor = MaterialTheme.colorScheme.surfaceContainer,
             ),
     ) {
         Row(
@@ -278,7 +278,7 @@ private fun RecognitionHistoryItem(
                 Text(
                     text = item.title,
                     style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold,
+                    fontWeight = FontWeight.Medium,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )

@@ -9,22 +9,21 @@ import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.Canvas
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.drawscope.clipRect
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.material3.CircularWavyProgressIndicator
-import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import com.metrolist.music.lyrics.LyricsEntry
 
@@ -39,12 +38,11 @@ sealed class LyricsListItem {
     ) : LyricsListItem()
 }
 
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 internal fun IntervalIndicator(
     gapStartMs: Long,
     gapEndMs: Long,
-    currentPositionMs: Long,
+    positionProvider: () -> Long,
     visible: Boolean,
     color: Color,
     modifier: Modifier = Modifier
@@ -62,9 +60,9 @@ internal fun IntervalIndicator(
         }
     }
 
-    val density = LocalDensity.current
     val targetHeightDp = 72.dp
 
+    val currentPositionMs = if (visible) positionProvider() else gapStartMs
     val progress = if (gapEndMs > gapStartMs) {
         ((currentPositionMs - gapStartMs).toFloat() / (gapEndMs - gapStartMs).toFloat()).coerceIn(0f, 1f)
     } else 0f
@@ -85,13 +83,15 @@ internal fun IntervalIndicator(
             },
         contentAlignment = Alignment.Center
     ) {
-        CircularWavyProgressIndicator(
-            progress = { animatedProgress },
-            modifier = Modifier
-                .size(36.dp)
-                .alpha(alpha.value),
-            color = color,
-            trackColor = color.copy(alpha = 0.2f),
-        )
+        Canvas(Modifier.size(width = 64.dp, height = 32.dp)) {
+            val radius = 4.5.dp.toPx()
+            for (index in 0..2) {
+                val center = Offset(size.width * (.25f + index * .25f), size.height / 2f)
+                drawCircle(color.copy(alpha = .22f), radius, center)
+                clipRect(right = size.width * animatedProgress) {
+                    drawCircle(color, radius, center)
+                }
+            }
+        }
     }
 }

@@ -47,6 +47,7 @@ import coil3.annotation.DelicateCoilApi
 import coil3.annotation.ExperimentalCoilApi
 import coil3.imageLoader
 import com.metrolist.music.LocalDatabase
+import com.metrolist.music.LocalDownloadUtil
 import com.metrolist.music.LocalPlayerAwareWindowInsets
 import com.metrolist.music.LocalPlayerConnection
 import com.metrolist.music.R
@@ -80,6 +81,7 @@ fun StorageSettings(
     val imageDiskCache = context.imageLoader.diskCache ?: return
     val playerCache = LocalPlayerConnection.current?.service?.playerCache ?: return
     val downloadCache = LocalPlayerConnection.current?.service?.downloadCache ?: return
+    val downloadUtil = LocalDownloadUtil.current
 
     val coroutineScope = rememberCoroutineScope()
     val songCacheString = stringResource(R.string.song_cache).lowercase()
@@ -175,11 +177,10 @@ fun StorageSettings(
             title = stringResource(R.string.clear_all_downloads),
             onDismiss = { clearDownloads = false },
             onConfirm = {
-                coroutineScope.launch(Dispatchers.IO) {
-                    downloadCache.keys.forEach { key ->
-                        downloadCache.removeResource(key)
-                    }
-                }
+                // Remove through DownloadManager so the download index, the
+                // cache and the DB stay in sync; deleting cache files directly
+                // left isDownloaded=1 songs with no bytes on disk.
+                downloadUtil.removeAllDownloads()
                 clearDownloads = false
             },
             onCancel = { clearDownloads = false },

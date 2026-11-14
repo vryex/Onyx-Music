@@ -17,6 +17,17 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.tween
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.unit.sp
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -26,6 +37,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -37,13 +49,15 @@ import com.metrolist.music.R
 fun Modifier.onyxGlass(
     shape: Shape = RoundedCornerShape(16.dp),
     emphasized: Boolean = false,
+    showBorder: Boolean = true,
 ): Modifier {
-    val c = MaterialTheme.colorScheme
-    val surface = if (emphasized) c.surfaceContainerHigh else c.surfaceContainer
-    return this
-        .clip(shape)
-        .background(Brush.verticalGradient(listOf(surface, c.surfaceContainerLow)))
-        .border(1.dp, GlassEdge, shape)
+    return clip(shape)
+        .background(if (emphasized) Color(0xFF242424) else Color(0xFF141414))
+        .drawWithCache {
+            val innerLight = Brush.verticalGradient(listOf(Color.White.copy(alpha = 0.045f), Color.Transparent))
+            onDrawBehind { drawRect(innerLight) }
+        }
+        .then(if (showBorder) Modifier.border(1.dp, GlassEdge, shape) else Modifier)
 }
 
 @Composable
@@ -61,25 +75,12 @@ fun OnyxBrand(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(11.dp),
     ) {
-        Box(
-            Modifier
-                .size(38.dp)
-                .clip(RoundedCornerShape(50))
-                .background(MaterialTheme.colorScheme.surfaceContainerHigh)
-                .border(1.dp, GlassEdge, RoundedCornerShape(50)),
-            contentAlignment = Alignment.Center,
-        ) {
-            Icon(
-                painter = painterResource(R.drawable.onyx_mark),
-                contentDescription = null,
-                tint = FrostGlow,
-                modifier = Modifier.size(25.dp),
-            )
-        }
+        Icon(painterResource(R.drawable.sonet_mark), null, modifier = Modifier.size(24.dp), tint = Color.White)
         Column {
             Text(
-                text = "Onyx Music",
-                style = MaterialTheme.typography.titleMedium,
+                text = stringResource(R.string.app_name),
+                style = MaterialTheme.typography.titleLarge,
+                letterSpacing = (-0.5).sp,
                 fontWeight = FontWeight.Medium,
                 color = MaterialTheme.colorScheme.onSurface,
                 maxLines = 1,
@@ -99,41 +100,36 @@ fun OnyxBrand(
 }
 
 @Composable
-fun OnyxPageHeader(title: String, modifier: Modifier = Modifier) {
-    val headingStyle = MaterialTheme.typography.headlineLarge.copy(
-        brush = Brush.verticalGradient(listOf(Color(0xFFD8ECF8), Color(0xFF98C0EF))),
-    )
-    Box(
-        modifier = modifier
-            .fillMaxWidth()
-            .padding(horizontal = 20.dp, vertical = 12.dp)
-            .clip(RoundedCornerShape(16.dp))
-            .drawWithCache {
-                val halo = Brush.radialGradient(
-                    listOf(Color(0x187C91B6), Color.Transparent),
-                    center = Offset(size.width * 0.85f, 0f),
-                    radius = size.width.coerceAtLeast(1f),
-                )
-                val cell = 48.dp.toPx()
-                onDrawBehind {
-                    drawRect(halo)
-                    var x = 0f
-                    while (x < size.width) {
-                        drawLine(Color(0x08BAD7F7), Offset(x, 0f), Offset(x, size.height), 1.dp.toPx())
-                        x += cell
-                    }
-                    var y = 0f
-                    while (y < size.height) {
-                        drawLine(Color(0x08BAD7F7), Offset(0f, y), Offset(size.width, y), 1.dp.toPx())
-                        y += cell
-                    }
-                }
-            },
+fun OnyxPageHeader(title: String, modifier: Modifier = Modifier, subtitle: String? = null) {
+    Column(
+        modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 24.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         Text(
-            text = title,
-            style = headingStyle,
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 24.dp),
+            title, style = MaterialTheme.typography.displaySmall,
+            fontWeight = FontWeight.Medium, letterSpacing = (-0.4).sp,
         )
+        if (subtitle != null) Text(
+            subtitle, style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
+}
+
+/** Saved per screen so returning a lazy header to view does not replay it. */
+@Composable
+fun Modifier.onyxEntrance(key: Any? = Unit): Modifier {
+    var appeared by rememberSaveable(key) { mutableStateOf(false) }
+    val progress = remember(key) { Animatable(if (appeared) 1f else 0f) }
+    LaunchedEffect(key) {
+        if (!appeared) {
+            progress.animateTo(1f, tween(440, easing = FastOutSlowInEasing))
+            appeared = true
+        }
+    }
+    return graphicsLayer {
+        alpha = progress.value
+        translationY = (1f - progress.value) * 26.dp.toPx()
     }
 }

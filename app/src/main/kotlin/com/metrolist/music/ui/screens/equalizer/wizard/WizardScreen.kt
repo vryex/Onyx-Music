@@ -2,7 +2,9 @@ package com.metrolist.music.ui.screens.equalizer.wizard
 
 import androidx.compose.animation.*
 import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -256,6 +258,7 @@ private fun ModelItem(
         modifier = Modifier
             .fillMaxWidth()
             .clickable(onClick = onClick),
+        shape = RoundedCornerShape(24.dp),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceVariant
         )
@@ -338,6 +341,7 @@ private fun VariantSelectionStep(
         ) {
             val bottomPadding = LocalPlayerAwareWindowInsets.current.asPaddingValues().calculateBottomPadding()
             Button(
+                shape = RoundedCornerShape(24.dp),
                 onClick = onCompleteClicked,
                 enabled = canComplete && !isLoading,
                 modifier = Modifier
@@ -354,7 +358,7 @@ private fun VariantSelectionStep(
                     Text(
                         text = stringResource(R.string.wizard_save_profiles),
                         style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.SemiBold
+                        fontWeight = FontWeight.Medium
                     )
                 }
             }
@@ -372,6 +376,8 @@ private fun VariantItem(
         modifier = Modifier
             .fillMaxWidth()
             .clickable(onClick = onToggle),
+        shape = RoundedCornerShape(24.dp),
+        border = if (isSelected) BorderStroke(1.dp, MaterialTheme.colorScheme.primary) else null,
         colors = CardDefaults.cardColors(
             containerColor = if (isSelected) {
                 MaterialTheme.colorScheme.primaryContainer
@@ -395,7 +401,7 @@ private fun VariantItem(
                 Text(
                     text = variant.displayName.substringBefore(" - "),
                     style = MaterialTheme.typography.titleMedium,
-                    fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal
+                    fontWeight = if (isSelected) FontWeight.Medium else FontWeight.Normal
                 )
                 if (variant.sourceDisplay.isNotEmpty() || variant.rigDisplay.isNotEmpty()) {
                     Spacer(modifier = Modifier.height(4.dp))

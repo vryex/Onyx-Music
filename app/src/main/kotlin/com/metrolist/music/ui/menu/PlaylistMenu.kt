@@ -5,6 +5,7 @@
 
 package com.metrolist.music.ui.menu
 
+import androidx.compose.ui.graphics.Color
 import android.content.Intent
 import android.content.res.Configuration
 import android.widget.Toast
@@ -286,7 +287,7 @@ fun PlaylistMenu(
                             if (dbPlaylist?.playlist?.bookmarkedAt !=
                                 null
                             ) {
-                                MaterialTheme.colorScheme.error
+                                Color.White
                             } else {
                                 LocalContentColor.current
                             },
