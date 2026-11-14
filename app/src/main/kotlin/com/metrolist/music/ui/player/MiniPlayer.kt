@@ -8,6 +8,7 @@
 package com.metrolist.music.ui.player
 
 import com.metrolist.music.ui.theme.onArtworkColor
+import com.metrolist.music.ui.theme.readableArtworkAccent
 import com.metrolist.music.ui.theme.rememberArtworkTones
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.LinearEasing
@@ -241,7 +242,7 @@ private fun NewMiniPlayer(
 
     val artworkTones by rememberArtworkTones(mediaMetadata?.thumbnailUrl)
     val playButtonColor by animateColorAsState(
-        artworkTones.accent.takeIf { mediaMetadata?.thumbnailUrl != null } ?: Color.White,
+        remember(artworkTones.accent) { readableArtworkAccent(artworkTones.accent) },
         tween(350), label = "miniAccent",
     )
     val miniOnArtworkColor = MaterialTheme.colorScheme.onSurface
@@ -367,7 +368,7 @@ private fun NewMiniPlayer(
                         contentColor = onArtworkColor(playButtonColor),
                     )
                 }
-                Spacer(Modifier.width(12.dp))
+                Spacer(Modifier.width(8.dp))
                 NewMiniPlayerSongInfo(
                     mediaMetadata = mediaMetadata,
                     onSurfaceColor = miniOnArtworkColor,
@@ -380,7 +381,7 @@ private fun NewMiniPlayer(
                 }
                 IconButton(
                     enabled = canSkipPrevious && !isListenTogetherGuest,
-                    onClick = playerConnection::seekToPrevious,
+                    onClick = { playerConnection.player.seekToPreviousMediaItem() },
                 ) {
                     Icon(painterResource(R.drawable.skip_previous), stringResource(R.string.onyx_previous_track),
                         tint = miniOnArtworkColor.copy(alpha = 0.65f))
@@ -392,7 +393,7 @@ private fun NewMiniPlayer(
                     Icon(painterResource(R.drawable.skip_next), stringResource(R.string.onyx_next_track),
                         tint = miniOnArtworkColor.copy(alpha = 0.65f))
                 }
-                Box(Modifier.size(36.dp).clip(RoundedCornerShape(24.dp))) {
+                Box(Modifier.size(32.dp).clip(RoundedCornerShape(10.dp))) {
                     AsyncImage(
                         model = mediaMetadata?.thumbnailUrl?.resize(120, 120),
                         contentDescription = null,

@@ -97,23 +97,20 @@ fun rememberArtworkTones(artwork: String?): State<ArtworkTones> {
 @Composable
 fun rememberLyricsAccent(artwork: String?): State<Color> {
     val tones by rememberArtworkTones(artwork)
-    val visibleAccent = remember(tones) {
-        val hsl = FloatArray(3)
-        ColorUtils.colorToHSL(tones.accent.toArgb(), hsl)
-        if (hsl[1] < 0.12f) {
-            // An almost monochrome artwork has no meaningful chromatic accent.
-            Color(0xFFE5E5E5)
-        } else {
-            // Preserve the source hue AND saturation. Increase brightness only.
-            hsl[2] = hsl[2].coerceAtLeast(0.72f)
-            Color(ColorUtils.HSLToColor(hsl))
-        }
-    }
+    val visibleAccent = remember(tones.accent) { readableArtworkAccent(tones.accent) }
     return animateColorAsState(
         targetValue = visibleAccent,
         animationSpec = tween(550, easing = FastOutSlowInEasing),
         label = "sonetLyricsAccent",
     )
+}
+
+internal fun readableArtworkAccent(accent: Color): Color {
+    val hsl = FloatArray(3)
+    ColorUtils.colorToHSL(accent.toArgb(), hsl)
+    if (hsl[1] < 0.12f) return Color(0xFFE5E5E5)
+    hsl[2] = hsl[2].coerceAtLeast(0.72f)
+    return Color(ColorUtils.HSLToColor(hsl))
 }
 
 /** Existing color behavior/transition retained for every original caller. */

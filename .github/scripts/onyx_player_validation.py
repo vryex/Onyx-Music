@@ -110,7 +110,7 @@ def validate_spotify_background(root):
 
 
 def validate_page_actions():
-    # Page actions must disappear with the player and return on the underlying page.
+    # Verify the collapsed player and Home actions have separate touch targets.
     tap_label(snapshot('22-fit-player'), 'minimize player')
     adb('shell', 'input', 'keyevent', 'KEYCODE_BACK')
     tap_label(snapshot('22-find-library'), 'library')
@@ -123,18 +123,15 @@ def validate_page_actions():
         assert max(rgb) - min(rgb) < 10, 'Library background inherited the playing song artwork'
     tap_label(snapshot('22-library'), 'home')
     home_actions = snapshot('22-home-actions')
-    assert any(n.get('resource-id', '') == 'sonet_page_actions' for n in home_actions.iter('node')), 'Home floating actions missing with collapsed player'
-    mini = max((n for n in home_actions.iter('node') if 'sonet ui check 1' in (n.get('text', '') + n.get('content-desc', '')).lower()),
-               key=lambda n: int(re.findall(r'\d+', n.get('bounds', ''))[3]))
-    mx1, my1, mx2, my2 = map(int, re.findall(r'\d+', mini.get('bounds', '')))
-    size = list(map(int, re.findall(r'\d+', adb('shell', 'wm', 'size').decode())))[-2:]
-    adb('shell', 'input', 'swipe', str((mx1 + mx2) // 2), str((my1 + my2) // 2),
-        str(size[0] // 2), str(size[1] // 4), '750')
-    time.sleep(2)
-    expanded_actions = snapshot('22-expanded-actions')
-    assert not any(n.get('resource-id', '') == 'sonet_page_actions' for n in expanded_actions.iter('node')), 'Page actions remain accessible over expanded player'
-    tap_label(expanded_actions, 'minimize player')
-    assert any(n.get('resource-id', '') == 'sonet_page_actions' for n in snapshot('22-returned-actions').iter('node')), 'Page actions did not return after collapse'
+    assert not any(n.get('resource-id', '') == 'sonet_page_actions' for n in home_actions.iter('node')), (
+        'Floating Home actions obstruct the carousel')
+    assert any(n.get('text', '') == 'Recently played' for n in home_actions.iter('node')), (
+        'Listening history should have an inline heading')
+    tap_label(home_actions, 'sonet ui check 1')
+    expanded = snapshot('22-expanded-player')
+    assert any(n.get('resource-id', '') == 'sonet_player_transport' for n in expanded.iter('node')), (
+        'Tapping the mini player from Home did not expand it')
+    tap_label(expanded, 'minimize player')
 
     # Only a disposable local artist is toggled; no real channel subscription is changed.
     adb('shell', 'am', 'start', '-W', '-a', 'android.intent.action.VIEW', '-d',

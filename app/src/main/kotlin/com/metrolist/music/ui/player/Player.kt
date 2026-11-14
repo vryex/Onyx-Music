@@ -9,6 +9,7 @@ import com.metrolist.music.ui.component.LiquidIconButton
 import com.metrolist.music.ui.component.OnyxPlayerHeader
 import com.metrolist.music.ui.theme.SonetLyricsBackdrop
 import com.metrolist.music.ui.theme.onArtworkColor
+import com.metrolist.music.ui.theme.readableArtworkAccent
 import com.metrolist.music.ui.theme.rememberArtworkTones
 import com.metrolist.music.ui.utils.resize
 import androidx.compose.ui.draw.shadow
@@ -339,7 +340,7 @@ fun BottomSheetPlayer(
     }
     val artworkTones by rememberArtworkTones(mediaMetadata?.thumbnailUrl)
     val artworkColor = artworkTones.surface
-    val playbackAccent = if (mediaMetadata?.thumbnailUrl.isNullOrBlank()) Color.White else artworkTones.accent
+    val playbackAccent = remember(artworkTones.accent) { readableArtworkAccent(artworkTones.accent) }
     // Darkened cover tone shared by the gradient background and the queue,
     // so the two sheets never cut against each other.
     val artworkDarkTone = artworkColor.copy(
@@ -862,18 +863,19 @@ fun BottomSheetPlayer(
             // and separating it from its cover, slider and buttons.
             val isLandscape = LocalConfiguration.current.orientation == Configuration.ORIENTATION_LANDSCAPE
             val showLyricsCover = showInlineLyrics && !isLandscape && !mediaMetadata.thumbnailUrl.isNullOrBlank()
-            val coverInset = if (showLyricsCover) 54.dp else 0.dp
+            val coverSize = if (LocalConfiguration.current.screenWidthDp < 360) 34.dp else 44.dp
+            val coverInset = if (showLyricsCover) coverSize + 8.dp else 0.dp
             val coverSlotWidth = animateDpAsState(
                 coverInset,
                 tween(320), label = "metadataCoverSlot",
             )
             Row(
-                Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 8.dp),
+                Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 6.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Box(Modifier.weight(1f), contentAlignment = Alignment.CenterStart) {
                     if (!isLandscape) {
-                        Box(Modifier.size(44.dp).onGloballyPositioned(artworkPlacement::placeTarget))
+                        Box(Modifier.size(coverSize).onGloballyPositioned(artworkPlacement::placeTarget))
                     }
                     Column(
                         Modifier.fillMaxWidth()
