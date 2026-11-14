@@ -9,7 +9,7 @@ import com.metrolist.music.ui.component.LiquidIconButton
 import com.metrolist.music.ui.component.OnyxPlayerHeader
 import com.metrolist.music.ui.theme.SonetLyricsBackdrop
 import com.metrolist.music.ui.theme.onArtworkColor
-import com.metrolist.music.ui.theme.rememberArtworkColor
+import com.metrolist.music.ui.theme.rememberArtworkTones
 import com.metrolist.music.ui.utils.resize
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.draw.clipToBounds
@@ -29,7 +29,6 @@ import androidx.activity.compose.BackHandler
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
-import android.content.Intent
 import android.content.res.Configuration
 import android.view.WindowManager
 import android.widget.Toast
@@ -54,7 +53,6 @@ import androidx.compose.animation.shrinkVertically
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.togetherWith
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.border
 import androidx.compose.foundation.background
 import androidx.compose.foundation.basicMarquee
@@ -124,7 +122,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.input.pointer.pointerInput
@@ -159,7 +156,6 @@ import androidx.lifecycle.ProcessLifecycleOwner
 import androidx.media3.common.C
 import androidx.media3.common.Player
 import androidx.media3.common.Player.STATE_ENDED
-import androidx.media3.exoplayer.offline.Download
 import androidx.navigation.NavController
 import androidx.palette.graphics.Palette
 import com.metrolist.music.LocalNavController
@@ -170,7 +166,6 @@ import coil3.request.ImageRequest
 import coil3.request.allowHardware
 import coil3.toBitmap
 import com.metrolist.music.LocalDatabase
-import com.metrolist.music.LocalDownloadUtil
 import com.metrolist.music.LocalListenTogetherManager
 import com.metrolist.music.LocalPlayerConnection
 import com.metrolist.music.R
@@ -209,7 +204,6 @@ import com.metrolist.music.ui.component.SleepTimerCountdownDialog
 import com.metrolist.music.ui.component.SquigglySlider
 import com.metrolist.music.ui.component.WavySlider
 import com.metrolist.music.ui.component.rememberBottomSheetState
-import com.metrolist.music.ui.menu.AddToPlaylistDialog
 import com.metrolist.music.ui.menu.PlayerMenu
 import com.metrolist.music.ui.screens.settings.DarkMode
 import com.metrolist.music.ui.theme.PlayerColorExtractor
@@ -241,7 +235,6 @@ fun BottomSheetPlayer(
     pureBlack: Boolean,
 ) {
     val context = LocalContext.current
-    val database = LocalDatabase.current
     val clipboardManager = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
     val menuState = LocalMenuState.current
     val sleepTimerDefaultSetTemplate = stringResource(R.string.sleep_timer_default_set)
@@ -344,7 +337,9 @@ fun BottomSheetPlayer(
         it.isNotEmpty() && !it.equals(mediaMetadata?.title, ignoreCase = true) &&
             !it.equals("radio", ignoreCase = true)
     }
-    val artworkColor by rememberArtworkColor(mediaMetadata?.thumbnailUrl)
+    val artworkTones by rememberArtworkTones(mediaMetadata?.thumbnailUrl)
+    val artworkColor = artworkTones.surface
+    val playbackAccent = if (mediaMetadata?.thumbnailUrl.isNullOrBlank()) Color.White else artworkTones.accent
     // Darkened cover tone shared by the gradient background and the queue,
     // so the two sheets never cut against each other.
     val artworkDarkTone = artworkColor.copy(
@@ -601,11 +596,6 @@ fun BottomSheetPlayer(
             }
         }
 
-    val download by LocalDownloadUtil.current
-        .getDownload(mediaMetadata?.id ?: "")
-        .collectAsStateWithLifecycle(initialValue = null)
-    val downloadUtil = LocalDownloadUtil.current
-
     val sleepTimerEnabled =
         remember(
             playerConnection.service.sleepTimer?.triggerTime,
@@ -674,31 +664,6 @@ fun BottomSheetPlayer(
             onDismiss = { showSleepTimerDialog = false },
         )
     }
-
-    var showChoosePlaylistDialog by rememberSaveable {
-        mutableStateOf(false)
-    }
-
-    // Wires the (previously declared but never shown) add-to-playlist state
-    // to the real dialog, so the player can add the current song directly.
-    AddToPlaylistDialog(
-        isVisible = showChoosePlaylistDialog,
-        onGetSong = {
-            val current = mediaMetadata
-            if (current == null) {
-                emptyList()
-            } else {
-                database.withTransaction {
-                    insert(current)
-                }
-                listOf(current.id)
-            }
-        },
-        onGetSongIds = { mediaMetadata?.let { listOf(it.id) } ?: emptyList() },
-        onDismiss = {
-            showChoosePlaylistDialog = false
-        },
-    )
 
     val lifecycleOwner = LocalLifecycleOwner.current
     LaunchedEffect(playerConnection, isPlaying, isCasting, state.isExpanded, lifecycleOwner) {
@@ -891,13 +856,13 @@ fun BottomSheetPlayer(
             )
         },
     ) {
-        val metadataContent: @Composable (MediaMetadata, Boolean) -> Unit = { mediaMetadata, showQuickActions ->
+        val metadataContent: @Composable (MediaMetadata) -> Unit = { mediaMetadata ->
             // Only the horizontal cover slot animates. A global bounds animation
             // here also chased the parent's fullscreen resize, delaying the title
             // and separating it from its cover, slider and buttons.
             val isLandscape = LocalConfiguration.current.orientation == Configuration.ORIENTATION_LANDSCAPE
             val showLyricsCover = showInlineLyrics && !isLandscape && !mediaMetadata.thumbnailUrl.isNullOrBlank()
-            val coverInset = if (showLyricsCover) 60.dp else 0.dp
+            val coverInset = if (showLyricsCover) 54.dp else 0.dp
             val coverSlotWidth = animateDpAsState(
                 coverInset,
                 tween(320), label = "metadataCoverSlot",
@@ -907,80 +872,67 @@ fun BottomSheetPlayer(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Box(Modifier.weight(1f), contentAlignment = Alignment.CenterStart) {
-                if (!isLandscape) {
-                    if (showLyricsCover) {
-                        // Lyrics mode: draw the small cover here, next to the
-                        // title. The background artwork is faded out in lyrics
-                        // mode (see PlayerArtwork), so this is the only cover.
-                        AsyncImage(
-                            model = mediaMetadata.thumbnailUrl?.resize(96, 96),
-                            contentDescription = null,
-                            contentScale = ContentScale.Crop,
-                            modifier = Modifier.size(48.dp).clip(RoundedCornerShape(12.dp))
-                                .graphicsLayer { alpha = lyricsMix.value },
-                        )
-                    } else {
-                        // A layout anchor only. The bitmap is drawn once in the background.
-                        Box(Modifier.size(48.dp).onGloballyPositioned(artworkPlacement::placeTarget))
+                    if (!isLandscape) {
+                        Box(Modifier.size(44.dp).onGloballyPositioned(artworkPlacement::placeTarget))
                     }
-                }
-                Column(
-                    Modifier.fillMaxWidth()
-                        .layout { measurable, constraints ->
-                            // Measure text once for its destination width; animate
-                            // placement only, without relaying out text each frame.
-                            val inset = coverInset.roundToPx()
-                            val text = measurable.measure(constraints.offset(horizontal = -inset))
-                            layout(text.width + inset, text.height) {
-                                text.placeRelative(coverSlotWidth.value.roundToPx(), 0)
+                    Column(
+                        Modifier.fillMaxWidth()
+                            .layout { measurable, constraints ->
+                                // Measure text once for its destination width; animate
+                                // placement only, without relaying out text each frame.
+                                val inset = coverInset.roundToPx()
+                                val text = measurable.measure(constraints.offset(horizontal = -inset))
+                                layout(text.width + inset, text.height) {
+                                    text.placeRelative(coverSlotWidth.value.roundToPx(), 0)
+                                }
+                            }
+                            .padding(end = 6.dp),
+                        verticalArrangement = Arrangement.spacedBy(4.dp),
+                    ) {
+                        Text(
+                            mediaMetadata.title,
+                            style = if (showInlineLyrics) MaterialTheme.typography.titleLarge else MaterialTheme.typography.headlineMedium,
+                            color = playerContentColor,
+                            fontWeight = FontWeight.Medium,
+                            maxLines = 2, overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.fillMaxWidth().semantics { testTagsAsResourceId = true }
+                                .testTag("sonet_player_title").combinedClickable(
+                                onClick = {
+                                    val album = mediaMetadata.album?.id ?: currentSong?.album?.id ?: currentSong?.song?.albumId
+                                    if (album != null) {
+                                        navController.navigate("album/$album")
+                                        state.collapseSoft()
+                                    }
+                                },
+                                onLongClick = {
+                                    clipboardManager.setPrimaryClip(ClipData.newPlainText(copiedTitleStr, mediaMetadata.title))
+                                    Toast.makeText(context, copiedTitleStr, Toast.LENGTH_SHORT).show()
+                                },
+                            ),
+                        )
+                        Row(Modifier.horizontalScroll(rememberScrollState())) {
+                            if (mediaMetadata.explicit) MIcon.Explicit()
+                            mediaMetadata.artists.forEachIndexed { index, artist ->
+                                Text(
+                                    artist.name + if (index < mediaMetadata.artists.lastIndex) ", " else "",
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    color = playerContentColor.copy(alpha = 0.75f),
+                                    modifier = Modifier.combinedClickable(
+                                        onClick = {
+                                            artist.id?.takeIf { it.isNotBlank() }?.let {
+                                                navController.navigate("artist/$it")
+                                                state.collapseSoft()
+                                            }
+                                        },
+                                        onLongClick = {
+                                            clipboardManager.setPrimaryClip(ClipData.newPlainText(copiedArtistStr, artist.name))
+                                            Toast.makeText(context, copiedArtistStr, Toast.LENGTH_SHORT).show()
+                                        },
+                                    ),
+                                )
                             }
                         }
-                        .padding(end = 12.dp),
-                    verticalArrangement = Arrangement.spacedBy(4.dp),
-                ) {
-                    Text(
-                        mediaMetadata.title,
-                        style = MaterialTheme.typography.headlineMedium,
-                        color = playerContentColor,
-                        fontWeight = FontWeight.Medium,
-                        maxLines = 2, overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.combinedClickable(
-                            onClick = {
-                                val album = mediaMetadata.album?.id ?: currentSong?.album?.id ?: currentSong?.song?.albumId
-                                if (album != null) {
-                                    navController.navigate("album/$album")
-                                    state.collapseSoft()
-                                }
-                            },
-                            onLongClick = {
-                                clipboardManager.setPrimaryClip(ClipData.newPlainText(copiedTitleStr, mediaMetadata.title))
-                                Toast.makeText(context, copiedTitleStr, Toast.LENGTH_SHORT).show()
-                            },
-                        ),
-                    )
-                    Row(Modifier.horizontalScroll(rememberScrollState())) {
-                        if (mediaMetadata.explicit) MIcon.Explicit()
-                        mediaMetadata.artists.forEachIndexed { index, artist ->
-                            Text(
-                                artist.name + if (index < mediaMetadata.artists.lastIndex) ", " else "",
-                                style = MaterialTheme.typography.bodyLarge,
-                                color = playerContentColor.copy(alpha = 0.75f),
-                                modifier = Modifier.combinedClickable(
-                                    onClick = {
-                                        artist.id?.takeIf { it.isNotBlank() }?.let {
-                                            navController.navigate("artist/$it")
-                                            state.collapseSoft()
-                                        }
-                                    },
-                                    onLongClick = {
-                                        clipboardManager.setPrimaryClip(ClipData.newPlainText(copiedArtistStr, artist.name))
-                                        Toast.makeText(context, copiedArtistStr, Toast.LENGTH_SHORT).show()
-                                    },
-                                ),
-                            )
-                        }
                     }
-                }
                 }
                 val favorite = if (currentSong?.song?.isEpisode == true) currentSong?.song?.inLibrary != null else currentSong?.song?.liked == true
                 val favoritePulse = remember { Animatable(1f) }
@@ -1013,41 +965,7 @@ fun BottomSheetPlayer(
                     }.semantics { selected = favorite },
                     contentColor = playerContentColor,
                 )
-                if (!showInlineLyrics && showQuickActions) {
-                    Spacer(Modifier.width(12.dp))
-                    PlayerIconButton(
-                        R.drawable.playlist_add,
-                        stringResource(R.string.add_to_playlist),
-                        onClick = { showChoosePlaylistDialog = true },
-                        contentColor = playerContentColor,
-                    )
-                    Spacer(Modifier.width(12.dp))
-                    PlayerIconButton(
-                        R.drawable.share,
-                        stringResource(R.string.share),
-                        onClick = {
-                            context.startActivity(Intent.createChooser(Intent(Intent.ACTION_SEND).apply {
-                                type = "text/plain"
-                                putExtra(Intent.EXTRA_TEXT, "https://music.youtube.com/watch?v=" + mediaMetadata.id)
-                            }, null))
-                        },
-                        contentColor = playerContentColor,
-                    )
-                    // Direct download button: completed = remove, otherwise download.
-                    // The in-progress state is shown with % in the "···" menu.
-                    Spacer(Modifier.width(12.dp))
-                    PlayerIconButton(
-                        if (download?.state == Download.STATE_COMPLETED) R.drawable.offline else R.drawable.download,
-                        stringResource(if (download?.state == Download.STATE_COMPLETED) R.string.remove_download else R.string.action_download),
-                        onClick = {
-                            if (download?.state == Download.STATE_COMPLETED) downloadUtil.removeDownload(mediaMetadata.id)
-                            else downloadUtil.download(mediaMetadata)
-                        },
-                        contentColor = playerContentColor,
-                    )
-                }
                 if (showInlineLyrics) {
-                    Spacer(Modifier.width(12.dp))
                     PlayerIconButton(
                         R.drawable.fullscreen,
                         stringResource(R.string.onyx_fullscreen),
@@ -1056,7 +974,6 @@ fun BottomSheetPlayer(
                         contentColor = playerContentColor,
                     )
                 }
-                Spacer(Modifier.width(12.dp))
                 if (showInlineLyrics) {
                     val lyrics by playerConnection.currentLyrics.collectAsStateWithLifecycle(initialValue = null)
                     PlayerIconButton(R.drawable.more_horiz, stringResource(R.string.onyx_lyrics_tools), onClick = {
@@ -1070,7 +987,7 @@ fun BottomSheetPlayer(
                             )
                         }
                     })
-                } else PlayerMoreMenuButton(mediaMetadata, state, textButtonColor, iconButtonColor)
+                } else PlayerMoreMenuButton(mediaMetadata, state, playerContentColor)
             }
         }
         val controlsContent: @Composable ColumnScope.(MediaMetadata) -> Unit = { mediaMetadata ->
@@ -1133,13 +1050,13 @@ fun BottomSheetPlayer(
                         track = { sliderState ->
                             PlayerSliderTrack(
                                 sliderState = sliderState,
-                                colors = PlayerSliderColors.getSliderColors(Color(0xFFF5F5F7), playerBackground, useDarkTheme),
+                                colors = PlayerSliderColors.getSliderColors(playbackAccent, playerBackground, useDarkTheme),
                                 trackHeight = scrubTrackHeight,
-                                accentColor = artworkColor,
+                                accentColor = playbackAccent,
                                 bufferedFraction = if (duration > 0L) playerConnection.player.bufferedPosition.toFloat() / duration else 0f,
                             )
                         },
-                        colors = PlayerSliderColors.getSliderColors(Color(0xFFF5F5F7), playerBackground, useDarkTheme),
+                        colors = PlayerSliderColors.getSliderColors(playbackAccent, playerBackground, useDarkTheme),
                         modifier = Modifier.padding(horizontal = PlayerHorizontalPadding).heightIn(min = 48.dp),
                     )
                 }
@@ -1165,7 +1082,7 @@ fun BottomSheetPlayer(
                                 sliderPosition = null
                             },
                             modifier = Modifier.padding(horizontal = PlayerHorizontalPadding),
-                            colors = PlayerSliderColors.getSliderColors(Color(0xFFF5F5F7), playerBackground, useDarkTheme),
+                            colors = PlayerSliderColors.getSliderColors(playbackAccent, playerBackground, useDarkTheme),
                             isPlaying = effectiveIsPlaying,
                         )
                     } else {
@@ -1187,7 +1104,7 @@ fun BottomSheetPlayer(
                                 }
                                 sliderPosition = null
                             },
-                            colors = PlayerSliderColors.getSliderColors(Color(0xFFF5F5F7), playerBackground, useDarkTheme),
+                            colors = PlayerSliderColors.getSliderColors(playbackAccent, playerBackground, useDarkTheme),
                             modifier = Modifier.padding(horizontal = PlayerHorizontalPadding),
                             isPlaying = effectiveIsPlaying,
                         )
@@ -1229,7 +1146,7 @@ fun BottomSheetPlayer(
                         track = { sliderState ->
                             PlayerSliderTrack(
                                 sliderState = sliderState,
-                                colors = PlayerSliderColors.getSliderColors(Color(0xFFF5F5F7), playerBackground, useDarkTheme),
+                                colors = PlayerSliderColors.getSliderColors(playbackAccent, playerBackground, useDarkTheme),
                             )
                         },
                         modifier = Modifier.padding(horizontal = PlayerHorizontalPadding).heightIn(min = 48.dp),
@@ -1272,7 +1189,7 @@ fun BottomSheetPlayer(
                 exit = fadeOut(tween(240)) + shrinkVertically(tween(320)),
             ) {
                 Row(
-                    Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 8.dp)
+                    Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 4.dp)
                         .semantics { testTagsAsResourceId = true }.testTag("sonet_player_transport")
                         .padding(horizontal = 8.dp, vertical = 4.dp),
                     verticalAlignment = Alignment.CenterVertically,
@@ -1303,7 +1220,7 @@ fun BottomSheetPlayer(
                             } else playerConnection.togglePlayPause()
                         },
                         modifier = Modifier.size(52.dp).focusRequester(focusRequester), emphasized = true,
-                        containerColor = Color.White, contentColor = Color.Black,
+                        containerColor = playbackAccent, contentColor = onArtworkColor(playbackAccent),
                     )
                     PlayerIconButton(R.drawable.skip_next, stringResource(R.string.onyx_next_track), playerConnection::seekToNext,
                         enabled = canSkipNext && !isListenTogetherGuest)
@@ -1404,7 +1321,7 @@ fun BottomSheetPlayer(
                                 .windowInsetsPadding(WindowInsets.systemBars.only(WindowInsetsSides.Top)),
                     ) {
                         mediaMetadata?.let {
-                            metadataContent(it, false)
+                            metadataContent(it)
                             controlsContent(it)
                         }
 
@@ -1413,7 +1330,6 @@ fun BottomSheetPlayer(
             }
 
             else -> BoxWithConstraints(Modifier.fillMaxSize()) {
-                val showQuickActions = maxWidth >= 392.dp
                 // Spend spare portrait height on breathing room below the controls.
                 val controlsLift = if (isFullScreen) 0.dp else
                     ((maxHeight - 600.dp) / 3).coerceIn(0.dp, 40.dp)
@@ -1490,7 +1406,7 @@ fun BottomSheetPlayer(
                     }
 
                     mediaMetadata?.let {
-                        metadataContent(it, showQuickActions)
+                        metadataContent(it)
                         controlsContent(it)
                     }
 
@@ -1683,43 +1599,28 @@ fun InlineLyricsView(
 private fun PlayerMoreMenuButton(
     mediaMetadata: MediaMetadata,
     state: BottomSheetState,
-    textButtonColor: Color,
-    iconButtonColor: Color,
+    contentColor: Color,
 ) {
-    val navController = LocalNavController.current
     val menuState = LocalMenuState.current
     val bottomSheetPageState = LocalBottomSheetPageState.current
 
-    Box(
-        contentAlignment = Alignment.Center,
-        modifier =
-            Modifier
-                .size(40.dp)
-                .clip(RoundedCornerShape(24.dp))
-                .background(textButtonColor)
-                .clickable {
-                    menuState.show {
-                        PlayerMenu(
-                            mediaMetadata = mediaMetadata,
-                            playerBottomSheetState = state,
-                            onShowDetailsDialog = {
-                                mediaMetadata.id.let {
-                                    bottomSheetPageState.show {
-                                        ShowMediaInfo(it)
-                                    }
-                                }
-                            },
-                            onDismiss = menuState::dismiss,
-                        )
-                    }
-                },
-    ) {
-        Image(
-            painter = painterResource(R.drawable.more_horiz),
-            contentDescription = stringResource(R.string.more_options),
-            colorFilter = ColorFilter.tint(iconButtonColor),
-        )
-    }
+    PlayerIconButton(
+        R.drawable.more_horiz,
+        stringResource(R.string.more_options),
+        onClick = {
+            menuState.show {
+                PlayerMenu(
+                    mediaMetadata = mediaMetadata,
+                    playerBottomSheetState = state,
+                    onShowDetailsDialog = {
+                        bottomSheetPageState.show { ShowMediaInfo(mediaMetadata.id) }
+                    },
+                    onDismiss = menuState::dismiss,
+                )
+            }
+        },
+        contentColor = contentColor,
+    )
 }
 
 @Composable

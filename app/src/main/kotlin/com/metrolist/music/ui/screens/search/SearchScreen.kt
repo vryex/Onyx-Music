@@ -138,7 +138,8 @@ fun SearchScreen(
     }
     val pauseSearchHistory by rememberPreference(PauseSearchHistoryKey, defaultValue = false)
 
-    fun handleSearch(searchQuery: String) {
+    fun handleSearch(rawQuery: String) {
+        val searchQuery = rawQuery.trim()
         if (searchQuery.isEmpty()) {
             return
         }
@@ -187,7 +188,7 @@ fun SearchScreen(
     Scaffold(
         topBar = {
             Column(Modifier.fillMaxWidth().statusBarsPadding().padding(horizontal = 20.dp, vertical = 12.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                     LiquidIconButton(R.drawable.arrow_back, stringResource(R.string.dismiss),
                         { navController.navigateUp() }, plain = true)
@@ -198,8 +199,8 @@ fun SearchScreen(
                         { navController.navigate("recognition") }, plain = true)
                 }
                 Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(24.dp))
-                    .background(MaterialTheme.colorScheme.surface)
-                    .border(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = .35f), RoundedCornerShape(24.dp))
+                    .background(MaterialTheme.colorScheme.surfaceContainer)
+                    .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(24.dp))
                     .padding(horizontal = 12.dp),
                     verticalAlignment = Alignment.CenterVertically) {
                     Icon(painterResource(R.drawable.search), null, Modifier.size(20.dp),
@@ -233,7 +234,7 @@ fun SearchScreen(
                     }
                 }
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    SearchScopeButton(stringResource(R.string.onyx_search_online), R.drawable.language,
+                    SearchScopeButton("YouTube Music", R.drawable.language,
                         searchSource == SearchSource.ONLINE, { searchSource = SearchSource.ONLINE }, Modifier.weight(1f))
                     SearchScopeButton(stringResource(R.string.search_library), R.drawable.library_music,
                         searchSource == SearchSource.LOCAL, { searchSource = SearchSource.LOCAL }, Modifier.weight(1f))

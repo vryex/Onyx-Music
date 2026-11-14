@@ -305,6 +305,10 @@ for attempt in range(8):
     player = snapshot('11-player-settled-' + str(attempt))
 assert any('Minimize player' in n.get('content-desc', '') for n in player.iter('node')), 'Expanded player header missing'
 assert any('Next track' in n.get('content-desc', '') for n in player.iter('node')), 'Transport missing'
+title = next(n for n in player.iter('node') if n.get('resource-id') == 'sonet_player_title')
+x1, _, x2, _ = map(int, re.findall(r'\d+', title.get('bounds', '')))
+assert x2 - x1 >= Image.open(out / '11-player.png').width * .45, 'Player actions squeezed the song title'
+
 transport = next(n for n in player.iter('node') if n.get('resource-id', '') == 'sonet_player_transport')
 x1, y1, x2, y2 = map(int, re.findall(r'\d+', transport.get('bounds', '')))
 pixels = Image.open(out / '11-player.png').convert('RGB')

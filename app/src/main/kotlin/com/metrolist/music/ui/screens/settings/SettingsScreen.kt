@@ -134,6 +134,17 @@ fun SettingsScreen(navController: NavController, latestVersionName: String) {
         )
         Spacer(Modifier.height(8.dp))
         Material3SettingsGroup(
+            title = stringResource(R.string.settings_section_ui),
+            items = listOf(
+                Material3SettingsItem(
+                    icon = painterResource(R.drawable.palette),
+                    title = { Text(stringResource(R.string.appearance)) },
+                    onClick = { navController.navigate("settings/appearance") }
+                )
+            )
+        )
+        Spacer(Modifier.height(20.dp))
+        Material3SettingsGroup(
             title = stringResource(R.string.settings_section_player_content),
             items = listOf(
                 Material3SettingsItem(

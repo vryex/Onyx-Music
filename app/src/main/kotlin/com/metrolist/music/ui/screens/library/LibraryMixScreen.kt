@@ -11,6 +11,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
@@ -468,12 +469,6 @@ fun LibraryMixScreen(
                     Icon(painterResource(R.drawable.history), stringResource(R.string.history))
                 }
             }
-            Text(
-                text = stringResource(R.string.onyx_library_subtitle),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(bottom = 8.dp),
-            )
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.Top) {
                 if (showLikedPlaylist) {
                     LibraryCollectionFeature(
@@ -485,7 +480,7 @@ fun LibraryMixScreen(
                         onClick = { navController.navigate("auto_playlist/liked") },
                     )
                 }
-                Column(
+                if (showDownloadedPlaylist || showCachedPlaylists || showTopPlaylists || showUploadedPlaylists) Column(
                     modifier = Modifier.weight(1.15f)
                         .onyxGlass(RoundedCornerShape(24.dp), showBorder = false),
                 ) {
@@ -992,7 +987,7 @@ private fun LibraryCollectionFeature(
     val shape = RoundedCornerShape(24.dp)
     if (prominent) {
         Box(
-            modifier = modifier.height(208.dp).clip(shape)
+            modifier = modifier.height(190.dp).clip(shape)
                 .background(MaterialTheme.colorScheme.surfaceContainer)
                 .clickable(onClick = onClick),
         ) {
@@ -1017,7 +1012,8 @@ private fun LibraryCollectionFeature(
         horizontalArrangement = Arrangement.spacedBy(12.dp),
         modifier = modifier.fillMaxWidth()
             .clickable(onClick = onClick)
-            .padding(horizontal = 12.dp, vertical = 15.dp),
+            .heightIn(min = 48.dp)
+            .padding(horizontal = 12.dp, vertical = 10.dp),
     ) {
         Icon(
             painter = painterResource(icon), contentDescription = null,
@@ -1029,7 +1025,7 @@ private fun LibraryCollectionFeature(
             style = MaterialTheme.typography.bodyMedium,
             fontWeight = FontWeight.Normal,
             modifier = Modifier.weight(1f),
-            maxLines = 1,
+            maxLines = 2,
             overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
         )
 

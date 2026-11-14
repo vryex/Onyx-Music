@@ -136,64 +136,25 @@ private fun ObservatoryStars(modifier: Modifier = Modifier) {
 }
 
 @Composable
-fun OnyxHomeObservatory() {
-    Column(
-        Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 24.dp),
-        verticalArrangement = Arrangement.spacedBy(6.dp),
-    ) {
-        Text(stringResource(R.string.home), style = MaterialTheme.typography.displaySmall,
-            fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
-        Text(stringResource(R.string.onyx_home_intro), style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant)
-    }
-}
-
-@Composable
-fun OnyxHomeShortcuts(onHistory: () -> Unit, onExplore: () -> Unit) {
-    Row(Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 4.dp),
-        horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-        HomeShortcut(stringResource(R.string.history), R.drawable.history, onHistory, Modifier.weight(1f))
-        HomeShortcut(stringResource(R.string.mood_and_genres), R.drawable.discover_tune, onExplore, Modifier.weight(1f))
-    }
-}
-
-@Composable
-private fun HomeShortcut(title: String, icon: Int, onClick: () -> Unit, modifier: Modifier) {
-    Row(modifier.clip(RoundedCornerShape(24.dp))
-        .background(MaterialTheme.colorScheme.surface)
-        .border(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.18f), RoundedCornerShape(24.dp))
-        .clickable(role = Role.Button, onClick = onClick)
-        .heightIn(min = 48.dp).padding(horizontal = 12.dp, vertical = 10.dp),
-        verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        Icon(painterResource(icon), null, Modifier.size(18.dp), tint = MaterialTheme.colorScheme.primary)
-        Text(title, style = MaterialTheme.typography.labelMedium, maxLines = 2, overflow = TextOverflow.Ellipsis)
-    }
-}
-
-@Composable
 fun OnyxHomeHero(
     title: String?,
     artist: String?,
     artwork: String?,
-    label: String,
     onPlay: () -> Unit,
     onExplore: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    if (title.isNullOrBlank() || artwork.isNullOrBlank()) return
     var fallbackArt by remember(artwork) { mutableStateOf(false) }
-    val artTone by rememberArtworkColor(artwork.resize(224, 224))
+    val artTone by rememberArtworkColor(artwork?.resize(224, 224))
     val (accent, onAccent) = rememberOnyxAccent(artwork)
-    // One understated surface. The parent crossfades artwork AND metadata in
-    // this same position; no card carousel, pagination, or magazine layout.
     Box(
-        modifier = modifier.height(316.dp)
+        modifier = modifier.height(274.dp)
             .clip(RoundedCornerShape(OnyxRadius))
             .background(artTone)
             .clickable(role = Role.Button, onClick = onExplore),
     ) {
         AsyncImage(
-            model = if (fallbackArt) artwork else artwork.recommendationArtworkUrl(),
+            model = if (fallbackArt) artwork else artwork?.recommendationArtworkUrl(),
             contentDescription = title,
             onError = { fallbackArt = true },
             contentScale = ContentScale.Crop,
@@ -210,12 +171,6 @@ fun OnyxHomeHero(
                 ),
             ),
         )
-        Text(
-            label,
-            color = Color.White.copy(alpha = .92f),
-            style = MaterialTheme.typography.labelMedium,
-            modifier = Modifier.align(Alignment.TopStart).padding(18.dp),
-        )
         Row(
             modifier = Modifier.align(Alignment.BottomStart).fillMaxWidth().padding(18.dp),
             verticalAlignment = Alignment.Bottom,
@@ -226,7 +181,7 @@ fun OnyxHomeHero(
                 verticalArrangement = Arrangement.spacedBy(4.dp),
             ) {
                 Text(
-                    title, color = Color.White, style = MaterialTheme.typography.titleLarge,
+                    title.orEmpty(), color = Color.White, style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.SemiBold, maxLines = 2,
                     overflow = TextOverflow.Ellipsis,
                 )

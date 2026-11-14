@@ -211,15 +211,15 @@ internal fun LyricsLine(
                 // Inactive lines must stay clearly readable, not fade to
                 // near-invisible: the next line was white at 0.15 alpha,
                 // unreadable over any cover. Muted grey, not dimmed away.
-                val inactiveAlpha = if (item.isBackground) 0.08f else 0.45f
+                val inactiveAlpha = if (item.isBackground) 0.08f else 0.55f
                 val activeAlpha = 1f
-                val focusedAlpha = if (item.isBackground) 0.5f else 0.6f
+                val focusedAlpha = if (item.isBackground) 0.5f else 0.68f
                 val targetAlpha = if (!isSynced || item.isBackground || isActiveLine) {
                     activeAlpha
                 } else if (isAutoScrollEnabled && displayedCurrentLineIndex >= 0) {
                     when (abs(index - displayedCurrentLineIndex)) {
                         0 -> focusedAlpha
-                        1 -> 0.6f; 2 -> 0.55f; 3 -> 0.45f; 4 -> 0.4f; else -> 0.35f
+                        1 -> 0.75f; 2 -> 0.62f; 3 -> 0.50f; 4 -> 0.4f; else -> 0.35f
                     }
                 } else inactiveAlpha
                 

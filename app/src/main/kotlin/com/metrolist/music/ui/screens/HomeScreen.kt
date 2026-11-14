@@ -7,12 +7,9 @@ package com.metrolist.music.ui.screens
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.Crossfade
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
-import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.gestures.snapping.rememberSnapFlingBehavior
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
@@ -31,6 +28,8 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.layout.systemBars
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
@@ -78,7 +77,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
-import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
@@ -139,17 +137,11 @@ import com.metrolist.music.playback.queues.YouTubeQueue
 import com.metrolist.music.ui.component.AlbumGridItem
 import com.metrolist.music.ui.component.ArtistGridItem
 import com.metrolist.music.ui.component.ChipsRow
-import com.metrolist.music.ui.component.HideOnScrollFAB
 import com.metrolist.music.ui.component.LocalBottomSheetPageState
 import com.metrolist.music.ui.component.LocalMenuState
-import com.metrolist.music.utils.RecentCarouselFadeMillis
-import com.metrolist.music.utils.recentCarouselIndices
 import kotlinx.coroutines.flow.collect
-import kotlinx.coroutines.channels.Channel
 import com.metrolist.music.utils.recentlyHeardSongs
 import com.metrolist.music.ui.component.OnyxHomeHero
-import com.metrolist.music.ui.component.OnyxHomeObservatory
-import com.metrolist.music.ui.component.OnyxHomeShortcuts
 import com.metrolist.music.ui.component.OnyxQuickAccessItem
 import com.metrolist.music.ui.component.NavigationTitle
 import com.metrolist.music.ui.component.SongGridItem
@@ -180,9 +172,8 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.withContext
-import kotlin.math.abs
-import kotlin.math.min
 import kotlin.random.Random
+import kotlin.math.min
 
 sealed class HomeSection(
     val id: String,
@@ -671,6 +662,8 @@ fun HomeScreen(
     val playerConnection = LocalPlayerConnection.current ?: return
     val haptic = LocalHapticFeedback.current
     val listenTogetherManager = LocalListenTogetherManager.current
+    val allLocalItems by viewModel.allLocalItems.collectAsStateWithLifecycle()
+    val allYtItems by viewModel.allYtItems.collectAsStateWithLifecycle()
     val isListenTogetherGuest = listenTogetherManager?.let { it.isInRoom && !it.isHost } ?: false
 
     val isPlaying by playerConnection.isEffectivelyPlaying.collectAsStateWithLifecycle()
@@ -702,8 +695,6 @@ fun HomeScreen(
     }
 
 
-    val allLocalItems by viewModel.allLocalItems.collectAsStateWithLifecycle()
-    val allYtItems by viewModel.allYtItems.collectAsStateWithLifecycle()
     val speedDialItems by viewModel.speedDialItems.collectAsStateWithLifecycle()
     val pinnedSpeedDialItems by viewModel.pinnedSpeedDialItems.collectAsStateWithLifecycle()
     val selectedChip by viewModel.selectedChip.collectAsStateWithLifecycle()
@@ -714,6 +705,78 @@ fun HomeScreen(
 
     val isLoading: Boolean by viewModel.isLoading.collectAsStateWithLifecycle()
     val connectionError by viewModel.connectionError.collectAsStateWithLifecycle()
+    val scope = rememberCoroutineScope()
+    val playRandom: () -> Unit = {
+        if (!isListenTogetherGuest && (allLocalItems.isNotEmpty() || allYtItems.isNotEmpty())) {
+            val local =
+                when {
+                    allLocalItems.isNotEmpty() && allYtItems.isNotEmpty() -> Random.nextFloat() < 0.5
+                    allLocalItems.isNotEmpty() -> true
+                    else -> false
+                }
+            scope.launch(Dispatchers.Main) {
+                if (local) {
+                    when (val luckyItem = allLocalItems.random()) {
+                        is Song -> {
+                            playerConnection.playQueue(YouTubeQueue.radio(luckyItem.toMediaMetadata()))
+                        }
+
+                        is Album -> {
+                            val albumWithSongs =
+                                withContext(Dispatchers.IO) {
+                                    database.albumWithSongs(luckyItem.id).first()
+                                }
+                            albumWithSongs?.let {
+                                playerConnection.playQueue(LocalAlbumRadio(it))
+                            }
+                        }
+
+                        is Artist -> {}
+
+                        is Playlist -> {}
+                    }
+                } else {
+                    when (val luckyItem = allYtItems.random()) {
+                        is SongItem -> {
+                            playerConnection.playQueue(YouTubeQueue.radio(luckyItem.toMediaMetadata()))
+                        }
+
+                        is AlbumItem -> {
+                            playerConnection.playQueue(YouTubeAlbumRadio(luckyItem.playlistId))
+                        }
+
+                        is ArtistItem -> {
+                            luckyItem.radioEndpoint?.let {
+                                playerConnection.playQueue(YouTubeQueue(it))
+                            }
+                        }
+
+                        is PlaylistItem -> {
+                            luckyItem.playEndpoint?.let {
+                                playerConnection.playQueue(YouTubeQueue(it))
+                            }
+                        }
+
+                        is PodcastItem -> {
+                            luckyItem.playEndpoint?.let {
+                                playerConnection.playQueue(YouTubeQueue(it))
+                            }
+                        }
+
+                        is EpisodeItem -> {
+                            playerConnection.playQueue(
+                                ListQueue(
+                                    title = luckyItem.title,
+                                    items = listOf(luckyItem.toMediaMetadata().toMediaItem()),
+                                ),
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+
     val isMoodAndGenresLoading = isLoading && explorePage?.moodAndGenres == null
     val isRefreshing by viewModel.isRefreshing.collectAsStateWithLifecycle()
     val isRandomizing by viewModel.isRandomizing.collectAsStateWithLifecycle()
@@ -780,8 +843,6 @@ fun HomeScreen(
                 cachedPodcasts
             }
         }
-
-    val scope = rememberCoroutineScope()
 
     val lazylistState = rememberLazyListState()
     val gridItemSize by rememberEnumPreference(GridItemsSizeKey, GridItemSize.BIG)
@@ -1224,9 +1285,6 @@ fun HomeScreen(
                 modifier = Modifier,
                 contentPadding = LocalPlayerAwareWindowInsets.current.asPaddingValues(),
             ) {
-                item(key = "onyx_observatory") {
-                    OnyxHomeObservatory()
-                }
                 if (connectionError != null && !isLoading) item(key = "youtube_connection_error") {
                     Column(modifier = Modifier.padding(horizontal = 20.dp, vertical = 12.dp)) {
                         Text(stringResource(R.string.youtube_home_connection_error))
@@ -1236,84 +1294,65 @@ fun HomeScreen(
                         }
                     }
                 }
-                item(key = "onyx_home_shortcuts") {
-                    OnyxHomeShortcuts(
-                        onHistory = { navController.navigate("history") },
-                        onExplore = { navController.navigate("mood_and_genres") },
-                    )
-                }
-                item {
-                    ChipsRow(
-                        chips = homePage?.chips?.map { it to it.title } ?: emptyList(),
-                        currentValue = selectedChip,
-                        onValueUpdate = {
-                            viewModel.toggleChip(it)
-                        },
-                    )
-                }
                 if (selectedChip == null && recentlyHeard.isNotEmpty()) {
-                    item(key = "sonet_recently_heard_crossfade") {
-                        val songs = remember(recentlyHeard) { recentlyHeard }
+                    item(key = "sonet_recently_heard_heading") {
+                        NavigationTitle(
+                            title = stringResource(R.string.sonet_recently_heard),
+                            onClick = { navController.navigate("history") },
+                        )
+                    }
+                    item(key = "sonet_recently_heard_carousel") {
+                        val songs = recentlyHeard
                         val sourceTitle = stringResource(R.string.sonet_recently_heard)
-                        val songIds = remember(songs) { songs.map { it.id } }
-                        var selectedIndex by remember(songIds) { mutableIntStateOf(0) }
-                        val swipeRequests = remember(songIds) { Channel<Int>(Channel.CONFLATED) }
-                        LaunchedEffect(swipeRequests) {
-                            recentCarouselIndices(songs.size, swipeRequests).collect { selectedIndex = it }
-                        }
-
-                        Box(
-                            modifier = Modifier.fillMaxWidth()
-                                .padding(horizontal = 20.dp, vertical = 10.dp)
-                                .pointerInput(songs) {
-                                    var dragged = 0f
-                                    detectHorizontalDragGestures(
-                                        onHorizontalDrag = { change, distance ->
-                                            change.consume()
-                                            dragged += distance
-                                        },
-                                        onDragEnd = {
-                                            if (songs.size > 1 && abs(dragged) > size.width * .14f) {
-                                                swipeRequests.trySend(if (dragged < 0) 1 else -1)
-                                            }
-                                            dragged = 0f
-                                        },
-                                        onDragCancel = { dragged = 0f },
+                        val pagerState = rememberPagerState { songs.size }
+                        HorizontalPager(
+                            state = pagerState,
+                            contentPadding = PaddingValues(start = 20.dp, end = if (songs.size > 1) 44.dp else 20.dp),
+                            pageSpacing = 12.dp,
+                            key = { index -> songs[index].id },
+                        ) { index ->
+                            val entry = songs[index]
+                            val playSong = {
+                                if (!isListenTogetherGuest) {
+                                    playerConnection.playQueue(
+                                        ListQueue(title = sourceTitle, items = songs.map { it.toMediaItem() }, startIndex = index),
+                                        source = sourceTitle,
                                     )
-                                },
-                        ) {
-                            Crossfade(
-                                targetState = songs[selectedIndex.coerceIn(0, songs.lastIndex)],
-                                animationSpec = tween(durationMillis = RecentCarouselFadeMillis),
-                                label = "recentlyHeardArtworkCrossfade",
-                            ) { entry ->
-                                val index = songs.indexOfFirst { it.id == entry.id }.coerceAtLeast(0)
-                                val playSong = {
-                                    if (!isListenTogetherGuest) {
-                                        playerConnection.playQueue(
-                                            ListQueue(
-                                                title = sourceTitle,
-                                                items = songs.map { it.toMediaItem() },
-                                                startIndex = index,
-                                            ),
-                                            source = sourceTitle,
-                                        )
-                                    }
                                 }
-                                OnyxHomeHero(
-                                    title = entry.title,
-                                    artist = entry.orderedArtists.joinToString { it.name },
-                                    artwork = entry.thumbnailUrl,
-                                    label = sourceTitle,
-                                    onPlay = playSong,
-                                    onExplore = playSong,
-                                    modifier = Modifier.fillMaxWidth(),
-                                )
                             }
+                            OnyxHomeHero(
+                                title = entry.title,
+                                artist = entry.orderedArtists.joinToString { it.name },
+                                artwork = entry.thumbnailUrl,
+                                onPlay = playSong,
+                                onExplore = playSong,
+                                modifier = Modifier.fillMaxWidth(),
+                            )
+                        }
+                    }
+                } else if (selectedChip == null) {
+                    item(key = "sonet_history") {
+                        NavigationTitle(title = stringResource(R.string.history), onClick = { navController.navigate("history") })
+                    }
+                }
+                if (!isListenTogetherGuest && (allLocalItems.isNotEmpty() || allYtItems.isNotEmpty())) {
+                    item(key = "sonet_home_shuffle") {
+                        androidx.compose.material3.TextButton(
+                            onClick = playRandom,
+                            modifier = Modifier.padding(horizontal = 16.dp),
+                        ) {
+                            Icon(painterResource(R.drawable.shuffle), null, Modifier.size(18.dp))
+                            Text(stringResource(R.string.shuffle), Modifier.padding(start = 8.dp))
                         }
                     }
                 }
-
+                item(key = "sonet_home_filters") {
+                    ChipsRow(
+                        chips = homePage?.chips?.map { it to it.title } ?: emptyList(),
+                        currentValue = selectedChip,
+                        onValueUpdate = { viewModel.toggleChip(it) },
+                    )
+                }
 
                 if (isLoading && homePage?.chips.isNullOrEmpty() && speedDialItems.isEmpty()) {
                     item(key = "chips_shimmer") {
@@ -2558,84 +2597,7 @@ fun HomeScreen(
                 }
             }
 
-            HideOnScrollFAB(
-                visible = allLocalItems.isNotEmpty() || allYtItems.isNotEmpty(),
-                lazyListState = lazylistState,
-                icon = R.drawable.shuffle,
-                onClick = {
-                    if (!isListenTogetherGuest) {
-                        val local =
-                            when {
-                                allLocalItems.isNotEmpty() && allYtItems.isNotEmpty() -> Random.nextFloat() < 0.5
-                                allLocalItems.isNotEmpty() -> true
-                                else -> false
-                            }
-                        scope.launch(Dispatchers.Main) {
-                            if (local) {
-                                when (val luckyItem = allLocalItems.random()) {
-                                    is Song -> {
-                                        playerConnection.playQueue(YouTubeQueue.radio(luckyItem.toMediaMetadata()))
-                                    }
 
-                                    is Album -> {
-                                        val albumWithSongs =
-                                            withContext(Dispatchers.IO) {
-                                                database.albumWithSongs(luckyItem.id).first()
-                                            }
-                                        albumWithSongs?.let {
-                                            playerConnection.playQueue(LocalAlbumRadio(it))
-                                        }
-                                    }
-
-                                    is Artist -> {}
-
-                                    is Playlist -> {}
-                                }
-                            } else {
-                                when (val luckyItem = allYtItems.random()) {
-                                    is SongItem -> {
-                                        playerConnection.playQueue(YouTubeQueue.radio(luckyItem.toMediaMetadata()))
-                                    }
-
-                                    is AlbumItem -> {
-                                        playerConnection.playQueue(YouTubeAlbumRadio(luckyItem.playlistId))
-                                    }
-
-                                    is ArtistItem -> {
-                                        luckyItem.radioEndpoint?.let {
-                                            playerConnection.playQueue(YouTubeQueue(it))
-                                        }
-                                    }
-
-                                    is PlaylistItem -> {
-                                        luckyItem.playEndpoint?.let {
-                                            playerConnection.playQueue(YouTubeQueue(it))
-                                        }
-                                    }
-
-                                    is PodcastItem -> {
-                                        luckyItem.playEndpoint?.let {
-                                            playerConnection.playQueue(YouTubeQueue(it))
-                                        }
-                                    }
-
-                                    is EpisodeItem -> {
-                                        playerConnection.playQueue(
-                                            ListQueue(
-                                                title = luckyItem.title,
-                                                items = listOf(luckyItem.toMediaMetadata().toMediaItem()),
-                                            ),
-                                        )
-                                    }
-                                }
-                            }
-                        }
-                    }
-                },
-                onRecognitionClick = {
-                    navController.navigate("recognition")
-                },
-            )
         }
     }
 }

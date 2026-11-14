@@ -194,10 +194,10 @@ fun AppNavigationBar(
                         navigationItems.lastIndex - selectionPosition.value
                     else selectionPosition.value
                     drawRoundRect(
-                        color = Color.White,
-                        topLeft = Offset(position * (itemWidth + gap), 0f),
-                        size = Size(itemWidth, size.height),
-                        cornerRadius = CornerRadius(size.height / 2),
+                        color = Color.White.copy(alpha = 0.12f),
+                        topLeft = Offset(position * (itemWidth + gap) + 3.dp.toPx(), 3.dp.toPx()),
+                        size = Size((itemWidth - 6.dp.toPx()).coerceAtLeast(0f), (size.height - 6.dp.toPx()).coerceAtLeast(0f)),
+                        cornerRadius = CornerRadius(20.dp.toPx()),
                     )
                 }
             },
@@ -232,7 +232,7 @@ fun AppNavigationBar(
                     }
                 }
             }
-            val tint = if (selected) Color.Black else MaterialTheme.colorScheme.onSurfaceVariant
+            val tint = if (selected) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant
             Column(
                 modifier = Modifier
                     .weight(1f)

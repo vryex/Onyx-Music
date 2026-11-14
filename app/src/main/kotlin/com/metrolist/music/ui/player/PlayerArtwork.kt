@@ -69,7 +69,7 @@ internal fun PlayerArtwork(
             .graphicsLayer {
                 val t = mix.value
                 val target = placement.bounds
-                val hasTarget = target.width > 0f && target.height > 0f
+                val hasTarget = size.width > 0f && size.height > 0f && target.width > 0f && target.height > 0f
                 val sx = if (hasTarget) 1f + (target.width / size.width - 1f) * t else 1f
                 val sy = if (hasTarget) 1f + (target.height / size.height - 1f) * t else 1f
                 scaleX = sx
@@ -77,12 +77,7 @@ internal fun PlayerArtwork(
                 translationX = if (hasTarget) target.left * t else 0f
                 translationY = if (hasTarget) target.top * t else 0f
                 transformOrigin = TransformOrigin(0f, 0f)
-                // In lyrics mode the cover fades out: the small cover lives
-                // in the metadata row instead, and the lyrics pane must not
-                // keep the bright photo behind the text. (The flight to the
-                // row anchor never lands in practice, so fading is what
-                // guarantees the lyrics pane is actually clear.)
-                alpha = if (visibleInCoverMode) 1f - t else t
+                alpha = if (!hasTarget && t > 0f) 0f else if (visibleInCoverMode) 1f else t
                 shape = RoundedCornerShape(12.dp * t / minOf(sx, sy).coerceAtLeast(0.001f))
                 clip = true
                 compositingStrategy = CompositingStrategy.Offscreen
@@ -110,7 +105,7 @@ internal fun PlayerArtwork(
             modifier = Modifier.fillMaxSize().graphicsLayer {
                 val target = placement.bounds
                 val t = mix.value
-                if (target.width > 0f && target.height > 0f) {
+                if (size.width > 0f && size.height > 0f && target.width > 0f && target.height > 0f) {
                     val sx = 1f + (target.width / size.width - 1f) * t
                     val sy = 1f + (target.height / size.height - 1f) * t
                     // Crop the source instead of stretching it into a square.

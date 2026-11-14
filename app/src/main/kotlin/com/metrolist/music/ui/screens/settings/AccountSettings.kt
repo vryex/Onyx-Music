@@ -101,6 +101,7 @@ fun AccountSettings(
     val accountName by homeViewModel.accountName.collectAsStateWithLifecycle()
     val accountImageUrl by homeViewModel.accountImageUrl.collectAsStateWithLifecycle()
 
+    var showAdvancedLogin by remember { mutableStateOf(false) }
     var showToken by remember { mutableStateOf(false) }
     var showTokenEditor by remember { mutableStateOf(false) }
     var showLogoutDialog by remember { mutableStateOf(false) }
@@ -127,7 +128,7 @@ fun AccountSettings(
             )
             Spacer(modifier = Modifier.weight(1f))
             IconButton(onClick = onClose) {
-                Icon(painterResource(R.drawable.close), contentDescription = null)
+                Icon(painterResource(R.drawable.close), contentDescription = stringResource(R.string.close))
             }
         }
 
@@ -273,7 +274,7 @@ fun AccountSettings(
                             }
 
                             Text(
-                                text = if (isLoggedIn) accountName else stringResource(R.string.login),
+                                text = if (isLoggedIn) accountName else stringResource(R.string.action_login),
                             )
                         }
                     },
@@ -321,7 +322,12 @@ fun AccountSettings(
 
         Material3SettingsGroup(
             items = listOfNotNull(
-                Material3SettingsItem(
+                if (!isLoggedIn) Material3SettingsItem(
+                    title = { Text(stringResource(R.string.advanced)) },
+                    icon = painterResource(R.drawable.token),
+                    onClick = { showAdvancedLogin = !showAdvancedLogin }
+                ) else null,
+                if (isLoggedIn || showAdvancedLogin) Material3SettingsItem(
                     title = {
                         Text(
                             when {
@@ -337,7 +343,7 @@ fun AccountSettings(
                         else if (!showToken) showToken = true
                         else showTokenEditor = true
                     }
-                ),
+                ) else null,
                 if (isLoggedIn) Material3SettingsItem(
                     title = { Text(stringResource(R.string.more_content)) },
                     icon = painterResource(R.drawable.cached),

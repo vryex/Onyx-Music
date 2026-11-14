@@ -27,7 +27,6 @@ import androidx.compose.animation.core.spring
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
-import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
@@ -241,11 +240,12 @@ private fun NewMiniPlayer(
 
 
     val artworkTones by rememberArtworkTones(mediaMetadata?.thumbnailUrl)
-    val artworkColor by animateColorAsState(artworkTones.surface, tween(650), label = "miniArtwork")
-    val playButtonColor by animateColorAsState(artworkTones.accent, tween(650), label = "miniAccent")
-    // Text/icons on the mini player follow the cover luminance: light
-    // covers get dark text, dark covers keep white text.
-    val miniOnArtworkColor = remember(artworkColor) { onArtworkColor(artworkColor) }
+    val playButtonColor by animateColorAsState(
+        artworkTones.accent.takeIf { mediaMetadata?.thumbnailUrl != null } ?: Color.White,
+        tween(350), label = "miniAccent",
+    )
+    val miniOnArtworkColor = MaterialTheme.colorScheme.onSurface
+    val miniSurface = MaterialTheme.colorScheme.surfaceContainer
     val isEffectivelyPlaying by playerConnection.isEffectivelyPlaying.collectAsStateWithLifecycle()
     val primaryColor = MaterialTheme.colorScheme.primary
     val outlineColor = MaterialTheme.colorScheme.outline
@@ -329,7 +329,7 @@ private fun NewMiniPlayer(
                     .height(56.dp)
                     .offset { IntOffset(offsetXAnimatable.value.roundToInt(), 0) }
                     .clip(RoundedCornerShape(24.dp))
-                    .background(androidx.compose.ui.graphics.Brush.horizontalGradient(listOf(artworkColor, artworkColor.copy(red = artworkColor.red * .62f, green = artworkColor.green * .62f, blue = artworkColor.blue * .62f))))
+                    .background(miniSurface)
                     .border(1.dp, Color(0xFFF5F5F7).copy(alpha = 0.20f), RoundedCornerShape(24.dp))
                     .drawWithContent {
                         drawContent()
@@ -364,6 +364,7 @@ private fun NewMiniPlayer(
                         castHandler = castHandler,
                         playerConnection = playerConnection,
                         listenTogetherManager = listenTogetherManager,
+                        contentColor = onArtworkColor(playButtonColor),
                     )
                 }
                 Spacer(Modifier.width(12.dp))
@@ -379,7 +380,7 @@ private fun NewMiniPlayer(
                 }
                 IconButton(
                     enabled = canSkipPrevious && !isListenTogetherGuest,
-                    onClick = { playerConnection.player.seekToPreviousMediaItem() },
+                    onClick = playerConnection::seekToPrevious,
                 ) {
                     Icon(painterResource(R.drawable.skip_previous), stringResource(R.string.onyx_previous_track),
                         tint = miniOnArtworkColor.copy(alpha = 0.65f))
@@ -468,8 +469,7 @@ private fun NewMiniPlayerSongInfo(
                 fontSize = 14.sp,
                 fontWeight = FontWeight.Medium,
                 maxLines = 1,
-                overflow = TextOverflow.Clip,
-                modifier = Modifier.basicMarquee(iterations = 1, initialDelayMillis = 3000, velocity = 30.dp),
+                overflow = TextOverflow.Ellipsis,
             )
             Row(
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -482,8 +482,7 @@ private fun NewMiniPlayerSongInfo(
                          color = onSurfaceColor.copy(alpha = 0.7f),
                         fontSize = 12.sp,
                         maxLines = 1,
-                        overflow = TextOverflow.Clip,
-                        modifier = Modifier.basicMarquee(iterations = 1, initialDelayMillis = 3000, velocity = 30.dp),
+                        overflow = TextOverflow.Ellipsis,
                     )
                 }
             }
@@ -508,6 +507,7 @@ private fun LegacyPlayPauseButton(
     castHandler: CastConnectionHandler?,
     playerConnection: PlayerConnection,
     listenTogetherManager: ListenTogetherManager?,
+    contentColor: Color,
 ) {
     val isPlaying by playerConnection.isPlaying.collectAsStateWithLifecycle()
     val castIsPlaying by castHandler?.castIsPlaying?.collectAsStateWithLifecycle() ?: remember { mutableStateOf(false) }
@@ -541,6 +541,7 @@ private fun LegacyPlayPauseButton(
                         else -> R.drawable.play
                     },
                 ),
+            tint = contentColor,
             contentDescription = stringResource(when {
                 isListenTogetherGuest -> if (isMuted) R.string.unmute else R.string.mute
                 playbackState == Player.STATE_ENDED -> R.string.play
