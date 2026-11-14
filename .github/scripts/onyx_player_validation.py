@@ -329,9 +329,8 @@ if not video_only:
     adb('shell', 'settings', 'put', 'system', 'user_rotation', '1')
     time.sleep(3)
     landscape = snapshot('14-player-landscape')
-    if not any('Previous track' in n.get('content-desc', '') for n in landscape.iter('node')):
-        tap_label(landscape, 'sonet ui check 1')
-        landscape = snapshot('14-player-landscape-expanded')
+    assert any(n.get('resource-id') == 'sonet_player_transport' for n in landscape.iter('node')), (
+        'Rotation must preserve the expanded player, not fall back to the mini player')
     width, height = map(int, re.findall(r'\d+', adb('shell', 'wm', 'size').decode().splitlines()[-1]))
     # Mini player exposes Next, so require Previous as well to prove expansion.
     for control in ['Previous track', 'Next track']:
@@ -348,25 +347,16 @@ if not video_only:
                     result.append(bounds)
         return result
 
-    for attempt in range(5):
-        if visible_bounds(landscape, 'Sleep timer'):
-            break
-        assert attempt < 4, 'Landscape timer must remain accessible by scrolling its controls'
-        adb('shell', 'input', 'swipe', str(int(height * .8)), str(int(width * .5)),
-            str(int(height * .8)), str(int(width * .25)), '350')
-        time.sleep(.5)
-        landscape = snapshot('14-landscape-utilities-' + str(attempt))
-    for timer in visible_bounds(landscape, 'Sleep timer'):
-        for menu in visible_bounds(landscape, 'More options'):
-            assert max(timer[0], menu[0]) >= min(timer[2], menu[2]) or max(timer[1], menu[1]) >= min(timer[3], menu[3]), 'Landscape timer overlaps player menu'
-    snapshot('14-landscape-utilities-verified')
+    for control in ['Sleep timer', 'Lyrics', 'Queue']:
+        assert visible_bounds(landscape, control), 'Landscape player action missing: ' + control
+    tap_label(landscape, 'sleep timer')
+    tap_label(snapshot('14-landscape-timer-dialog'), 'cancel')
     adb('shell', 'wm', 'size', 'reset')
     adb('shell', 'settings', 'put', 'system', 'user_rotation', '0')
     time.sleep(2)
     portrait = snapshot('15-player-portrait')
-    if not any('Minimize player' in n.get('content-desc', '') for n in portrait.iter('node')):
-        tap_label(portrait, 'sonet ui check 1')
-        portrait = snapshot('15-player-portrait-expanded')
+    assert any('Minimize player' in n.get('content-desc', '') for n in portrait.iter('node')), (
+        'Returning to portrait must keep the player expanded')
     tap_label(portrait, 'lyrics')
     lyrics_screen = snapshot('16-lyrics')
 
@@ -405,7 +395,12 @@ if not video_only:
     check_metadata_row(fullscreen_screen)
     check_visible_lyrics(fullscreen_screen)
     fullscreen_expanded = control_point(fullscreen_screen, 'fullscreen lyrics')
-    tap_label(fullscreen_screen, 'fullscreen lyrics')
+    adb('shell', 'input', 'keyevent', 'KEYCODE_BACK')
+    time.sleep(1)
+    returned = snapshot('16-fullscreen-back')
+    assert any(n.get('resource-id') == 'sonet_player_transport' for n in returned.iter('node')), (
+        'Back from fullscreen lyrics must restore playback controls')
+    check_visible_lyrics(returned)
 
     # Measure repeated mode changes with loaded local lyrics; no network/stream timing.
     # Keep raw frame data and a recording so jank isn't hidden by a successful build.

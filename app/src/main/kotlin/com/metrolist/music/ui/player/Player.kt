@@ -257,9 +257,8 @@ fun BottomSheetPlayer(
         mutableStateOf(false)
     }
 
-    var isFullScreen by rememberSaveable {
-        mutableStateOf(false)
-    }
+    var fullscreenLyrics by rememberSaveable { mutableStateOf(false) }
+    val isFullScreen = showInlineLyrics && fullscreenLyrics
 
 
     val playerBackground by rememberEnumPreference(
@@ -325,8 +324,8 @@ fun BottomSheetPlayer(
         }
     }
 
-    BackHandler(enabled = state.isExpanded) {
-        state.collapseSoft()
+    BackHandler(enabled = state.isExpanded && isFullScreen) {
+        fullscreenLyrics = false
     }
 
     val onBackgroundColor =
@@ -808,6 +807,7 @@ fun BottomSheetPlayer(
     BottomSheet(
         state = state,
         backgroundFollowsContent = true,
+        handleBack = !isFullScreen,
         retainExpandedContent = hasShownLyrics || showInlineLyrics || videoModeActive,
         modifier = modifier,
         background = {
@@ -890,11 +890,13 @@ fun BottomSheetPlayer(
             )
         },
     ) {
-        val metadataContent: @Composable (MediaMetadata) -> Unit = { mediaMetadata ->
+        val metadataContent: @Composable (MediaMetadata, Boolean) -> Unit = { mediaMetadata, showQuickActions ->
             // Only the horizontal cover slot animates. A global bounds animation
             // here also chased the parent's fullscreen resize, delaying the title
             // and separating it from its cover, slider and buttons.
-            val coverInset = if (showInlineLyrics && !mediaMetadata.thumbnailUrl.isNullOrBlank()) 60.dp else 0.dp
+            val isLandscape = LocalConfiguration.current.orientation == Configuration.ORIENTATION_LANDSCAPE
+            val showLyricsCover = showInlineLyrics && !isLandscape && !mediaMetadata.thumbnailUrl.isNullOrBlank()
+            val coverInset = if (showLyricsCover) 60.dp else 0.dp
             val coverSlotWidth = animateDpAsState(
                 coverInset,
                 tween(320), label = "metadataCoverSlot",
@@ -904,8 +906,8 @@ fun BottomSheetPlayer(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Box(Modifier.weight(1f), contentAlignment = Alignment.CenterStart) {
-                if (LocalConfiguration.current.orientation != Configuration.ORIENTATION_LANDSCAPE) {
-                    if (showInlineLyrics && !mediaMetadata.thumbnailUrl.isNullOrBlank()) {
+                if (!isLandscape) {
+                    if (showLyricsCover) {
                         // Lyrics mode: draw the small cover here, next to the
                         // title. The background artwork is faded out in lyrics
                         // mode (see PlayerArtwork), so this is the only cover.
@@ -920,14 +922,6 @@ fun BottomSheetPlayer(
                         // A layout anchor only. The bitmap is drawn once in the background.
                         Box(Modifier.size(48.dp).onGloballyPositioned(artworkPlacement::placeTarget))
                     }
-                } else {
-                    AsyncImage(
-                        model = mediaMetadata.thumbnailUrl?.resize(96, 96),
-                        contentDescription = null,
-                        contentScale = ContentScale.Crop,
-                        modifier = Modifier.size(48.dp).clip(RoundedCornerShape(12.dp))
-                            .graphicsLayer { alpha = lyricsMix.value },
-                    )
                 }
                 Column(
                     Modifier.fillMaxWidth()
@@ -1018,53 +1012,46 @@ fun BottomSheetPlayer(
                     }.semantics { selected = favorite },
                     contentColor = playerContentColor,
                 )
-                // Direct add-to-playlist, share and download, next to the like
-                // button, instead of hiding them behind the "···" menu only.
-                // They stay out of the row in lyrics mode: six 48dp buttons
-                // leave the title no width at all (the row is only ~360dp
-                // wide), so the title was measured at zero width and the
-                // whole metadata row looked empty. In lyrics mode the row
-                // keeps like / fullscreen / more, and these three stay in
-                // the player menu outside lyrics mode.
-                if (!showInlineLyrics) {
-                Spacer(Modifier.width(12.dp))
-                PlayerIconButton(
-                    R.drawable.playlist_add,
-                    stringResource(R.string.add_to_playlist),
-                    onClick = { showChoosePlaylistDialog = true },
-                    contentColor = playerContentColor,
-                )
-                Spacer(Modifier.width(12.dp))
-                PlayerIconButton(
-                    R.drawable.share,
-                    stringResource(R.string.share),
-                    onClick = {
-                        context.startActivity(Intent.createChooser(Intent(Intent.ACTION_SEND).apply {
-                            type = "text/plain"
-                            putExtra(Intent.EXTRA_TEXT, "https://music.youtube.com/watch?v=" + mediaMetadata.id)
-                        }, null))
-                    },
-                    contentColor = playerContentColor,
-                )
-                // Direct download button: completed = remove, otherwise download.
-                // The in-progress state is shown with % in the "···" menu.
-                Spacer(Modifier.width(12.dp))
-                PlayerIconButton(
-                    if (download?.state == Download.STATE_COMPLETED) R.drawable.offline else R.drawable.download,
-                    stringResource(if (download?.state == Download.STATE_COMPLETED) R.string.remove_download else R.string.action_download),
-                    onClick = {
-                        if (download?.state == Download.STATE_COMPLETED) downloadUtil.removeDownload(mediaMetadata.id)
-                        else downloadUtil.download(mediaMetadata)
-                    },
-                    contentColor = playerContentColor,
-                )
+                if (!showInlineLyrics && showQuickActions) {
+                    Spacer(Modifier.width(12.dp))
+                    PlayerIconButton(
+                        R.drawable.playlist_add,
+                        stringResource(R.string.add_to_playlist),
+                        onClick = { showChoosePlaylistDialog = true },
+                        contentColor = playerContentColor,
+                    )
+                    Spacer(Modifier.width(12.dp))
+                    PlayerIconButton(
+                        R.drawable.share,
+                        stringResource(R.string.share),
+                        onClick = {
+                            context.startActivity(Intent.createChooser(Intent(Intent.ACTION_SEND).apply {
+                                type = "text/plain"
+                                putExtra(Intent.EXTRA_TEXT, "https://music.youtube.com/watch?v=" + mediaMetadata.id)
+                            }, null))
+                        },
+                        contentColor = playerContentColor,
+                    )
+                    // Direct download button: completed = remove, otherwise download.
+                    // The in-progress state is shown with % in the "···" menu.
+                    Spacer(Modifier.width(12.dp))
+                    PlayerIconButton(
+                        if (download?.state == Download.STATE_COMPLETED) R.drawable.offline else R.drawable.download,
+                        stringResource(if (download?.state == Download.STATE_COMPLETED) R.string.remove_download else R.string.action_download),
+                        onClick = {
+                            if (download?.state == Download.STATE_COMPLETED) downloadUtil.removeDownload(mediaMetadata.id)
+                            else downloadUtil.download(mediaMetadata)
+                        },
+                        contentColor = playerContentColor,
+                    )
                 }
                 if (showInlineLyrics) {
                     Spacer(Modifier.width(12.dp))
                     PlayerIconButton(
                         R.drawable.fullscreen,
                         stringResource(R.string.onyx_fullscreen),
-                        onClick = { isFullScreen = !isFullScreen },
+                        onClick = { fullscreenLyrics = !fullscreenLyrics },
+                        modifier = Modifier.semantics { selected = isFullScreen },
                         contentColor = playerContentColor,
                     )
                 }
@@ -1310,7 +1297,7 @@ fun BottomSheetPlayer(
                             else if (isCasting) {
                                 if (castIsPlaying) castHandler?.pause() else castHandler?.play()
                             } else if (playbackState == STATE_ENDED) {
-                                playerConnection.player.seekTo(0, 0)
+                                playerConnection.seekTo(0L)
                                 playerConnection.player.playWhenReady = true
                             } else playerConnection.togglePlayPause()
                         },
@@ -1416,7 +1403,7 @@ fun BottomSheetPlayer(
                                 .windowInsetsPadding(WindowInsets.systemBars.only(WindowInsetsSides.Top)),
                     ) {
                         mediaMetadata?.let {
-                            metadataContent(it)
+                            metadataContent(it, false)
                             controlsContent(it)
                         }
 
@@ -1501,7 +1488,7 @@ fun BottomSheetPlayer(
                     }
 
                     mediaMetadata?.let {
-                        metadataContent(it)
+                        metadataContent(it, maxWidth >= 392.dp)
                         controlsContent(it)
                     }
 
@@ -1513,10 +1500,14 @@ fun BottomSheetPlayer(
         // Queue owns a full-screen sheet; animate its alpha instead of
         // collapsing/re-measuring it while the lyrics are resizing.
         val queueReveal by animateFloatAsState(if (isFullScreen) 0f else 1f, tween(320), label = "queueReveal")
-        Box(Modifier.fillMaxSize().graphicsLayer {
-            alpha = queueReveal
-            translationY = (1f - queueReveal) * state.expandedBound.toPx()
-        }) {
+        Box(
+            Modifier.fillMaxSize()
+                .graphicsLayer {
+                    alpha = queueReveal
+                    translationY = (1f - queueReveal) * state.expandedBound.toPx()
+                }
+                .then(if (isFullScreen) Modifier.clearAndSetSemantics { } else Modifier),
+        ) {
             Queue(
                 state = queueSheetState,
                 playerBottomSheetState = state,
@@ -1536,6 +1527,7 @@ fun BottomSheetPlayer(
                 timerLabel = if (sleepTimerEnabled) makeTimeString(sleepTimerTimeLeft.coerceAtLeast(0L)) else null,
                 onToggleLyrics = {
                     showInlineLyrics = !showInlineLyrics
+                    fullscreenLyrics = false
                 },
             )
         }
@@ -1664,7 +1656,7 @@ fun InlineLyricsView(
                 Text(
                     text = stringResource(R.string.lyrics_not_found),
                     style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+                    color = Color.White.copy(alpha = 0.7f),
                     textAlign = TextAlign.Center,
                 )
             }
@@ -1729,7 +1721,7 @@ private fun PlayerMoreMenuButton(
     ) {
         Image(
             painter = painterResource(R.drawable.more_horiz),
-            contentDescription = null,
+            contentDescription = stringResource(R.string.more_options),
             colorFilter = ColorFilter.tint(iconButtonColor),
         )
     }

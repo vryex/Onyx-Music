@@ -895,8 +895,8 @@ class MainActivity : FragmentActivity() {
                 }
 
                 LaunchedEffect(activePlayerConnection) {
-                    val player = runCatching { activePlayerConnection?.player }.getOrNull()
-                    if (player?.currentMediaItem == null) {
+                    val player = runCatching { activePlayerConnection?.player }.getOrNull() ?: return@LaunchedEffect
+                    if (player.currentMediaItem == null) {
                         if (!playerBottomSheetState.isDismissed) {
                             playerBottomSheetState.dismiss()
                         }

@@ -524,7 +524,7 @@ private fun LegacyPlayPauseButton(
             if (isCasting) {
                 if (castIsPlaying) castHandler?.pause() else castHandler?.play()
             } else if (playbackState == Player.STATE_ENDED) {
-                playerConnection.player.seekTo(0, 0)
+                playerConnection.seekTo(0L)
                 playerConnection.player.playWhenReady = true
             } else {
                 playerConnection.togglePlayPause()

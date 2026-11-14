@@ -69,6 +69,7 @@ fun BottomSheet(
     isExpandable: Boolean = true,
     backgroundFollowsContent: Boolean = false,
     retainExpandedContent: Boolean = false,
+    handleBack: Boolean = true,
     content: @Composable BoxScope.() -> Unit,
 ) {
     val density = LocalDensity.current
@@ -125,7 +126,7 @@ fun BottomSheet(
                 clip = true
             }
     ) {
-        if (!state.isCollapsed && !state.isDismissed) {
+        if (handleBack && !state.isCollapsed && !state.isDismissed) {
             PredictiveBackHandler { progress ->
                 val initialValue = state.value
                 try {
@@ -356,21 +357,19 @@ fun rememberBottomSheetState(
     var previousAnchor by rememberSaveable {
         mutableIntStateOf(initialAnchor)
     }
-    val animatable = remember {
-        Animatable(0.dp, Dp.VectorConverter)
+    val anchorValue = when (previousAnchor) {
+        expandedAnchor -> expandedBound
+        collapsedAnchor -> collapsedBound
+        dismissedAnchor -> dismissedBound
+        else -> error("Unknown BottomSheet anchor")
     }
+    val animatable = remember { Animatable(anchorValue, Dp.VectorConverter) }
 
-    return remember(dismissedBound, expandedBound, collapsedBound, coroutineScope) {
-        val initialValue = when (previousAnchor) {
-            expandedAnchor -> expandedBound
-            collapsedAnchor -> collapsedBound
-            dismissedAnchor -> dismissedBound
-            else -> error("Unknown BottomSheet anchor")
-        }
+    return remember(dismissedBound, expandedBound, collapsedBound, coroutineScope, density) {
 
         animatable.updateBounds(dismissedBound.coerceAtMost(expandedBound), expandedBound)
         coroutineScope.launch {
-            animatable.animateTo(initialValue, NavigationBarAnimationSpec)
+            animatable.animateTo(anchorValue, NavigationBarAnimationSpec)
         }
 
         BottomSheetState(
