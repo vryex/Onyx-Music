@@ -107,6 +107,18 @@ if globals().get('VIDEO_PROBE_ONLY', False):
 
 if not globals().get('VIDEO_PROBE_ONLY', False):
     home = snapshot('01-home')
+    tap_label(home, 'account')
+    account = snapshot('01-account')
+    assert any(n.get('text', '') == 'Log in' for n in account.iter('node')), 'Account sheet is missing its sign-in action'
+    tap_label(account, 'settings')
+    settings = snapshot('01-settings')
+    tap_label(settings, 'appearance')
+    snapshot('01-appearance')
+    adb('shell', 'input', 'keyevent', 'KEYCODE_BACK')
+    time.sleep(1)
+    adb('shell', 'input', 'keyevent', 'KEYCODE_BACK')
+    time.sleep(1)
+    home = snapshot('01-home-return')
     tap_label(home, 'library')
     library = snapshot('02-library')
     for index, tab in enumerate(['home', 'library', 'home', 'library']):

@@ -125,8 +125,8 @@ def validate_page_actions():
     home_actions = snapshot('22-home-actions')
     assert not any(n.get('resource-id', '') == 'sonet_page_actions' for n in home_actions.iter('node')), (
         'Floating Home actions obstruct the carousel')
-    assert any(n.get('text', '') == 'Recently played' for n in home_actions.iter('node')), (
-        'Listening history should have an inline heading')
+    assert any(n.get('text', '') == 'Shuffle' for n in home_actions.iter('node')), (
+        'Home should offer Shuffle as an inline action')
     tap_label(home_actions, 'sonet ui check 1')
     expanded = snapshot('22-expanded-player')
     assert any(n.get('resource-id', '') == 'sonet_player_transport' for n in expanded.iter('node')), (
